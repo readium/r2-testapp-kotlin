@@ -26,7 +26,6 @@ import org.jetbrains.anko.appcompat.v7.Appcompat
 import org.jetbrains.anko.design.textInputLayout
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-import org.readium.r2.lcp.LcpLicense
 import org.readium.r2.navigator.R2EpubActivity
 import org.readium.r2.shared.Publication
 import org.readium.r2.shared.drm.DRMMModel
@@ -48,8 +47,15 @@ import java.net.ServerSocket
 import java.net.URL
 import java.util.*
 
+
+
 class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListener {
 
+    enum class DrmType {
+        LCP,
+        URMS,
+        NONE
+    }
     private val TAG = this::class.java.simpleName
 
     private lateinit var server: Server
@@ -138,9 +144,11 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
     private fun parseIntent() {
         val intent = intent
         val uriString: String? = intent.getStringExtra(R2IntentHelper.URI)
-        val lcp: Boolean = intent.getBooleanExtra(R2IntentHelper.LCP, false)
+        //TODO handle urms case
+        val drmType: DrmType = if (intent.getBooleanExtra(R2IntentHelper.LCP, false)) DrmType.LCP else DrmType.NONE
+
         //Open extern Epub without lcp
-        if (uriString != null && lcp == false) {
+        if (uriString != null && drmType == DrmType.NONE) {
             val uri: Uri? = Uri.parse(uriString)
             if (uri != null) {
 
@@ -178,14 +186,14 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
             }
         // Open extern Epub with LCP
         // TODO Move this code in lcp-specfic module
-        } else if (uriString != null && lcp == true) {
+        } else if (uriString != null && drmType != DrmType.NONE) {
             val uri: Uri? = Uri.parse(uriString)
             if (uri != null) {
                 val progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_downloading_book))
                 progress.show()
                 val thread = Thread(Runnable {
                     task {
-                        DrmFetcher().fetch(uri, this)
+                        DrmFetcher().fetch(uri, this, drmType)
                     } successUi { path ->
                             val file = File(path)
                             try {

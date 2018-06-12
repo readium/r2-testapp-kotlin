@@ -11,23 +11,32 @@ import java.net.URL
 
 class DrmFetcher {
     @SuppressLint("TimberArgCount")
-    fun fetch(uri: Uri, context: Context) : String {
-        val lcpLicense = LcpLicense(URL(uri.toString()), false, context)
-        return lcpLicense.fetchStatusDocument().then({
-            Timber.i(TAG, "LCP fetchStatusDocument: $it")
-            lcpLicense.checkStatus()
-            lcpLicense.updateLicenseDocument().get()
-        }).then({
-            Timber.i(TAG, "LCP updateLicenseDocument: $it")
-            lcpLicense.areRightsValid()
-            lcpLicense.register()
-            lcpLicense.fetchPublication()
-        }).then({
-            Timber.i(TAG, "LCP fetchPublication: $it")
-            it?.let {
-                lcpLicense.moveLicense(it, lcpLicense.archivePath)
+    fun fetch(uri: Uri, context: Context, drmType: CatalogActivity.DrmType) : String {
+
+        return when(drmType) {
+            CatalogActivity.DrmType.LCP -> {
+                val lcpLicense = LcpLicense(URL(uri.toString()), false, context)
+                return lcpLicense.fetchStatusDocument().then({
+                    Timber.i(TAG, "LCP fetchStatusDocument: $it")
+                    lcpLicense.checkStatus()
+                    lcpLicense.updateLicenseDocument().get()
+                }).then({
+                    Timber.i(TAG, "LCP updateLicenseDocument: $it")
+                    lcpLicense.areRightsValid()
+                    lcpLicense.register()
+                    lcpLicense.fetchPublication()
+                }).then({
+                    Timber.i(TAG, "LCP fetchPublication: $it")
+                    it?.let {
+                        lcpLicense.moveLicense(it, lcpLicense.archivePath)
+                    }
+                    it!!
+                }).get()
+            } else -> {
+                //TODO insert your urms fetcher logic here
+                "Unknown"
             }
-            it!!
-        }).get()
+        }
+
     }
 }
