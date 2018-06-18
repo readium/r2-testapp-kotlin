@@ -1,15 +1,12 @@
 package org.readium.r2.testapp
 
-
 // uncomment for lcp
 /*
 import org.readium.r2.lcp.LcpHttpService
 import org.readium.r2.lcp.LcpLicense
 import org.readium.r2.lcp.LcpSession
- */
-
+*/
 import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.Bundle
@@ -24,7 +21,6 @@ import android.widget.ListPopupWindow
 import android.widget.PopupWindow
 import com.mcxiaoke.koi.HASH
 import kotlinx.android.synthetic.main.activity_catalog.*
-import net.theluckycoder.materialchooser.Chooser
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 import nl.komponents.kovenant.then
@@ -39,6 +35,7 @@ import org.readium.r2.navigator.R2EpubActivity
 import org.readium.r2.shared.Publication
 import org.readium.r2.shared.drm.DRMMModel
 import org.readium.r2.shared.drm.Drm
+import org.readium.r2.shared.drm.DrmLicense
 import org.readium.r2.streamer.Parser.EpubParser
 import org.readium.r2.streamer.Parser.PubBox
 import org.readium.r2.streamer.Server.BASE_URL
@@ -55,8 +52,15 @@ import java.net.ServerSocket
 import java.net.URL
 import java.util.*
 
+
+
 class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListener {
 
+    enum class DrmType {
+        LCP,
+        URMS,
+        NONE
+    }
     private val TAG = this::class.java.simpleName
 
     private lateinit var server: Server
@@ -67,6 +71,8 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
     private lateinit var permissions: Permissions
     private lateinit var preferences: SharedPreferences
     private lateinit var R2TEST_DIRECTORY_PATH: String
+
+    private val useDrm = false
 
     private var database: BooksDatabase = BooksDatabase(this)
 
@@ -95,8 +101,7 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
 
         catalogView.layoutManager = GridAutoFitLayoutManager(act, 120)
 
-        parseIntent(null);
-
+        parseIntent()
     }
 
     override fun onResume() {
@@ -140,70 +145,82 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
     }
 
 
-    private fun parseIntent(filePath: String?) {
+    private fun parseIntent(filePath: String? = null) {
+        val intent = intent
+        val uriString: String? = intent.getStringExtra(R2IntentHelper.URI)
+        //TODO handle urms case
+        val drmType: DrmType = if (intent.getBooleanExtra(R2IntentHelper.LCP, false)) DrmType.LCP else DrmType.NONE
 
-        if (filePath != null) {
-            val progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_downloading_book))
-            progress.show()
+        //Open extern Epub without lcp
+        if (uriString != null && drmType == DrmType.NONE) {
+            val uri: Uri? = Uri.parse(uriString)
+            if (uri != null) {
 
-            val fileName = UUID.randomUUID().toString()
-            val publicationPath = R2TEST_DIRECTORY_PATH + fileName
+                val progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_downloading_book))
+                progress.show()
+                val thread = Thread(Runnable {
+                    val fileName = UUID.randomUUID().toString()
+                    val publicationPath = R2TEST_DIRECTORY_PATH + fileName
+                    val path = RealPathUtil.getRealPathFromURI_API19(this, uri)
 
-            copyFile(File(filePath), File(publicationPath))
-            val file = File(publicationPath)
+                    if (path != null) {
+                        val input = File(path).toURL().openStream()
+                        input.toFile(publicationPath)
+                    }
+                    else {
+                        val input = java.net.URL(uri.toString()).openStream()
+                        input.toFile(publicationPath)
+                    }
+                    val file = File(publicationPath)
 
-            try {
-                runOnUiThread(Runnable {
-                    val parser = EpubParser()
-                    val pub = parser.parse(publicationPath)
-                    if (pub != null) {
-                        prepareToServe(parser, pub, fileName, file.absolutePath, true)
-                        progress.dismiss()
+                    try {
+                        runOnUiThread(Runnable {
+                            val parser = EpubParser()
+                            val pub = parser.parse(publicationPath)
+                            if (pub != null) {
+                                prepareToServe(parser, pub, fileName, file.absolutePath, true)
+                                progress.dismiss()
+                            }
+                        })
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
                     }
                 })
             } catch (e: Throwable) {
                 e.printStackTrace()
             }
-        } else {
-            val intent = intent
-            val uriString: String? = intent.getStringExtra(R2IntentHelper.URI)
-            val lcp: Boolean = intent.getBooleanExtra(R2IntentHelper.LCP, false)
-            if (uriString != null && lcp == false) {
-                val uri: Uri? = Uri.parse(uriString)
-                if (uri != null) {
+        // Open extern Epub with LCP
+        // TODO Move this code in lcp-specfic module
+        } else if (uriString != null && drmType != DrmType.NONE) {
+            val uri: Uri? = Uri.parse(uriString)
+            if (uri != null) {
+                val progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_downloading_book))
+                progress.show()
+                val thread = Thread(Runnable {
+                    task {
+                        DrmFetcher().fetch(uri, this, drmType)
+                    } successUi { path ->
+                            val file = File(path)
+                            try {
+                                runOnUiThread(Runnable {
+                                    val parser = EpubParser()
+                                    val pub = parser.parse(path)
+                                    if (pub != null) {
+                                        val pair = parser.parseRemainingResource(pub.container, pub.publication, pub.container.drm)
+                                        pub.container = pair.first
+                                        pub.publication = pair.second
+                                        prepareToServe(parser, pub, file.name, file.absolutePath, true)
+                                        progress.dismiss()
 
-                    val progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_downloading_book))
-                    progress.show()
-                    val thread = Thread(Runnable {
-                        val fileName = UUID.randomUUID().toString()
-                        val publicationPath = R2TEST_DIRECTORY_PATH + fileName
-                        val path = RealPathUtil.getRealPathFromURI_API19(this, uri)
-
-                        if (path != null) {
-                            copyFile(File(path), File(publicationPath))
-                        } else {
-                            val input = java.net.URL(uri.toString()).openStream()
-                            input.toFile(publicationPath)
+                                    }
+                                })
+                            } catch (e: Throwable) {
+                                e.printStackTrace()
+                            }
                         }
-                        val file = File(publicationPath)
-
-                        try {
-                            runOnUiThread(Runnable {
-                                val parser = EpubParser()
-                                val pub = parser.parse(publicationPath)
-                                if (pub != null) {
-                                    prepareToServe(parser, pub, fileName, file.absolutePath, true)
-                                    progress.dismiss()
-                                }
-                            })
-                        } catch (e: Throwable) {
-                            e.printStackTrace()
-                        }
-                    })
-                    thread.start()
-                }
-
-            }
+                })
+                thread.start()
+          }
 
             // uncomment for lcp
             /*
@@ -442,10 +459,9 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                 val publication = pub.publication
                 if (publication.spine.size > 0) {
                     pub.container.drm?.let { drm ->
+                        val license = (drm.license as DrmLicense)
                         if (drm.brand == Drm.Brand.lcp) {
-                            // uncomment for lcp
-                            /*
-                            handleLcpPublication(publicationPath, drm, {
+                            handlePublication(license, publicationPath, drm, {
                                 val pair = parser.parseRemainingResource(pub.container, publication, it)
                                 pub.container = pair.first
                                 pub.publication = pair.second
@@ -454,7 +470,7 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                                     server.addEpub(publication, pub.container, "/" + book.fileName)
                                     Timber.i(TAG, "handle lcp done")
 
-                                    val license = (drm.license as LcpLicense)
+
                                     val drmModel = DRMMModel(drm.brand.name,
                                             license.currentStatus(),
                                             license.provider().toString(),
@@ -487,16 +503,13 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
         }
     }
 
-    // uncomment for lcp
-/*
-    private fun handleLcpPublication(publicationPath: String, drm: Drm, parsingCallback: (drm: Drm) -> Unit, callback: (drm: Drm) -> Unit, callbackUI: () -> Unit): Promise<Unit, Exception> {
+    private fun handlePublication (license: DrmLicense, publicationPath: String, drm: Drm, parsingCallback: (drm: Drm) -> Unit, callback: (drm: Drm) -> Unit, callbackUI: () -> Unit): Promise<Unit, Exception> {
+        val drmHttpService = license.getHttpService()
+        val session = license.getDrmSession(publicationPath, this)
 
-        val lcpHttpService = LcpHttpService()
-        val session = LcpSession(publicationPath, this)
-
-        fun validatePassphrase(passphraseHash: String): Promise<LcpLicense, Exception> {
+        fun validatePassphrase(passphraseHash: String): Promise<DrmLicense, Exception> {
             return task {
-                lcpHttpService.certificateRevocationList("http://crl.edrlab.telesec.de/rl/EDRLab_CA.crl").get()
+                drmHttpService.certificateRevocationList("http://crl.edrlab.telesec.de/rl/EDRLab_CA.crl").get()
             } then { pemCrtl ->
                 session.resolve(passphraseHash, pemCrtl).get()
             }
@@ -529,7 +542,6 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                 }.show()
             }
         }
-
         return task {
             val passphrases = session.passphraseFromDb()
             passphrases?.let {
@@ -550,7 +562,6 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
             }
         }
     }
-*/
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
