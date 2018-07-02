@@ -1,3 +1,8 @@
+/**
+Copyright 2018 Readium Foundation. All rights reserved.
+Use of this source code is governed by a BSD-style license which is detailed in the LICENSE file present in the project repository where this source code is maintained.
+ */
+
 package org.readium.r2.testapp
 
 
@@ -26,6 +31,7 @@ import net.theluckycoder.materialchooser.Chooser
 import nl.komponents.kovenant.task
 import nl.komponents.kovenant.then
 import org.jetbrains.anko.*
+import org.jetbrains.anko.appcompat.v7.Appcompat
 import org.jetbrains.anko.design.snackbar
 import org.readium.r2.navigator.R2EpubActivity
 import org.readium.r2.shared.Publication
@@ -34,6 +40,7 @@ import org.readium.r2.streamer.Parser.EpubParser
 import org.readium.r2.streamer.Parser.PubBox
 import org.readium.r2.streamer.Server.BASE_URL
 import org.readium.r2.streamer.Server.Server
+import org.readium.r2.testapp.R.id.catalogView
 import org.readium.r2.testapp.opds.GridAutoFitLayoutManager
 import org.readium.r2.testapp.opds.OPDSListActivity
 import org.readium.r2.testapp.permissions.PermissionHelper
