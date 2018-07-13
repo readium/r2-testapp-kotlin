@@ -629,7 +629,7 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                     publication.coverLink?.href?.let {
                         val blob = ZipUtil.unpackEntry(File(absolutePath), it.removePrefix("/"))
                         blob?.let {
-                            val book = Book(fileName, publication.metadata.title, author, absolutePath, books.size.toLong(), publication.coverLink?.href, publicationIdentifier, blob, ".epub")
+                            val book = Book(fileName = fileName, title = publication.metadata.title, author = author, fileUrl = absolutePath, id = books.size.toLong() + 1, coverLink = publication.coverLink?.href, identifier = publicationIdentifier, cover = blob, ext = ".epub")
                             if (add) {
                                 database.books.insert(book, false)?.let {
                                     books.add(book)
@@ -658,7 +658,7 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                             }
                         }
                     } ?: run {
-                        val book = Book(fileName, publication.metadata.title, author, absolutePath, books.size.toLong(), publication.coverLink?.href, publicationIdentifier, null,".epub")
+                        val book = Book(fileName = fileName, title = publication.metadata.title, author = author, fileUrl = absolutePath, id = books.size.toLong() + 1, coverLink = publication.coverLink?.href, identifier = publicationIdentifier, cover = null, ext = ".epub")
                         if (add) {
                             database.books.insert(book, false)?.let {
                                 books.add(book)
@@ -691,7 +691,7 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                 } else if(publication.type == PUBLICATION_TYPE.CBZ) {
                     if (add) {
                         publication.coverLink?.href?.let {
-                            val book = Book(fileName, publication.metadata.title, "", absolutePath, books.size.toLong(), publication.coverLink?.href, UUID.randomUUID().toString(), container.data(it),".cbz")
+                            val book = Book(fileName = fileName, title = publication.metadata.title, author = "", fileUrl = absolutePath, id = books.size.toLong() + 1, coverLink = publication.coverLink?.href, identifier = UUID.randomUUID().toString(), cover = container.data(it), ext = ".cbz")
                             database.books.insert(book, false)?.let {
                                 books.add(book)
                                 booksAdapter.notifyDataSetChanged()
