@@ -629,7 +629,10 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                     publication.coverLink?.href?.let {
                         val blob = ZipUtil.unpackEntry(File(absolutePath), it.removePrefix("/"))
                         blob?.let {
-                            val book = Book(fileName = fileName, title = publication.metadata.title, author = author, fileUrl = absolutePath, id = books.size.toLong() + 1, coverLink = publication.coverLink?.href, identifier = publicationIdentifier, cover = blob, ext = ".epub")
+                            var newId: Long = 0
+                            val lastBook = books.lastOrNull()
+                            if (lastBook != null) { newId = lastBook!!.id }
+                            val book = Book(fileName = fileName, title = publication.metadata.title, author = author, fileUrl = absolutePath, id = newId + 1, coverLink = publication.coverLink?.href, identifier = publicationIdentifier, cover = blob, ext = ".epub")
                             if (add) {
                                 database.books.insert(book, false)?.let {
                                     books.add(book)
@@ -658,7 +661,10 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                             }
                         }
                     } ?: run {
-                        val book = Book(fileName = fileName, title = publication.metadata.title, author = author, fileUrl = absolutePath, id = books.size.toLong() + 1, coverLink = publication.coverLink?.href, identifier = publicationIdentifier, cover = null, ext = ".epub")
+                        var newId: Long = 0
+                        val lastBook = books.lastOrNull()
+                        if (lastBook != null) { newId = lastBook!!.id }
+                        val book = Book(fileName = fileName, title = publication.metadata.title, author = author, fileUrl = absolutePath, id = newId + 1, coverLink = publication.coverLink?.href, identifier = publicationIdentifier, cover = null, ext = ".epub")
                         if (add) {
                             database.books.insert(book, false)?.let {
                                 books.add(book)
@@ -691,7 +697,10 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                 } else if(publication.type == PUBLICATION_TYPE.CBZ) {
                     if (add) {
                         publication.coverLink?.href?.let {
-                            val book = Book(fileName = fileName, title = publication.metadata.title, author = "", fileUrl = absolutePath, id = books.size.toLong() + 1, coverLink = publication.coverLink?.href, identifier = UUID.randomUUID().toString(), cover = container.data(it), ext = ".cbz")
+                            var newId: Long = 0
+                            val lastBook = books.lastOrNull()
+                            if (lastBook != null) { newId = lastBook!!.id }
+                            val book = Book(fileName = fileName, title = publication.metadata.title, author = "", fileUrl = absolutePath, id = newId + 1, coverLink = publication.coverLink?.href, identifier = UUID.randomUUID().toString(), cover = container.data(it), ext = ".cbz")
                             database.books.insert(book, false)?.let {
                                 books.add(book)
                                 booksAdapter.notifyDataSetChanged()
