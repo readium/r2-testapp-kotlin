@@ -899,46 +899,48 @@ class CatalogActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
         // Instead, a URI to that document will be contained in the return intent
         // provided to this method as a parameter.
         // Pull that URI using resultData.getData().
-        if (requestCode == 1 && resultCode == RESULT_OK) {
+        val progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_downloading_book))
+        progress.show()
+        task {
+            if (requestCode == 1 && resultCode == RESULT_OK) {
 
-            val progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_downloading_book))
-            progress.show()
+                progress.onStart()
+                val uri: Uri?
+                uri = data.data
 
-            val uri: Uri?
-            uri = data.data
+                val fileName = UUID.randomUUID().toString()
+                val publicationPath = R2TEST_DIRECTORY_PATH + fileName
 
-            val fileName = UUID.randomUUID().toString()
-            val publicationPath = R2TEST_DIRECTORY_PATH + fileName
+                val input = contentResolver.openInputStream(uri)
+                input.toFile(publicationPath)
+                val file = File(publicationPath)
 
-            val input = contentResolver.openInputStream(uri)
-            input.toFile(publicationPath)
-            val file = File(publicationPath)
-
-            try {
-                runOnUiThread(Runnable {
-                    if (uri.toString().endsWith(".epub")) {
-                        val parser = EpubParser()
-                        val pub = parser.parse(publicationPath)
-                        if (pub != null) {
-                            prepareToServe(parser, pub, fileName, file.absolutePath, true)
-                            progress.dismiss()
+                try {
+                    runOnUiThread(Runnable {
+                        if (uri.toString().endsWith(".epub")) {
+                            val parser = EpubParser()
+                            val pub = parser.parse(publicationPath)
+                            if (pub != null) {
+                                prepareToServe(parser, pub, fileName, file.absolutePath, true)
+                            }
+                        } else if (uri.toString().endsWith(".cbz")) {
+                            val parser = CbzParser()
+                            val pub = parser.parse(publicationPath)
+                            if (pub != null) {
+                                prepareToServe(parser, pub, fileName, file.absolutePath, true)
+                            }
                         }
-                    } else  if (uri.toString().endsWith(".cbz")) {
-                        val parser = CbzParser()
-                        val pub = parser.parse(publicationPath)
-                        if (pub != null) {
-                            prepareToServe(parser, pub, fileName, file.absolutePath, true)
-                            progress.dismiss()
-                        }
-                    }
-                })
-            } catch (e: Throwable) {
-                e.printStackTrace()
+                    })
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+
+            } else if (resultCode == RESULT_OK) {
+                val filePath = data.getStringExtra(Chooser.RESULT_PATH)
+                parseIntent(filePath)
             }
-
-        } else if (resultCode == RESULT_OK) {
-            val filePath = data.getStringExtra(Chooser.RESULT_PATH)
-            parseIntent(filePath)
+        } then {
+            progress.dismiss()
         }
     }
 
