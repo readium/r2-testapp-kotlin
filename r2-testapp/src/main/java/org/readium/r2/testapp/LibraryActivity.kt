@@ -788,7 +788,6 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
 
                     } ?: run {
                         showDuplicateBookAlert(book, publication, lcp)
-                        }
                     }
                 }
             } else if (publication.type == Publication.TYPE.DiViNa) {
