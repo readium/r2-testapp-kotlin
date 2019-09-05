@@ -25,8 +25,8 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
-        tools:replace="android:allowBackup"
         android:usesCleartextTraffic="true"
+        tools:replace="android:allowBackup"
         tools:targetApi="m">
         <activity android:name=".CatalogActivity">
             <intent-filter>
@@ -95,7 +95,7 @@
         <activity
             android:name=".DRMManagementActivity"
             android:label="DRM Management"
-            android:theme="@style/AppTheme"/>
+            android:theme="@style/AppTheme" />
         <activity
             android:name=".R2OutlineActivity"
             android:label="@string/title_activity_outline" />
@@ -106,7 +106,6 @@
             android:name=".opds.OPDSDetailActivity"
             android:label="@string/title_activity_opds_detail" />
         <activity android:name=".audiobook.AudiobookActivity" />
-
     </application>
 
 </manifest>

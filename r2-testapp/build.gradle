@@ -12,7 +12,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'com.github.dcendents.android-maven'
-group='com.github.readium'
+group = 'com.github.readium'
 
 
 int major = 2
@@ -44,6 +44,12 @@ android {
             storePassword '###         '
         }
     }
+    //Error: Invoke-customs are only supported starting with Android O (--min-api 26)
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
     defaultConfig {
         applicationId "org.readium.r2reader"
         minSdkVersion 21
@@ -51,7 +57,7 @@ android {
         versionCode project.ext.versionCode
         versionName project.ext.versionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        ndk.abiFilters 'armeabi-v7a','arm64-v8a','x86','x86_64'
+        ndk.abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
     }
     compileOptions {
         sourceCompatibility 1.8
@@ -166,7 +172,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-nop:1.7.25'
 
     implementation 'com.duolingo.open:rtl-viewpager:1.0.3'
-    implementation 'androidx.viewpager2:viewpager2:1.0.0-beta02'
+    implementation 'androidx.viewpager2:viewpager2:1.0.0-beta03'
 
     implementation 'com.commonsware.cwac:merge:1.1.2'
     implementation 'com.github.abacritt:sectionedmergeadapter:0.2'
@@ -176,4 +182,5 @@ dependencies {
     androidTestImplementation 'androidx.test:runner:1.2.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     testImplementation "org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version"
+
 }
