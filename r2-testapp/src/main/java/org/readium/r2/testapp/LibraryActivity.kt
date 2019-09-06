@@ -1066,13 +1066,12 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
             val file = File(publicationPath)
 
             try {
-                if (mime == EpubParser.mimetype) {
+                if (mime == EpubParser.mimetypeEpub) {
                     val parser = EpubParser()
                     val pub = parser.parse(publicationPath)
                     if (pub != null) {
                         prepareToServe(pub, fileName, file.absolutePath, add = true, lcp = pub.container.drm?.let { true } ?: false)
                         progress.dismiss()
-
                     }
                 } else if (name.endsWith(Publication.EXTENSION.CBZ.value)) {
                     val parser = CbzParser()
@@ -1080,17 +1079,15 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                     if (pub != null) {
                         prepareToServe(pub, fileName, file.absolutePath, add = true, lcp = pub.container.drm?.let { true } ?: false)
                         progress.dismiss()
-
                     }
                 } else if (name.endsWith(Publication.EXTENSION.AUDIO.value) || mime == AudioBookParser.mimetypeAudiobook) {
                     val parser = AudioBookParser()
                     val pub = parser.parse(publicationPath)
-
                     if (pub != null) {
                         prepareToServe(pub, fileName, file.absolutePath, true, pub.container.drm?.let { true } ?: false)
                         progress.dismiss()
                     }
-                } else if (name.endsWith(Publication.EXTENSION.DIVINA.value)) {
+                } else if (name.endsWith(Publication.EXTENSION.DIVINA.value) || mime == DiViNaParser.mimetypeDiViNa) {
                     val parser = DiViNaParser()
                     val pub = parser.parse(publicationPath)
                     if (pub != null) {
