@@ -41,6 +41,7 @@ import org.json.JSONObject
 import org.readium.r2.navigator.R2EpubActivity
 import org.readium.r2.navigator.pager.R2EpubPageFragment
 import org.readium.r2.navigator.pager.R2PagerAdapter
+import org.readium.r2.navigator.pager.R2ViewPager
 import org.readium.r2.shared.*
 import org.readium.r2.shared.drm.DRM
 import org.readium.r2.testapp.search.MarkJSSearchInterface
@@ -163,6 +164,7 @@ class R2EpubActivity : R2EpubActivity(), CoroutineScope {
                 searchView.clearFocus()
                 if (searchView.isShown) {
                     menuSearch?.collapseActionView();
+                    resourcePager.offscreenPageLimit = 1
                 }
 
                 val locator = searchResult[position]
@@ -206,16 +208,17 @@ class R2EpubActivity : R2EpubActivity(), CoroutineScope {
 
                 query?.let {
                     search_overlay.visibility = View.VISIBLE
+                    resourcePager.offscreenPageLimit = publication.readingOrder.size
+
                     //Saving searched term
                     searchTerm = query
                     //Initializing our custom search interfaces
-                    val markJSSearchInteface = MarkJSSearchInterface(publication, publicationIdentifier, preferences, epubName)
                     val progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_searching_book))
                     progress.show()
-                    markJSSearchInteface.search(query, applicationContext) { (last, result) ->
-                        if (last) {
-                            progress.dismiss()
-                        } else {
+
+                    val markJSSearchInteface = MarkJSSearchInterface(this@R2EpubActivity, resourcePager, publication, publicationIdentifier, preferences)
+                    Handler().postDelayed({
+                        markJSSearchInteface.search(query) { (last, result) ->
                             searchResult.clear()
                             searchResult.addAll(result)
                             searchResultAdapter.notifyDataSetChanged()
@@ -227,16 +230,20 @@ class R2EpubActivity : R2EpubActivity(), CoroutineScope {
                             editor.putString("term", searchTerm)
                             editor.putLong("book", bookId)
                             editor.apply()
+
+                            if (last) {
+                                progress.dismiss()
+                                resourcePager.offscreenPageLimit = 1
+                            }
                         }
-                    }
+                    }, 500)
+
+
                 }
                 return false
             }
 
             override fun onQueryTextChange(s: String): Boolean {
-//                if (TextUtils.isEmpty(s)){
-//                    bv.resultsList = mutableListOf()
-//                }
                 return false
             }
         })
@@ -245,6 +252,7 @@ class R2EpubActivity : R2EpubActivity(), CoroutineScope {
                 search_overlay.visibility = View.INVISIBLE
             } else {
                 search_overlay.visibility = View.VISIBLE
+                resourcePager.offscreenPageLimit = publication.readingOrder.size
             }
         }
         searchView.onClose {
@@ -278,11 +286,13 @@ class R2EpubActivity : R2EpubActivity(), CoroutineScope {
             }
 
             search_overlay.visibility = View.VISIBLE
+            resourcePager.offscreenPageLimit = publication.readingOrder.size
         }
 
         menuSearch?.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
             override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
                 search_overlay.visibility = View.VISIBLE
+                resourcePager.offscreenPageLimit = publication.readingOrder.size
                 return true;
             }
 
@@ -397,6 +407,7 @@ class R2EpubActivity : R2EpubActivity(), CoroutineScope {
             }
             R.id.search -> {
                 search_overlay.visibility = View.VISIBLE
+                resourcePager.offscreenPageLimit = publication.readingOrder.size
 
                 val searchView = menuSearch?.getActionView() as SearchView
 
@@ -433,7 +444,7 @@ class R2EpubActivity : R2EpubActivity(), CoroutineScope {
         } else {
             super.onActivityResult(requestCode, resultCode, data)
             if (requestCode == 2 && resultCode == Activity.RESULT_OK && data != null) {
-                val locator = data.getSerializableExtra("locator") as SearchLocator
+                val locator = data.getSerializableExtra("locator") as Locator
                 locator.locations?.fragment?.let { fragment ->
 
                     val fragments = JSONArray(fragment).getString(0).split(",").associate {
@@ -446,8 +457,6 @@ class R2EpubActivity : R2EpubActivity(), CoroutineScope {
                     Handler().postDelayed({
                         if (publication.metadata.rendition.layout == RenditionLayout.Reflowable) {
                             val currentFragent = (resourcePager.adapter as R2PagerAdapter).getCurrentFragment() as R2EpubPageFragment
-//                            val previousFragent = (resourcePager.adapter as R2PagerAdapter).getPreviousFragment() as R2EpubPageFragment
-//                            val nextFragent = (resourcePager.adapter as R2PagerAdapter).getNextFragment() as R2EpubPageFragment
                             val resource = publication.readingOrder[resourcePager.currentItem]
                             val resourceHref = resource.href ?: ""
                             val resourceType = resource.typeLink ?: ""
@@ -458,8 +467,6 @@ class R2EpubActivity : R2EpubActivity(), CoroutineScope {
                                 Timber.d("###### $result")
 
                             }
-//                            previousFragent.webView.runJavaScript("performSearch('${searchStorage.getString("term", null)}', 'null')")
-//                            nextFragent.webView.runJavaScript("performSearch('${searchStorage.getString("term", null)}', 'null')")
                         }
                     }, 1200)
                 }
