@@ -792,7 +792,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                 }
             } else if (publication.type == Publication.TYPE.DiViNa) {
                 if (add) {
-                    val book = Book(fileName, publication.metadata.title, null, absolutePath, null, publication.coverLink?.href, UUID.randomUUID().toString(), null, Publication.EXTENSION.ZIP)
+                    val book = Book(fileName, publication.metadata.title, null, absolutePath, null, publication.coverLink?.href, UUID.randomUUID().toString(), null, Publication.EXTENSION.DIVINA)
                     database.books.insert(book, false)?.let {
                         book.id = it
                         books.add(0,book)
@@ -889,7 +889,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                         startActivity(publicationPath, book, pub.publication, coverByteArray)
                     }
                 }
-                book.ext == Publication.EXTENSION.ZIP -> {
+                book.ext == Publication.EXTENSION.DIVINA -> {
                     val parser = DiViNaParser()
                     val pub = parser.parse(publicationPath)
                     pub?.let {
@@ -1051,7 +1051,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                     }
                 }
                 ZipUtil.unpack(input, output)
-            } else if (name.endsWith(".zip")) {
+            } else if (name.endsWith(Publication.EXTENSION.DIVINA.value)) {
                 val output = File(publicationPath);
                 if (!output.exists()) {
                     if (!output.mkdir()) {
@@ -1090,11 +1090,11 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                         prepareToServe(pub, fileName, file.absolutePath, true, pub.container.drm?.let { true } ?: false)
                         progress.dismiss()
                     }
-                } else if (name.endsWith(".zip")) {
+                } else if (name.endsWith(Publication.EXTENSION.DIVINA.value)) {
                     val parser = DiViNaParser()
                     val pub = parser.parse(publicationPath)
                     if (pub != null) {
-                        prepareToServe(pub, fileName, file.absolutePath, true, false)
+                        prepareToServe(pub, fileName, file.absolutePath, true, pub.container.drm?.let { true } ?: false)
                         progress.dismiss()
                     }
                 } else {
