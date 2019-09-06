@@ -18,7 +18,7 @@ group = 'com.github.readium'
 int major = 2
 int minor = 1
 int patch = 0
-int build = 1
+int build = 3
 String type = ""
 
 def version = "$major.$minor.$patch"
@@ -36,14 +36,7 @@ project.ext.versionCode = 1_000_000 * major + 10_000 * minor + 100 * patch + bui
 
 android {
     compileSdkVersion 29
-    signingConfigs {
-        release {
-            keyAlias 'EDRLab'
-            keyPassword '###         '
-            storeFile file('/###')
-            storePassword '###         '
-        }
-    }
+
     //Error: Invoke-customs are only supported starting with Android O (--min-api 26)
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -67,7 +60,6 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
         }
     }
     packagingOptions {
