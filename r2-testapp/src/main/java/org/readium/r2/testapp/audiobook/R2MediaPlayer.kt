@@ -21,17 +21,19 @@ class R2MediaPlayer(private var items: MutableList<Link>, private var progress: 
         get() = mediaPlayer.isPlaying
 
     val duration: Double
-        get() = mediaPlayer.duration.toDouble()
+        get() = if (isPrepared) {mediaPlayer.duration.toDouble()}else {0.0}
 
     val currentPosition: Double
-        get() = mediaPlayer.currentPosition.toDouble()
+        get() = if (isPrepared) {mediaPlayer.currentPosition.toDouble()}else {0.0}
 
     var isPaused: Boolean
+    var isPrepared: Boolean
 
     private var index: Int
 
     init {
         isPaused = false
+        isPrepared = false
         index = 0
         if (mediaPlayer.isPlaying) {
             mediaPlayer.stop()
@@ -50,6 +52,7 @@ class R2MediaPlayer(private var items: MutableList<Link>, private var progress: 
         toggleProgress(false)
         this.start()
         callback.onPrepared()
+        isPrepared = true
     }
 
     fun startPlayer() {
@@ -76,38 +79,49 @@ class R2MediaPlayer(private var items: MutableList<Link>, private var progress: 
     }
 
     fun seekTo(progression: Any) {
-        when (progression) {
-            is Double -> mediaPlayer.seekTo(progression.toInt())
-            is Int -> mediaPlayer.seekTo(progression)
-            else -> mediaPlayer.seekTo(progression.toString().toInt())
+        if (isPrepared) {
+            when (progression) {
+                is Double -> mediaPlayer.seekTo(progression.toInt())
+                is Int -> mediaPlayer.seekTo(progression)
+                else -> mediaPlayer.seekTo(progression.toString().toInt())
+            }
         }
     }
 
     fun stop() {
-        mediaPlayer.stop()
+        if (isPrepared) {
+            mediaPlayer.stop()
+            isPrepared = false
+        }
     }
 
     fun pause() {
-        mediaPlayer.pause()
-        isPaused = true
+        if (isPrepared) {
+            mediaPlayer.pause()
+            isPaused = true
+        }
     }
 
     fun start() {
         mediaPlayer.start()
         isPaused = false
+        isPrepared = false
         mediaPlayer.setOnCompletionListener {
             callback.onComplete(index, it.currentPosition, it.duration)
         }
     }
 
     fun resume() {
-        mediaPlayer.start()
-        isPaused = false
+        if (isPrepared) {
+            mediaPlayer.start()
+            isPaused = false
+        }
     }
 
     fun goTo(index: Int) {
         this.index = index
         isPaused = false
+        isPrepared = false
         if (mediaPlayer.isPlaying) {
             mediaPlayer.stop()
         }
@@ -117,6 +131,7 @@ class R2MediaPlayer(private var items: MutableList<Link>, private var progress: 
     fun previous() {
         index -= 1
         isPaused = false
+        isPrepared = false
         if (mediaPlayer.isPlaying) {
             mediaPlayer.stop()
         }
@@ -126,6 +141,7 @@ class R2MediaPlayer(private var items: MutableList<Link>, private var progress: 
     fun next() {
         index += 1
         isPaused = false
+        isPrepared = false
         if (mediaPlayer.isPlaying) {
             mediaPlayer.stop()
         }
