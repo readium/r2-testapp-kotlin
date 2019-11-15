@@ -26,7 +26,11 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.text.TextUtils
-import android.view.*
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
 import android.webkit.MimeTypeMap
 import android.webkit.URLUtil
 import android.widget.Button
@@ -46,10 +50,26 @@ import nl.komponents.kovenant.task
 import nl.komponents.kovenant.then
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
-import org.jetbrains.anko.*
+import org.jetbrains.anko.alert
 import org.jetbrains.anko.appcompat.v7.Appcompat
-import org.jetbrains.anko.design.*
+import org.jetbrains.anko.bottomPadding
+import org.jetbrains.anko.button
+import org.jetbrains.anko.customView
+import org.jetbrains.anko.design.coordinatorLayout
+import org.jetbrains.anko.design.floatingActionButton
+import org.jetbrains.anko.design.longSnackbar
+import org.jetbrains.anko.design.snackbar
+import org.jetbrains.anko.design.textInputLayout
+import org.jetbrains.anko.dip
+import org.jetbrains.anko.editText
+import org.jetbrains.anko.imageResource
+import org.jetbrains.anko.indeterminateProgressDialog
+import org.jetbrains.anko.intentFor
+import org.jetbrains.anko.margin
+import org.jetbrains.anko.matchParent
+import org.jetbrains.anko.padding
 import org.jetbrains.anko.recyclerview.v7.recyclerView
+import org.jetbrains.anko.verticalLayout
 import org.json.JSONObject
 import org.readium.r2.opds.OPDS1Parser
 import org.readium.r2.opds.OPDS2Parser
@@ -76,7 +96,11 @@ import org.readium.r2.testapp.R2AboutActivity
 import org.readium.r2.testapp.audiobook.AudiobookActivity
 import org.readium.r2.testapp.comic.ComicActivity
 import org.readium.r2.testapp.comic.DiViNaActivity
-import org.readium.r2.testapp.db.*
+import org.readium.r2.testapp.db.Book
+import org.readium.r2.testapp.db.BookmarksDatabase
+import org.readium.r2.testapp.db.BooksDatabase
+import org.readium.r2.testapp.db.PositionsDatabase
+import org.readium.r2.testapp.db.books
 import org.readium.r2.testapp.drm.LCPLibraryActivityService
 import org.readium.r2.testapp.epub.EpubActivity
 import org.readium.r2.testapp.epub.R2SyntheticPageList
@@ -98,7 +122,8 @@ import java.net.ServerSocket
 import java.net.URI
 import java.net.URL
 import java.nio.charset.Charset
-import java.util.*
+import java.util.Properties
+import java.util.UUID
 import java.util.zip.ZipException
 import kotlin.coroutines.CoroutineContext
 
@@ -111,6 +136,8 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
      */
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Main
+
+    override var clickedBook = false
 
     protected lateinit var server: Server
     private var localPort: Int = 0
@@ -249,6 +276,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
 
     override fun onResume() {
         super.onResume()
+        clickedBook = false
         booksAdapter.notifyDataSetChanged()
     }
 

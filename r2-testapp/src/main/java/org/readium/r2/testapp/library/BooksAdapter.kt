@@ -52,7 +52,10 @@ open class BooksAdapter(private val activity: Activity, private var books: Mutab
 
         viewHolder.itemView.setOnClickListener { v ->
             //get the position of the image which is clicked
-            itemListener.recyclerViewListClicked(v, position)
+            if (!itemListener.clickedBook) {
+                itemListener.clickedBook = true
+                itemListener.recyclerViewListClicked(v, position)
+            }
         }
 
         viewHolder.itemView.setOnLongClickListener { v ->
@@ -77,6 +80,7 @@ open class BooksAdapter(private val activity: Activity, private var books: Mutab
 
     interface RecyclerViewClickListener {
 
+        var clickedBook: Boolean
         //this is method to handle the event when clicked on the image in Recyclerview
         fun recyclerViewListClicked(v: View, position: Int)
 
