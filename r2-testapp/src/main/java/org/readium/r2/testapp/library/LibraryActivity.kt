@@ -26,7 +26,11 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.text.TextUtils
-import android.view.*
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import android.view.View
 import android.webkit.MimeTypeMap
 import android.webkit.URLUtil
 import android.widget.Button
@@ -46,10 +50,26 @@ import nl.komponents.kovenant.task
 import nl.komponents.kovenant.then
 import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
-import org.jetbrains.anko.*
+import org.jetbrains.anko.alert
 import org.jetbrains.anko.appcompat.v7.Appcompat
-import org.jetbrains.anko.design.*
+import org.jetbrains.anko.bottomPadding
+import org.jetbrains.anko.button
+import org.jetbrains.anko.customView
+import org.jetbrains.anko.design.coordinatorLayout
+import org.jetbrains.anko.design.floatingActionButton
+import org.jetbrains.anko.design.longSnackbar
+import org.jetbrains.anko.design.snackbar
+import org.jetbrains.anko.design.textInputLayout
+import org.jetbrains.anko.dip
+import org.jetbrains.anko.editText
+import org.jetbrains.anko.imageResource
+import org.jetbrains.anko.indeterminateProgressDialog
+import org.jetbrains.anko.intentFor
+import org.jetbrains.anko.margin
+import org.jetbrains.anko.matchParent
+import org.jetbrains.anko.padding
 import org.jetbrains.anko.recyclerview.v7.recyclerView
+import org.jetbrains.anko.verticalLayout
 import org.json.JSONObject
 import org.readium.r2.opds.OPDS1Parser
 import org.readium.r2.opds.OPDS2Parser
@@ -61,6 +81,7 @@ import org.readium.r2.shared.parsePublication
 import org.readium.r2.shared.promise
 import org.readium.r2.streamer.container.ContainerError
 import org.readium.r2.streamer.parser.PubBox
+import org.readium.r2.streamer.parser.PublicationParser
 import org.readium.r2.streamer.parser.audio.AudioBookConstant
 import org.readium.r2.streamer.parser.audio.AudioBookParser
 import org.readium.r2.streamer.parser.cbz.CBZConstant
@@ -77,7 +98,11 @@ import org.readium.r2.testapp.R2AboutActivity
 import org.readium.r2.testapp.audiobook.AudiobookActivity
 import org.readium.r2.testapp.comic.ComicActivity
 import org.readium.r2.testapp.comic.DiViNaActivity
-import org.readium.r2.testapp.db.*
+import org.readium.r2.testapp.db.Book
+import org.readium.r2.testapp.db.BookmarksDatabase
+import org.readium.r2.testapp.db.BooksDatabase
+import org.readium.r2.testapp.db.PositionsDatabase
+import org.readium.r2.testapp.db.books
 import org.readium.r2.testapp.drm.LCPLibraryActivityService
 import org.readium.r2.testapp.epub.EpubActivity
 import org.readium.r2.testapp.epub.R2SyntheticPageList
@@ -94,12 +119,14 @@ import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.ServerSocket
 import java.net.URI
 import java.net.URL
 import java.nio.charset.Charset
-import java.util.*
+import java.util.Properties
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.ZipException
 import kotlin.coroutines.CoroutineContext
@@ -212,14 +239,14 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                                         alertDialog.dismiss()
                                         showDocumentPicker()
                                     }
-                                }
+                                }.tag = getString(R.string.tagButtonAddDeviceBook)
                                 button {
                                     text = context.getString(R.string.download_from_url)
                                     onClick {
                                         alertDialog.dismiss()
                                         showDownloadFromUrlAlert()
                                     }
-                                }
+                                }.tag = getString(R.string.tagButtonAddURLBook)
                             }
                         }
                     }.show()
@@ -227,7 +254,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
             }.lparams {
                 gravity = Gravity.END or Gravity.BOTTOM
                 margin = dip(16)
-            }
+            }.tag = getString(R.string.tagButtonAddBook)
         }
 
     }
@@ -274,6 +301,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                         editTextHref = editText {
                             hint = "URL"
                             contentDescription = "Enter A URL"
+                            tag = getString(R.string.tagInputAddURLBook)
                         }
                     }
                 }
@@ -644,6 +672,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                 }
             }
         } catch (e: Throwable) {
+            launch { progress.dismiss() }
             e.printStackTrace()
         }
     }
@@ -734,6 +763,9 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
         }
     }
 
+    /**
+     * Calls addBook for each file in internal storage that can be read.
+     */
     private fun copySamplesFromAssetsToStorage() {
         assets.list("Samples")?.filter {
             it.endsWith(Publication.EXTENSION.EPUB.value)
@@ -746,66 +778,73 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                 val fileName = UUID.randomUUID().toString()
                 val publicationPath = R2DIRECTORY + fileName
 
-                when {
-                    element.endsWith(Publication.EXTENSION.DIVINA.value) -> {
-                        val output = File(publicationPath)
-                        if (!output.exists()) {
-                            if (!output.mkdir()) {
-                                throw RuntimeException("Cannot create directory")
-                            }
-                        }
-                        ZipUtil.unpack(input, output)
-                    }
-                    element.endsWith(Publication.EXTENSION.AUDIO.value) -> {
-                        val output = File(publicationPath)
-                        if (!output.exists()) {
-                            if (!output.mkdir()) {
-                                throw RuntimeException("Cannot create directory")
-                            }
-                        }
-                        ZipUtil.unpack(input, output)
-                    }
-                    else -> input.toFile(publicationPath)
-                }
-
-                val file = File(publicationPath)
-
-                when {
-                    element.endsWith(Publication.EXTENSION.EPUB.value) -> {
-                        val parser = EpubParser()
-                        val pub = parser.parse(publicationPath)
-                        if (pub != null) {
-                            prepareToServe(pub, fileName, file.absolutePath, add = true, lcp = pub.container.drm?.let { true }
-                                    ?: false)
-                        }
-                    }
-                    element.endsWith(Publication.EXTENSION.CBZ.value) -> {
-                        val parser = CBZParser()
-                        val pub = parser.parse(publicationPath)
-                        if (pub != null) {
-                            prepareToServe(pub, fileName, file.absolutePath, add = true, lcp = pub.container.drm?.let { true }
-                                    ?: false)
-                        }
-                    }
-                    element.endsWith(Publication.EXTENSION.AUDIO.value) -> {
-                        val parser = AudioBookParser()
-                        val pub = parser.parse(publicationPath)
-                        if (pub != null) {
-                            prepareToServe(pub, fileName, file.absolutePath, add = true, lcp = pub.container.drm?.let { true }
-                                    ?: false)
-                        }
-                    }
-                    element.endsWith(Publication.EXTENSION.DIVINA.value) -> {
-                        val parser = DiViNaParser()
-                        val pub = parser.parse(publicationPath)
-                        if (pub != null) {
-                            prepareToServe(pub, fileName, file.absolutePath, add = true, lcp = pub.container.drm?.let { true }
-                                    ?: false)
-                        }
-                    }
-                }
+                addBook(element, fileName, publicationPath, input)
             }
         }
+    }
+
+    /**
+     * prepares element to be served.
+     *
+     * element: String - The original file name, with extension
+     * fileName: String - A random UUID
+     * outputFilePath: String - The output file that will be added to the db
+     * input: InputStream: The original file in the assets
+     */
+    private fun addBook(element: String, fileName: String, outputFilePath: String, input: InputStream) {
+
+        // if the element is a DiViNa or an Audiobook file, unzip in output. Copy element in output
+        // otherwise
+        if (element.endsWith(Publication.EXTENSION.DIVINA.value)
+                    || element.endsWith(Publication.EXTENSION.AUDIO.value)) {
+            val output = File(outputFilePath)
+            unzip(input, output)
+        }
+        else
+            input.toFile(outputFilePath)
+
+        //open copied file or folder
+        val file = File(outputFilePath)
+
+        //gets the correct parser, return if null.
+        val parser = getParser(element)?:return
+
+        val pub: PubBox?
+        pub = parser.parse(outputFilePath)
+        if (pub != null) {
+            prepareToServe(pub, fileName, file.absolutePath, add = true, lcp = pub.container.drm?.let { true }
+                    ?: false)
+        }
+    }
+
+    /**
+     * Returns the correct parser for the given 'original' file name
+     *
+     * element: String - The file to parse
+     */
+    private fun getParser(element: String): PublicationParser? {
+        when {
+            element.endsWith(Publication.EXTENSION.EPUB.value) -> return EpubParser()
+            element.endsWith(Publication.EXTENSION.CBZ.value) -> return CBZParser()
+            element.endsWith(Publication.EXTENSION.AUDIO.value) -> return AudioBookParser()
+            element.endsWith(Publication.EXTENSION.DIVINA.value) -> return DiViNaParser()
+        }
+        return null
+    }
+
+    /**
+     * Unzips a file pointed by input in a folder pointed by output.
+     *
+     * input: InputStream - The file to unzip
+     * output: File - The folder in which input should be unzipped
+     */
+    private fun unzip(input: InputStream, output: File) {
+        if (!output.exists()) {
+            if (!output.mkdir()) {
+                throw RuntimeException("Cannot create directory");
+            }
+        }
+        ZipUtil.unpack(input, output)
     }
 
     protected fun prepareToServe(pub: PubBox?, fileName: String, absolutePath: String, add: Boolean, lcp: Boolean) {
@@ -1087,9 +1126,8 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                     } else {
                         processEpubResult(uri, mime, progress, name)
                     }
-
+                    progress.dismiss()
                 }
-
             }
 
         } else if (resultCode == RESULT_OK) {
@@ -1114,37 +1152,42 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
         val input = contentResolver.openInputStream(uri as Uri)
 
         launch {
-
-            when {
-                name.endsWith(Publication.EXTENSION.DIVINA.value) -> {
-                    val output = File(publicationPath)
-                    if (!output.exists()) {
-                        if (!output.mkdir()) {
-                            throw RuntimeException("Cannot create directory")
-                        }
-                    }
-                    ZipUtil.unpack(input, output)
-                }
-                name.endsWith(Publication.EXTENSION.AUDIO.value) -> {
-                    val output = File(publicationPath)
-                    if (!output.exists()) {
-                        if (!output.mkdir()) {
-                            throw RuntimeException("Cannot create directory")
-                        }
-                    }
-                    ZipUtil.unpack(input, output)
-                }
-                else -> input?.toFile(publicationPath)
-            }
-
-            val file = File(publicationPath)
-
             try {
+                when {
+                    name.endsWith(Publication.EXTENSION.DIVINA.value) -> {
+                        val output = File(publicationPath)
+                        if (!output.exists()) {
+                            if (!output.mkdir()) {
+                                throw RuntimeException("Cannot create directory")
+                            }
+                        }
+                        ZipUtil.unpack(input, output)
+                    }
+                    name.endsWith(Publication.EXTENSION.AUDIO.value) -> {
+                        val output = File(publicationPath)
+                        if (!output.exists()) {
+                            if (!output.mkdir()) {
+                                throw RuntimeException("Cannot create directory")
+                            }
+                        }
+                        ZipUtil.unpack(input, output)
+                    }
+                    else -> input?.toFile(publicationPath)
+                }
+
+                val file = File(publicationPath)
+
+
                 if (mime == EPUBConstant.mimetype) {
                     val parser = EpubParser()
                     val pub = parser.parse(publicationPath)
                     if (pub != null) {
-                        prepareToServe(pub, fileName, file.absolutePath, add = true, lcp = pub.container.drm?.let { true }
+                        prepareToServe(
+                            pub,
+                            fileName,
+                            file.absolutePath,
+                            add = true,
+                            lcp = pub.container.drm?.let { true }
                                 ?: false)
                         progress.dismiss()
                     }
@@ -1152,7 +1195,12 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                     val parser = CBZParser()
                     val pub = parser.parse(publicationPath)
                     if (pub != null) {
-                        prepareToServe(pub, fileName, file.absolutePath, add = true, lcp = pub.container.drm?.let { true }
+                        prepareToServe(
+                            pub,
+                            fileName,
+                            file.absolutePath,
+                            add = true,
+                            lcp = pub.container.drm?.let { true }
                                 ?: false)
                         progress.dismiss()
                     }
@@ -1161,7 +1209,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                     val pub = parser.parse(publicationPath)
                     if (pub != null) {
                         prepareToServe(pub, fileName, file.absolutePath, true, pub.container.drm?.let { true }
-                                ?: false)
+                            ?: false)
                         progress.dismiss()
                     }
                 } else if (name.endsWith(Publication.EXTENSION.AUDIO.value) || mime == AudioBookConstant.mimetype) {
@@ -1169,7 +1217,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                     val pub = parser.parse(publicationPath)
                     if (pub != null) {
                         prepareToServe(pub, fileName, file.absolutePath, true, pub.container.drm?.let { true }
-                                ?: false)
+                            ?: false)
                         progress.dismiss()
                     }
                 } else {
