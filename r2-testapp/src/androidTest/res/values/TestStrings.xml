@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="tagButtonAddBook" translatable="false">addBookButton</string>
+    <string name="tagButtonAddDeviceBook" translatable="false">buttonAddDeviceBook</string>
+    <string name="tagButtonAddURLBook" translatable="false">buttonAddURLBook</string>
+    <string name="tagInputAddURLBook" translatable="false">inputAddURLBook</string>
+
+    <string name="InternalStorage_SDK23" translatable="false">Internal storage</string>
+    <string name="FilesFolderName" translatable="false">___tests-r2-testapp</string>
+
+    <string name="UnsupportedVerisonTest" translatable="false">Unsupported Android version for this test</string>
+
+    <string name="audiobookTestRemoteURL" translatable="false">https://api.archivelab.org/books/art_letters_1809_librivox/opds_audio_manifest</string>
+    <string name="audiobookTestName" translatable="false">The Art of Letters</string>
+
+    <string name="webPublicationTestRemoteURL" translatable="false">https://d2e.dita.digital/pub/L3Jvb3QvZDJlLXN0cmVhbWVyL21pc2MvZXB1YnMvY2hpbGRyZW5zLWxpdGVyYXR1cmUuZXB1Yg==/manifest.json</string>
+    <string name="webPublicationTestRemoteName" translatable="false">Children\'s Literature</string>
+
+    <string name="OPDS2TestRemoteURL" translatable="false">https://dita.digital/publication.json</string>
+    <string name="OPDS2TestRemoteName" translatable="false">Understanding media and culture: an introduction to mass communication</string>
+
+    <string name="Folder1" translatable="false">Android</string>
+    <string name="Folder2" translatable="false">data</string>
+    <string name="Folder3" translatable="false">org.readium.r2reader.test</string>
+    <string name="Folder4" translatable="false">files</string>
+
+    <string name="UnsupportedVersionTest" translatable="false">The Android version is not compatible with this test</string>
+
+    <string name="epubTestFile" translatable="false">moby_dick_test.epub</string>
+    <string name="cbzTestFile" translatable="false">cbz_test.cbz</string>
+    <string name="audiobookTestFile" translatable="false">art_letters_test.audiobook</string>
+    <string name="divinaTestFile" translatable="false">divina_test.divina</string>
+
+
+    <string name="epubTestName" translatable="false">Moby-Dick</string>
+    <string name="divinaTestName" translatable="false">Test dummy Images</string>
+
+
+    <string name="invalidCBZFile" translatable="false">invalid_cbz.cbz</string>
+    <string name="invalidEPubFile" translatable="false">invalid_epub.epub</string>
+    <string name="invalidDiViNaFile" translatable="false">invalid_divina.divina</string>
+    <string name="invalidAudioBookFile" translatable="false">invalid_audiobook.audiobook</string>
+
+
+    <string name="invalidEmptyCBZFile" translatable="false">empty_cbz.cbz</string>
+    <string name="invalidEmptyEPubFile" translatable="false">empty_epub.epub</string>
+    <string name="invalidEmptyDiViNaFile" translatable="false">empty_divina.divina</string>
+    <string name="invalidEmptyAudioBookFile" translatable="false">empty_audiobook.audiobook</string>
+
+    <string name="playButton" translatable="false">PlayButton</string>
+    <string name="pauseButton" translatable="false">PauseButton</string>
+
+    <string name="lorem_ipsum" translatable="false">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam tincidunt tortor non dolor aliquet tristique. Pellentesque bibendum, lacus quis fermentum maximus, sem orci tempus felis, ac elementum nibh nulla ultrices ligula. Vivamus mattis, augue in convallis pulvinar, neque est dapibus augue, non scelerisque lacus diam at magna. Sed urna dui, convallis nec fringilla a, auctor in neque. Etiam quis semper enim. Donec ac elit viverra, condimentum dui ac, laoreet tortor. Duis ac euismod turpis, ut scelerisque diam. Quisque commodo turpis in justo euismod, finibus cursus lectus dictum.</string>
+</resources>
