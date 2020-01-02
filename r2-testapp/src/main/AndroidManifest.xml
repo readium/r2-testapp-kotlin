@@ -105,7 +105,6 @@
         </activity>
         <activity
             android:name=".opds.OPDSCatalogActivity"
-            android:configChanges="orientation|screenSize"
             android:label="@string/title_activity_opdscatalog" />
         <activity
             android:name=".R2AboutActivity"
@@ -115,11 +114,9 @@
             android:label="@string/title_activity_epub" />
         <activity
             android:name=".comic.DiViNaActivity"
-            android:configChanges="orientation|screenSize"
             android:label="@string/title_activity_epub" />
         <activity
             android:name=".comic.ComicActivity"
-            android:configChanges="orientation|screenSize"
             android:label="@string/title_activity_epub" />
         <activity
             android:name=".DRMManagementActivity"
@@ -136,7 +133,6 @@
             android:label="@string/title_activity_opds_detail" />
         <activity
             android:name=".audiobook.AudiobookActivity"
-            android:configChanges="orientation|screenSize"
             android:label="@string/title_activity_epub" />
     </application>
 
