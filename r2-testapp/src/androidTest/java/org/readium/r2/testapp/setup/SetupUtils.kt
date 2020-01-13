@@ -6,8 +6,6 @@
 
 package org.readium.r2.testapp.setup
 
-import android.content.ContentValues.TAG
-import android.os.Build
 import android.util.Log
 import android.view.InputDevice
 import android.view.MotionEvent
@@ -45,7 +43,6 @@ import org.readium.r2.testapp.db.BooksDatabase
 import org.readium.r2.testapp.db.POSITIONSTable
 import org.readium.r2.testapp.db.PositionsDatabase
 import org.readium.r2.testapp.library.LibraryActivity
-import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -61,11 +58,6 @@ import java.util.UUID
  * As this function will always be called before any test, check device used is allowed for UI tests.
  */
 fun initTestEnv() {
-    when (Build.MODEL) {
-        "BTV-W09" -> Timber.d("Device model", "BTV-W09")
-        else -> Exception("Unsupported Device: ${Build.MODEL}")
-    }
-
     val db = BooksDatabase(getInstrumentation().targetContext)
     db.books.dropTable()
     db.shared.use {
@@ -123,7 +115,7 @@ fun initTestEnv() {
  */
 fun copyPubFromAPKToDeviceInternalMemory(pub: String) {
     try {
-        Log.w("PATH", getInstrumentation().context.getExternalFilesDir(null)!!.absolutePath)
+        //Log.w("PATH", getInstrumentation().context.getExternalFilesDir(null)!!.absolutePath)
         val file = File(getInstrumentation().context.getExternalFilesDir(null), pub)
         val ins = getInstrumentation().context.assets.open(pub)
         val outs = FileOutputStream(file)
@@ -219,7 +211,7 @@ fun withRecyclerViewSize(size: Int): Matcher<View> {
 
         override fun matchesSafely(view: View): Boolean {
             val actualListSize = (view as RecyclerView).adapter!!.itemCount
-            Log.e(TAG, "RecyclerView actual size $actualListSize")
+            //Log.e(TAG, "RecyclerView actual size $actualListSize")
             return actualListSize == size
         }
 
