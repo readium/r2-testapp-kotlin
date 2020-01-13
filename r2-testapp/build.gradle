@@ -70,9 +70,9 @@ android {
 
     sourceSets {
         main {
-            java.srcDirs = ['src/main/java', 'src/androidTest']
             res.srcDirs = ['src/main/res']
             assets.srcDirs = ['src/main/assets']
+
             if (findProject(':r2-lcp')) {
                 java.srcDirs = ['src/main/java', 'src/withlcp/java']
             } else {
@@ -83,6 +83,12 @@ android {
         debug {
             res.srcDirs = ['src/androidTest/res', 'src/main/res']
             assets.srcDirs = ['src/androidTest/assets']
+
+            if (findProject(':r2-lcp')) {
+                java.srcDirs = ['src/main/java', 'src/withlcp/java']
+            } else {
+                java.srcDirs = ['src/main/java', 'src/nondrm/java']
+            }
         }
     }
 }

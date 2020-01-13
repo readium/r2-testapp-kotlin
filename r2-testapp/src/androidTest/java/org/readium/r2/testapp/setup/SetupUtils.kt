@@ -109,6 +109,8 @@ fun initTestEnv() {
     val perm = UiDevice.getInstance(getInstrumentation()).findObject(UiSelector().text("Allow"))
     if (perm.exists())
         perm.click()
+
+    waitFor(3000)
     //TODO: Invalidate view (postInvalidate?) to redraw everything and not have some tests fail.
 }
 
@@ -255,7 +257,7 @@ fun getWebViewStr(): String {
     val mDevice : UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
     val webView = mDevice.findObject(By.clazz(WebView::class.java))
     val str = listAllChildren(webView)
-    Log.e("WebView text", str)
+    //Log.e("WebView text", str)
     return str
 }
 
