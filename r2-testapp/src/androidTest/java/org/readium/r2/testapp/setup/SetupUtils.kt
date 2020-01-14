@@ -48,17 +48,22 @@ import java.io.InputStream
 import java.util.UUID
 
 /**
- * Initializes the testing environment by destroying the Books, bookmarks and positions tables, and
- * creating them again. Would be preferable to have a function to create it in the BooksDatabase.kt
- * file. It also allows permission to access the sdcard. This function allows the tests to run
- * without having to manually configure the app.
+ * Clears the user preferences. //FIXME DOES NOT WORK
  *
- * As this function will always be called before any test, check device used is allowed for UI tests.
+ * Initializes the testing environment by destroying that [BOOKSTable], [BOOKMARKSTable] and [POSITIONSTable] databases
+ * and then recreating them.
+ *
+ * The function then checks if the window asking for permission exists and clicks on allow if
+ * that is the case.
+ *
+ * TODO: Should then invalidate the CatalogActivity view to remove duplicate entries with just deleted items.
+ *
+ * The last instruction, [waitFor] is used to allow the databases to finish being created. Otherwise tests would fail
+ * and the testsuite would directly stop.
  */
 fun initTestEnv() {
     val context = getInstrumentation().targetContext
 
-    //FIXME: The following line does not work
     context.getSharedPreferences("org.readium.r2.testapp", Context.MODE_PRIVATE).edit().clear().commit()
 
     val db = BooksDatabase(context)
@@ -106,15 +111,13 @@ fun initTestEnv() {
         perm.click()
 
     waitFor(3000)
-    //TODO: Invalidate view (postInvalidate?) to redraw everything and not have some tests fail.
 }
 
 /**
  * Writes the file in the androidTest app assets folder to the device's internal storage.
- * @ /Android/data/org.readium.r2reader.test
- * Logs error if it happens.
+ * at /Android/data/org.readium.r2reader.test
  *
- * pub: String - The name of the publication to add to internal memory.
+ * @param pub: String - The name of the publication to add to internal memory.
  */
 fun copyPubFromAPKToDeviceInternalMemory(pub: String) {
     val file = File(getInstrumentation().context.getExternalFilesDir(null), pub)
@@ -129,7 +132,9 @@ fun copyPubFromAPKToDeviceInternalMemory(pub: String) {
 
 /**
  * Removes every single file in the device's internal storage
- * @ /Android/data/org.readium.r2reader.test
+ * at /Android/data/org.readium.r2reader.test
+ *
+ * [walk] returns a tree of each element present in the directory.
  */
 fun remPubsFromDeviceInternalMemory() {
     getInstrumentation().context.getExternalFilesDir(null)!!.walk().forEach {
@@ -143,27 +148,32 @@ fun remPubsFromDeviceInternalMemory() {
 /**
  * The function is a shortcut for calling UiAutomator. It performs a click on a view that holds the text contained in 'button'
  *
- * button: String - The view to click on. It is targeted through the text shown on screen.
+ * @param button: String - The view to click on. It is targeted through the text shown on screen.
  */
 fun clickButtonUiAutomator(button: String) {
     UiDevice.getInstance(getInstrumentation()).findObject(UiSelector().text(button)).click()
 }
 
 /**
- * Uses UiAutomator to scroll a scrollable view until the text searched appears.
- * clickButtonUiAutomator is then called with the text to click on.
+ * Uses UiAutomator to scroll a scrollable view until the text searched appears. If the view cannot be scrolled or text
+ * is already present, the exception will be caught and the text directly clicked on by calling [clickButtonUiAutomator].
  *
- * test:String - The text the function should scroll to and click.
+ * @param text: String - The text the function should scroll to and click.
  */
 fun scrollUntilFoundTextAndClickUiAutomator(text: String) {
-    UiScrollable(UiSelector().scrollable(true)).scrollIntoView(UiSelector().text(text))
-    clickButtonUiAutomator(text)
+    try {
+        UiScrollable(UiSelector().scrollable(true)).scrollIntoView(UiSelector().text(text))
+    } catch (e: Exception) { } finally {
+        clickButtonUiAutomator(text)
+    }
+
 }
 
 /**
- * Creates a separate thread that will wait for 'time'. Then synchronizes.
+ * Creates a separate thread that will wait for 'time'. Then synchronizes. Allows the test to wait for the app to be
+ * available/not be busy.
  *
- * time: Long - Time to wait in milliseconds
+ * @param time: Long - Time to wait in milliseconds
  */
 fun waitFor(time: Long) {
     val t = Thread(Runnable {Thread.sleep(time)})
@@ -174,17 +184,17 @@ fun waitFor(time: Long) {
 /**
  * Gets resource string for the given ID.
  *
- * strID: Int - The resource string ID.
+ * strID: Int - The resource string ID (testapp string ID).
  */
 fun getStr(strID: Int) : String {
     return getInstrumentation().targetContext.getString(strID)
 }
 
 /**
- * Adds pub to the database
+ * Adds a publication to the database by using methods of [LibraryActivity].
  *
- * pub: String - The name of the publication to add to the database
- * activity: LibraryActivity? - Instance of LibraryActivity.
+ * @param pub: String - The name of the publication to add to the database
+ * @param activity: LibraryActivity? - Instance of LibraryActivity.
  */
 fun addPubToDatabase(pub: String, activity: LibraryActivity?) {
     val method = LibraryActivity::class.java.getDeclaredMethod("addBook", String::class.java,
@@ -200,11 +210,17 @@ fun addPubToDatabase(pub: String, activity: LibraryActivity?) {
     method.invoke(activity, pub, uuid, outputFilePath, input)
 }
 
+/**
+ * Function that returns a custom matcher which is used to test if the number of elements in a recycler view matches
+ * the prediction.
+ *
+ * @param size: Int - The predicted number of elements that should be inside the recycler view.
+ * @return Matcher<View> - A custom matcher. Returns true if sizes match, false otherwise.
+ */
 fun withRecyclerViewSize(size: Int): Matcher<View> {
     return object : TypeSafeMatcher<View>() {
         override fun matchesSafely(view: View): Boolean {
             val actualListSize = (view as RecyclerView).adapter!!.itemCount
-            //Log.e(TAG, "RecyclerView actual size $actualListSize")
             return actualListSize == size
         }
 
@@ -215,7 +231,7 @@ fun withRecyclerViewSize(size: Int): Matcher<View> {
 }
 
 /**
- * Perform a single click action on the view with the given ID.
+ * Perform a single click action on the center of the view with the given ID.
  *
  * @param id: Int - The id of the object to swipe on.
  */
@@ -225,7 +241,8 @@ fun clickCenter(id: Int) {
 }
 
 /**
- * Perform all the UI actions to access the TOC interface.
+ * Perform all the UI actions to access the TOC interface. Waits for one second to ensure app and testsuite will stay
+ * synchronized
  */
 fun goToTOC() {
     waitFor(1000)
@@ -267,7 +284,7 @@ private fun listAllChildren(obj: UiObject2): String {
  */
 fun clickRightSide(id: Int) {
     Espresso.onView(ViewMatchers.withId(id))
-        .perform(GeneralClickAction(Tap.SINGLE, GeneralLocation.CENTER_RIGHT,Press.FINGER))// GeneralLocation.CENTER_RIGHT, Press.FINGER))
+        .perform(GeneralClickAction(Tap.SINGLE, GeneralLocation.CENTER_RIGHT,Press.FINGER))
 }
 
 /**
