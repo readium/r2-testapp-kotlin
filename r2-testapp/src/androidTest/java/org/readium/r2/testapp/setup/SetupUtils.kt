@@ -6,6 +6,7 @@
 
 package org.readium.r2.testapp.setup
 
+import android.content.Context
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
@@ -18,7 +19,6 @@ import androidx.test.espresso.action.Press
 import androidx.test.espresso.action.Tap
 import androidx.test.espresso.action.ViewActions
 import androidx.test.espresso.matcher.ViewMatchers
-import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiDevice
@@ -56,7 +56,12 @@ import java.util.UUID
  * As this function will always be called before any test, check device used is allowed for UI tests.
  */
 fun initTestEnv() {
-    val db = BooksDatabase(getInstrumentation().targetContext)
+    val context = getInstrumentation().targetContext
+
+    //FIXME: The following line does not work
+    context.getSharedPreferences("org.readium.r2.testapp", Context.MODE_PRIVATE).edit().clear().commit()
+
+    val db = BooksDatabase(context)
     db.books.dropTable()
     db.shared.use {
         createTable(BOOKSTable.NAME, true,
@@ -234,7 +239,7 @@ fun goToTOC() {
  * @return: String - The content of the webview
  */
 fun getWebViewStr(): String {
-    val mDevice : UiDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
+    val mDevice : UiDevice = UiDevice.getInstance(getInstrumentation())
     val webView = mDevice.findObject(By.clazz(WebView::class.java))
     val str = listAllChildren(webView)
     //Log.e("WebView text", str)
