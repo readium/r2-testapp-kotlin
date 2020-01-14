@@ -6,7 +6,6 @@
 
 package org.readium.r2.testapp.setup
 
-import android.util.Log
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
@@ -45,7 +44,6 @@ import org.readium.r2.testapp.db.PositionsDatabase
 import org.readium.r2.testapp.library.LibraryActivity
 import java.io.File
 import java.io.FileOutputStream
-import java.io.IOException
 import java.io.InputStream
 import java.util.UUID
 
@@ -114,19 +112,14 @@ fun initTestEnv() {
  * pub: String - The name of the publication to add to internal memory.
  */
 fun copyPubFromAPKToDeviceInternalMemory(pub: String) {
-    try {
-        //Log.w("PATH", getInstrumentation().context.getExternalFilesDir(null)!!.absolutePath)
-        val file = File(getInstrumentation().context.getExternalFilesDir(null), pub)
-        val ins = getInstrumentation().context.assets.open(pub)
-        val outs = FileOutputStream(file)
-        var data = ByteArray(ins.available())
-        ins.read(data)
-        outs.write(data)
-        ins.close()
-        outs.close()
-    } catch (e: IOException) {
-        Log.e("IO ERROR", e.stackTrace.toString())
-    }
+    val file = File(getInstrumentation().context.getExternalFilesDir(null), pub)
+    val ins = getInstrumentation().context.assets.open(pub)
+    val outs = FileOutputStream(file)
+    val data = ByteArray(ins.available())
+    ins.read(data)
+    outs.write(data)
+    ins.close()
+    outs.close()
 }
 
 /**
@@ -134,15 +127,11 @@ fun copyPubFromAPKToDeviceInternalMemory(pub: String) {
  * @ /Android/data/org.readium.r2reader.test
  */
 fun remPubsFromDeviceInternalMemory() {
-    try {
-        getInstrumentation().context.getExternalFilesDir(null)!!.walk().forEach {
-            it.delete()
-        }
-        getInstrumentation().targetContext.getExternalFilesDir(null)!!.walk().forEach {
-            it.delete()
-        }
-    } catch (e: IOException) {
-        Log.e("IO ERROR", e.stackTrace.toString())
+    getInstrumentation().context.getExternalFilesDir(null)!!.walk().forEach {
+        it.delete()
+    }
+    getInstrumentation().targetContext.getExternalFilesDir(null)!!.walk().forEach {
+        it.delete()
     }
 }
 
@@ -208,7 +197,6 @@ fun addPubToDatabase(pub: String, activity: LibraryActivity?) {
 
 fun withRecyclerViewSize(size: Int): Matcher<View> {
     return object : TypeSafeMatcher<View>() {
-
         override fun matchesSafely(view: View): Boolean {
             val actualListSize = (view as RecyclerView).adapter!!.itemCount
             //Log.e(TAG, "RecyclerView actual size $actualListSize")
