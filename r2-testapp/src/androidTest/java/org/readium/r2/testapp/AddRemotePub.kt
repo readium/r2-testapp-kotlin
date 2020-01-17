@@ -30,7 +30,7 @@ import org.hamcrest.CoreMatchers.`is` as Is
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class AddRemoteBook
+class AddRemotePub
 {
     @get:Rule var activityScenarioRule = activityScenarioRule<CatalogActivity>()
 

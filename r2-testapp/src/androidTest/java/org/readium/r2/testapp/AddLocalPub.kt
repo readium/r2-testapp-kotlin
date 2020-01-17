@@ -34,7 +34,7 @@ import org.readium.r2.testapp.setup.waitFor
 
 @RunWith(AndroidJUnit4::class)
 @LargeTest
-class AddLocalBook
+class AddLocalPub
 {
     /**
      * Launches the CatalogActivity for the tests
