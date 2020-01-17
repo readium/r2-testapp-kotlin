@@ -8,7 +8,7 @@
     <string name="InternalStorage_SDK23" translatable="false">Internal storage</string>
     <string name="FilesFolderName" translatable="false">___tests-r2-testapp</string>
 
-    <string name="UnsupportedVerisonTest" translatable="false">Unsupported Android version for this test</string>
+    <string name="UnsupportedDeviceTest" translatable="false">Unsupported device for this test</string>
 
     <string name="audiobookTestRemoteURL" translatable="false">https://api.archivelab.org/books/art_letters_1809_librivox/opds_audio_manifest</string>
     <string name="audiobookTestName" translatable="false">The Art of Letters</string>

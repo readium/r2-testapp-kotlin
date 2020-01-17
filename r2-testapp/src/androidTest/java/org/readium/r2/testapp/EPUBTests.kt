@@ -11,6 +11,7 @@ import androidx.test.espresso.action.ViewActions
 import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
+import androidx.test.espresso.matcher.ViewMatchers.isRoot
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.rules.activityScenarioRule
@@ -24,10 +25,13 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.readium.r2.navigator.pager.R2EpubPageFragment
+import org.readium.r2.navigator.pager.R2PagerAdapter
 import org.readium.r2.testapp.library.LibraryActivity
 import org.readium.r2.testapp.setup.addPubToDatabase
 import org.readium.r2.testapp.setup.clickCenter
 import org.readium.r2.testapp.setup.copyPubFromAPKToDeviceInternalMemory
+import org.readium.r2.testapp.setup.getResourcePager
 import org.readium.r2.testapp.setup.getStr
 import org.readium.r2.testapp.setup.getWebViewStr
 import org.readium.r2.testapp.setup.goToTOC
@@ -63,6 +67,14 @@ class EPUBTests {
             activity = it
         }
         return activity
+    }
+
+    private fun getCurrentActivity(): Activity? {
+        val activity = arrayOfNulls<Activity>(1)
+        onView(isRoot()).check {
+                view, _ -> activity[0] = view.context as Activity
+        }
+        return activity[0]
     }
 
     /**
@@ -169,7 +181,7 @@ class EPUBTests {
     @Test
     fun swipeRTLBeginning() {
         addTestEPUB(getStr(R.string.epubTestFile))
-        swipeRTL(R.id.resourcePager, false)
+        swipeRTL(R.id.webView, false)
         assertTrue(getWebViewStr().contains("J"))
     }
 
@@ -179,8 +191,14 @@ class EPUBTests {
     @Test
     fun swipeLTRBeginning() {
         addTestEPUB(getStr(R.string.epubTestFile))
-        swipeLTR(R.id.resourcePager, false)
+        swipeLTR(R.id.webView, false)
         assertTrue(getWebViewStr().contains("Couverture"))
+    }
+
+    fun getWebviewId(): Int {
+        val resourcePager = getResourcePager(getCurrentActivity()!!)
+        return (((resourcePager.adapter as R2PagerAdapter).mFragments.get((resourcePager.adapter as R2PagerAdapter)
+            .getItemId(resourcePager.currentItem))) as? R2EpubPageFragment)!!.webView!!.id
     }
 
     /**
@@ -188,13 +206,14 @@ class EPUBTests {
      */
     @Test
     fun infiniteSwipe() {
+        //getInstrumentation().targetContext.getActivityManager().act
         var run = true
 
         addTestEPUB(getStr(R.string.epubTestFile))
-        waitFor(1000)
+        waitFor(10000)
 
         val t = Thread(Runnable {
-            Thread.sleep(10000)
+            Thread.sleep(3000)
             run = false
         })
 
@@ -203,10 +222,10 @@ class EPUBTests {
         while (run) {
             if (cycle) {
                 cycle = false
-                swipeLTR(R.id.resourcePager, false)
+                swipeLTR(getWebviewId(), false)
             } else {
                 cycle = true
-                swipeRTL(R.id.resourcePager, false)
+                swipeRTL(getWebviewId(), false)
             }
         }
         t.join()

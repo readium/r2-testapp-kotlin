@@ -6,7 +6,6 @@
 
 package org.readium.r2.testapp
 
-import android.os.Build
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions
 import androidx.test.espresso.assertion.ViewAssertions.doesNotExist
@@ -25,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.readium.r2.testapp.setup.clickButtonUiAutomator
 import org.readium.r2.testapp.setup.copyPubFromAPKToDeviceInternalMemory
+import org.readium.r2.testapp.setup.getDeviceModelName
 import org.readium.r2.testapp.setup.getStr
 import org.readium.r2.testapp.setup.initTestEnv
 import org.readium.r2.testapp.setup.remPubsFromDeviceInternalMemory
@@ -36,7 +36,11 @@ import org.readium.r2.testapp.setup.waitFor
 @LargeTest
 class AddLocalBook
 {
-    @get:Rule var activityScenarioRule = activityScenarioRule<CatalogActivity>()
+    /**
+     * Launches the CatalogActivity for the tests
+     */
+    @get:Rule
+    var activityScenarioRule = activityScenarioRule<CatalogActivity>()
 
     /**
      * Destroy, recreate the books database and allow sdcard access.
@@ -50,14 +54,13 @@ class AddLocalBook
 
     /**
      * Once the device's file explorer is open, navigate into the test files' folder.
+     * @param pub: String - The name of the file to select in the file explorer.
      */
     private fun selectFileInExplorer(pub: String) {
         //TODO: add a variant for each test device used, as the UI changes on different versions.
-        //    It might need another switch rather than the build sdk version.
 
-        when (Build.VERSION.SDK_INT){
-            23 -> {
-                //ANDROID 6 TABLET
+        when (getDeviceModelName()){
+            "HUAWEI BTV-W09" -> {
                 clickButtonUiAutomator(getStr(R.string.InternalStorage_SDK23))
                 scrollUntilFoundTextAndClickUiAutomator(getStr(R.string.Folder1))
                 clickButtonUiAutomator(getStr(R.string.Folder2))
@@ -65,7 +68,7 @@ class AddLocalBook
                 clickButtonUiAutomator(getStr(R.string.Folder4))
                 clickButtonUiAutomator(pub)
             }
-            else -> throw Exception(getStr(R.string.UnsupportedVersionTest))
+            else -> throw Exception(getStr(R.string.UnsupportedDeviceTest))
         }
 
     }

@@ -6,7 +6,9 @@
 
 package org.readium.r2.testapp.setup
 
+import android.app.Activity
 import android.content.Context
+import android.os.Build
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
@@ -34,6 +36,7 @@ import org.jetbrains.anko.db.INTEGER
 import org.jetbrains.anko.db.PRIMARY_KEY
 import org.jetbrains.anko.db.TEXT
 import org.jetbrains.anko.db.createTable
+import org.readium.r2.navigator.pager.R2ViewPager
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.db.BOOKMARKSTable
 import org.readium.r2.testapp.db.BOOKSTable
@@ -42,6 +45,7 @@ import org.readium.r2.testapp.db.BooksDatabase
 import org.readium.r2.testapp.db.POSITIONSTable
 import org.readium.r2.testapp.db.PositionsDatabase
 import org.readium.r2.testapp.library.LibraryActivity
+import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -191,6 +195,18 @@ fun getStr(strID: Int) : String {
 }
 
 /**
+ * Returns a string containing the device model name.
+ */
+fun getDeviceModelName(): String {
+    val manufacturer = Build.MANUFACTURER;
+    val model = Build.MODEL;
+    if (model.startsWith(manufacturer)) {
+        return model.toUpperCase()
+    }
+    return "$manufacturer $model".toUpperCase()
+}
+
+/**
  * Adds a publication to the database by using methods of [LibraryActivity].
  *
  * @param pub: String - The name of the publication to add to the database
@@ -295,6 +311,15 @@ fun clickRightSide(id: Int) {
 fun clickLeftSide(id: Int) {
     Espresso.onView(ViewMatchers.withId(id))
         .perform(GeneralClickAction(Tap.SINGLE, GeneralLocation.CENTER_LEFT,Press.FINGER))
+}
+
+/**
+ * @param a: Activity - The activity to get the R2ViewPager from.
+ * @return R2ViePager
+ */
+fun getResourcePager(a: Activity): R2ViewPager {
+    Timber.e(a.toString())
+    return a.findViewById(R.id.resourcePager) as R2ViewPager
 }
 
 /**
