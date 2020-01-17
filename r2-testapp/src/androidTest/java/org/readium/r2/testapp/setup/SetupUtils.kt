@@ -318,7 +318,6 @@ fun clickLeftSide(id: Int) {
  * @return R2ViePager
  */
 fun getResourcePager(a: Activity): R2ViewPager {
-    Timber.e(a.toString())
     return a.findViewById(R.id.resourcePager) as R2ViewPager
 }
 
