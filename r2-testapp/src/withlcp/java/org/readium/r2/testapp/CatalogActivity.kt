@@ -45,11 +45,12 @@ import org.readium.r2.testapp.drm.LCPLibraryActivityService
 import org.readium.r2.testapp.epub.EpubActivity
 import org.readium.r2.testapp.library.LibraryActivity
 import timber.log.Timber
+import tti.NavigatorExtension
 import java.io.File
 import java.net.URL
 import kotlin.coroutines.CoroutineContext
 
-class CatalogActivity : LibraryActivity(), LCPLibraryActivityService, CoroutineScope, DRMLibraryService, LCPAuthenticating, LCPAuthenticationDelegate {
+open class CatalogActivity : LibraryActivity(), LCPLibraryActivityService, CoroutineScope, DRMLibraryService, LCPAuthenticating, LCPAuthenticationDelegate {
 
 
     /**
@@ -325,7 +326,15 @@ class CatalogActivity : LibraryActivity(), LCPLibraryActivityService, CoroutineS
                     prepareToServe(pub, book.fileName!!, file.absolutePath, add = false, lcp = true)
                     server.addEpub(publication, pub.container, "/" + book.fileName, applicationContext.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json")
 
-                    this@CatalogActivity.startActivity(intentFor<EpubActivity>("publicationPath" to publicationPath, "publicationFileName" to book.fileName, "publication" to publication, "bookId" to book.id, "drm" to true))
+                    val cls = NavigatorExtension.getEpubActivityClass() ?: EpubActivity::class.java
+                    val intent = Intent(this@CatalogActivity,cls)
+                    intent.putExtra("publicationPath",publicationPath)
+                    intent.putExtra("publicationFileName",book.fileName)
+                    intent.putExtra("publication",publication)
+                    intent.putExtra("bookId", book.id)
+                    intent.putExtra("drm", true)
+                    this@CatalogActivity.startActivity(intent)
+                    //this@CatalogActivity.startActivity(intentFor<EpubActivity>("publicationPath" to publicationPath, "publicationFileName" to book.fileName, "publication" to publication, "bookId" to book.id, "drm" to true))
                 }
             }
         }

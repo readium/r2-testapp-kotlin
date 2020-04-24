@@ -27,6 +27,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.widget.TextViewCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
@@ -42,6 +43,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.NavigatorDelegate
+import org.readium.r2.navigator.R2BasicWebView
 import org.readium.r2.navigator.epub.R2EpubActivity
 import org.readium.r2.navigator.epub.Style
 import org.readium.r2.navigator.pager.R2EpubPageFragment
@@ -62,6 +64,8 @@ import org.readium.r2.testapp.outline.R2OutlineActivity
 import org.readium.r2.testapp.search.MarkJSSearchEngine
 import org.readium.r2.testapp.search.SearchLocatorAdapter
 import timber.log.Timber
+import tti.NavigatorInterface
+import tti.NavigatorExtension
 import kotlin.coroutines.CoroutineContext
 
 
@@ -72,7 +76,7 @@ import kotlin.coroutines.CoroutineContext
  *      ( Table of content, User Settings, DRM, Bookmarks )
  *
  */
-class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, VisualNavigatorDelegate, OutlineTableViewControllerDelegate*/ {
+open class EpubActivity : NavigatorInterface,R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, VisualNavigatorDelegate, OutlineTableViewControllerDelegate*/ {
 
     override fun locationDidChange(navigator: Navigator?, locator: Locator) {
         Timber.d("locationDidChange position ${locator.locations.position ?: 0}/${publication.positions.size} $locator")
@@ -91,17 +95,18 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
         get() = Dispatchers.Main
 
     //UserSettings
-    private lateinit var userSettings: UserSettings
+    protected lateinit var userSettings: UserSettings
 
     //Accessibility
-    private var isExploreByTouchEnabled = false
+    protected var isExploreByTouchEnabled = false
+    protected lateinit var tts_overlay_variable : ConstraintLayout
     private var pageEnded = false
 
     // Provide access to the Bookmarks & Positions Databases
     private lateinit var bookmarksDB: BookmarksDatabase
     private lateinit var booksDB: BooksDatabase
     private lateinit var positionsDB: PositionsDatabase
-    private lateinit var highlightDB: HighligtsDatabase
+    protected lateinit var highlightDB: HighligtsDatabase
 
 
     private lateinit var screenReader: R2ScreenReader
@@ -140,7 +145,9 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
 
         navigatorDelegate = this
         bookId = intent.getLongExtra("bookId", -1)
-
+        for(e in NavigatorExtension.allExtension){
+            e.onCreateReader(this)
+        }
         Handler().postDelayed({
             launch {
                 menuDrm?.isVisible = intent.getBooleanExtra("drm", false)
@@ -152,6 +159,7 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
         val textColors = mutableListOf("#000000", "#000000", "#ffffff")
         resourcePager.setBackgroundColor(Color.parseColor(backgroundsColors[appearancePref]))
         (resourcePager.focusedChild?.findViewById(org.readium.r2.navigator.R.id.book_title) as? TextView)?.setTextColor(Color.parseColor(textColors[appearancePref]))
+        tts_overlay_variable = tts_overlay
         toggleActionBar()
 
         resourcePager.offscreenPageLimit = 1
@@ -555,6 +563,7 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
         } else {
             super.onActivityResult(requestCode, resultCode, data)
             if (requestCode == 2 && resultCode == Activity.RESULT_OK && data != null) {
+                if(!data.hasExtra("locator")) return
                 val locator = data.getParcelableExtra("locator") as Locator
                 locator.locations.fragments.firstOrNull()?.let { fragment ->
 
@@ -620,6 +629,9 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
             }
         }
         this.mode = mode
+        for(e in NavigatorExtension.allExtension){
+            e.onActionModeStarted(this,mode)
+        }
     }
 
     private fun showHighlightPopup(highlightID: String? = null, size: Rect?, dismissCallback: () -> Unit) {
@@ -661,21 +673,32 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
             findViewById<View>(R.id.notch).run {
                 setX((rect.left * 2).toFloat())
             }
-            findViewById<View>(R.id.red).setOnClickListener {
-                changeHighlightColor(highlight, Color.rgb(247, 124, 124))
+            val clrs = mutableMapOf<Int,Int>()
+            highlightColors(clrs)
+            if(clrs.isNotEmpty()){
+                for((k,v) in clrs){
+                    findViewById<View>(k).setOnClickListener {
+                        changeHighlightColor(highlight, v)
+                    }
+                }
+            }else{
+                findViewById<View>(R.id.red).setOnClickListener {
+                    changeHighlightColor(highlight, Color.rgb(247, 124, 124))
+                }
+                findViewById<View>(R.id.green).setOnClickListener {
+                    changeHighlightColor(highlight, Color.rgb(173, 247, 123))
+                }
+                findViewById<View>(R.id.blue).setOnClickListener {
+                    changeHighlightColor(highlight, Color.rgb(124, 198, 247))
+                }
+                findViewById<View>(R.id.yellow).setOnClickListener {
+                    changeHighlightColor(highlight, Color.rgb(249, 239, 125))
+                }
+                findViewById<View>(R.id.purple).setOnClickListener {
+                    changeHighlightColor(highlight, Color.rgb(182, 153, 255))
+                }
             }
-            findViewById<View>(R.id.green).setOnClickListener {
-                changeHighlightColor(highlight, Color.rgb(173, 247, 123))
-            }
-            findViewById<View>(R.id.blue).setOnClickListener {
-                changeHighlightColor(highlight, Color.rgb(124, 198, 247))
-            }
-            findViewById<View>(R.id.yellow).setOnClickListener {
-                changeHighlightColor(highlight, Color.rgb(249, 239, 125))
-            }
-            findViewById<View>(R.id.purple).setOnClickListener {
-                changeHighlightColor(highlight, Color.rgb(182, 153, 255))
-            }
+
             findViewById<View>(R.id.annotation).setOnClickListener {
                 showAnnotationPopup(highlight)
                 popupWindow?.dismiss()
@@ -711,7 +734,7 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
         mode?.finish()
     }
 
-    private fun addHighlight(highlight: org.readium.r2.navigator.epub.Highlight) {
+    override fun addHighlight(highlight: org.readium.r2.navigator.epub.Highlight) {
         val annotation = highlightDB.highlights.list(highlight.id).run {
             if (isNotEmpty()) first().annotation
             else ""
@@ -735,7 +758,7 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
         }
     }
 
-    private fun addAnnotation(highlight: org.readium.r2.navigator.epub.Highlight, annotation: String) {
+    override fun addAnnotation(highlight: org.readium.r2.navigator.epub.Highlight, annotation: String) {
         highlightDB.highlights.insert(
                 convertNavigationHighlight2Highlight(highlight, annotation, "annotation")
         )
@@ -793,9 +816,13 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
         alert.show()
     }
 
-    override fun onPageLoaded() {
-        super.onPageLoaded()
+    override fun onPageLoaded(webView: R2BasicWebView) {
+        super.onPageLoaded(webView)
         drawHighlight()
+
+        for(e in NavigatorExtension.allExtension){
+            e.onPageLoaded(this,webView)
+        }
     }
 
     override fun highlightActivated(id: String) {
@@ -811,8 +838,9 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
     }
 
     private fun convertNavigationHighlight2Highlight(highlight: org.readium.r2.navigator.epub.Highlight, annotation: String? = null, annotationMarkStyle: String? = null): Highlight {
-        val resourceIndex = resourcePager.currentItem.toLong()
-        val resource = publication.readingOrder[resourcePager.currentItem]
+        val lnk = publication.linkWithHref(highlight.locator.href!!)
+        val resourceIndex =  publication.readingOrder.indexOf(lnk).toLong()
+        val resource = lnk!!//publication.readingOrder[resourcePager.currentItem]
         val resourceHref = resource.href
         val resourceType = resource.type ?: ""
         val resourceTitle = resource.title ?: ""
@@ -851,6 +879,9 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
             highlight.annotationMarkStyle
     )
 
+    open fun createUserSettings(preferences: SharedPreferences, epubActivity: EpubActivity, userSettingsUIPreset: MutableMap<ReadiumCSSName, Boolean>): UserSettings {
+        return UserSettings(preferences,epubActivity,userSettingsUIPreset)
+    }
     /**
      * Manage what happens when the focus is put back on the EpubActivity.
      *  - Synchronize the [R2ScreenReader] with the webView if the [R2ScreenReader] exists.
@@ -872,7 +903,7 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
             publication.userSettingsUIPreset[ReadiumCSSName.ref(SCROLL_REF)] = true
             preferences.edit().putBoolean(SCROLL_REF, true).apply() //overriding user preferences
 
-            userSettings = UserSettings(preferences, this, publication.userSettingsUIPreset)
+            userSettings = createUserSettings(preferences, this, publication.userSettingsUIPreset)
             userSettings.saveChanges()
 
             Handler().postDelayed({
@@ -884,7 +915,7 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
                 publication.userSettingsUIPreset.remove(ReadiumCSSName.ref(SCROLL_REF))
             }
 
-            userSettings = UserSettings(preferences, this, publication.userSettingsUIPreset)
+            userSettings = createUserSettings(preferences, this, publication.userSettingsUIPreset)
             userSettings.resourcePager = resourcePager
         }
 

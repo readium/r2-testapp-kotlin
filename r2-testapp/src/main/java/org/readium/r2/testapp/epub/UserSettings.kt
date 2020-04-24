@@ -30,7 +30,7 @@ import org.readium.r2.testapp.R
 import org.readium.r2.testapp.utils.color
 import java.io.File
 
-class UserSettings(var preferences: SharedPreferences, val context: Context, private val UIPreset: MutableMap<ReadiumCSSName, Boolean>) {
+open class UserSettings(var preferences: SharedPreferences, val context: Context, private val UIPreset: MutableMap<ReadiumCSSName, Boolean>) {
 
     lateinit var resourcePager: R2ViewPager
 
@@ -82,7 +82,7 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
         context.window.attributes = layoutParams
     }
 
-    private fun getUserSettings(): UserProperties {
+    protected fun getUserSettings(): UserProperties {
 
         val userProperties = UserProperties()
         // Publisher default system
@@ -177,11 +177,13 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
         view.setProperty(userSetting.name, userSetting.toString())
     }
 
+    protected lateinit var rootView : View
 
-    fun userSettingsPopUp(): PopupWindow {
+    open fun userSettingsPopUp(): PopupWindow {
 
         val layoutInflater = LayoutInflater.from(context)
         val layout = layoutInflater.inflate(R.layout.popup_window_user_settings, null)
+        rootView = layout
         val userSettingsPopup = PopupWindow(context)
         userSettingsPopup.contentView = layout
         userSettingsPopup.width = ListPopupWindow.WRAP_CONTENT
@@ -618,7 +620,6 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
                         (context as EpubActivity).updateScreenReaderSpeed(speechSpeed, true)
                     }
                 })
-
         return userSettingsPopup
     }
 }

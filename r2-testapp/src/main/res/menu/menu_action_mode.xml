@@ -6,13 +6,13 @@
 
     <item
         android:id="@+id/highlight"
-        android:title="Highlight"
+        android:title="@string/highlight"
         app:showAsAction="always">
     </item>
 
     <item
         android:id="@+id/note"
-        android:title="Note"
+        android:title="@string/note"
         app:showAsAction="always">
     </item>
 

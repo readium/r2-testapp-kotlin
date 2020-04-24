@@ -55,10 +55,23 @@ android {
         sourceCompatibility 1.8
         targetCompatibility 1.8
     }
+    if(project.hasProperty("RELEASE_STORE_FILE")) {
+        signingConfigs {
+            release {
+                storeFile file(RELEASE_STORE_FILE)
+                storePassword RELEASE_STORE_PASSWORD
+                keyAlias RELEASE_KEY_ALIAS
+                keyPassword RELEASE_KEY_PASSWORD
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if(project.hasProperty("RELEASE_STORE_FILE")) {
+                signingConfig signingConfigs.release
+            }
         }
     }
     packagingOptions {
@@ -80,33 +93,29 @@ android {
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation fileTree(include: ['r2-*.aar'], dir: '../../libs')
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
     implementation 'com.jakewharton.timber:timber:4.7.1'
+
     if (findProject(':r2-shared')) {
         implementation project(':r2-shared')
-    } else {
-        implementation "com.github.readium:r2-shared-kotlin:1.1.6"
     }
     if (findProject(':r2-navigator')) {
         implementation project(':r2-navigator')
-    } else {
-        implementation "com.github.readium:r2-navigator-kotlin:1.1.5"
     }
     if (findProject(':r2-streamer')) {
         implementation project(':r2-streamer')
-    } else {
-        implementation "com.github.readium:r2-streamer-kotlin:1.1.5"
     }
     if (findProject(':r2-opds')) {
         implementation project(':r2-opds')
-    } else {
-        implementation "com.github.readium:r2-opds-kotlin:1.1.4"
     }
     if (findProject(':r2-lcp')) {
         implementation project(':r2-lcp')
     }
 
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.1.1"
+
+    implementation project(':navigator-extension')
 
     implementation('com.mcxiaoke.koi:core:0.5.5') {
         exclude module: 'support-v4'

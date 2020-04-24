@@ -17,6 +17,8 @@ import nl.komponents.kovenant.android.startKovenant
 import nl.komponents.kovenant.android.stopKovenant
 import org.readium.r2.testapp.BuildConfig.DEBUG
 import timber.log.Timber
+import co.endao.EndaoExtension
+import tti.NavigatorExtension
 
 class R2App : Application() {
 
@@ -26,6 +28,8 @@ class R2App : Application() {
         // suitable for an Android environment.
         startKovenant()
         if (DEBUG) Timber.plant(Timber.DebugTree())
+        EndaoExtension.initInjectInfo()
+        NavigatorExtension.addExtension(EndaoExtension())
     }
 
     override fun onTerminate() {

@@ -63,6 +63,7 @@ import org.readium.r2.shared.publication.Publication.Companion
 import org.readium.r2.shared.publication.epub.pageList
 import org.readium.r2.shared.publication.opds.images
 import org.readium.r2.streamer.container.ContainerError
+import org.readium.r2.streamer.fetcher.Fetcher
 import org.readium.r2.streamer.parser.PubBox
 import org.readium.r2.streamer.parser.audio.AudioBookConstant
 import org.readium.r2.streamer.parser.audio.AudioBookParser
@@ -106,6 +107,7 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.ZipException
 import kotlin.coroutines.CoroutineContext
+import tti.NavigatorExtension
 
 var activitiesLaunched: AtomicInteger = AtomicInteger(0)
 
@@ -704,6 +706,9 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                 server.loadReadiumCSSResources(assets)
                 server.loadR2ScriptResources(assets)
                 server.loadR2FontResources(assets, applicationContext)
+                for(e in NavigatorExtension.allExtension){
+                    e.onServerStart(applicationContext)
+                }
 
 //                // Add your own resources here
 //                server.loadCustomResource(assets.open("scripts/test.js"), "test.js")
@@ -831,9 +836,19 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                             null
                         }
                     }
-
+                    var found = false
+                    val prop = applicationContext.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json"
+                    val fetcher = Fetcher(publication,container,prop,null)
+                    for(e in NavigatorExtension.allExtension){
+                        if(e.serveEpub(fileName,fetcher)){
+                            found = true
+                            break
+                        }
+                    }
                     if (!lcp) {
-                        server.addEpub(publication, container, "/$fileName", applicationContext.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json")
+                        if(!found) {
+                            server.addEpub(publication, container, "/$fileName", applicationContext.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json")
+                        }
                     }
                     Book(title = publication.metadata.title, author = author, href = absolutePath, identifier = publicationIdentifier, cover = cover, ext = Publication.EXTENSION.EPUB, progression = "{}")
                 }
@@ -913,7 +928,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
         }
     }
 
-    private val isNetworkAvailable: Boolean
+    protected val isNetworkAvailable: Boolean
         get() {
             val connectivityManager: ConnectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val activeNetworkInfo: NetworkInfo? = connectivityManager.activeNetworkInfo
@@ -1037,7 +1052,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
         }
     }
 
-    private fun prepareAndStartActivity(pub: PubBox?, book: Book, file: File, publicationPath: String, publication: Publication) {
+    protected fun prepareAndStartActivity(pub: PubBox?, book: Book, file: File, publicationPath: String, publication: Publication) {
         prepareToServe(pub, book.fileName!!, file.absolutePath, add = false, lcp = false)
         startActivity(publicationPath, book, publication)
     }
@@ -1048,7 +1063,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
             Publication.TYPE.AUDIO -> AudiobookActivity::class.java
             Publication.TYPE.CBZ -> ComicActivity::class.java
             Publication.TYPE.DiViNa -> DiViNaActivity::class.java
-            else -> EpubActivity::class.java
+            else -> NavigatorExtension.getEpubActivityClass() ?: EpubActivity::class.java
         })
         intent.putExtra("publicationPath", publicationPath)
         intent.putExtra("publicationFileName", book.fileName)
