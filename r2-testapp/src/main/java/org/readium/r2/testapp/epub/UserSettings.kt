@@ -151,7 +151,8 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
 
     fun updateViewCSS(ref: String) {
         for (i in 0 until resourcePager.childCount) {
-            val webView = resourcePager.getChildAt(i).findViewById(R.id.webView) as? R2WebView
+//            val webView = resourcePager.getChildAt(i).findViewById(R.id.webView) as? R2WebView
+            val webView = ((resourcePager.adapter as R2PagerAdapter).fm.findFragmentByTag("f${resourcePager.currentItem}") as R2EpubPageFragment).webView as? R2WebView
             webView?.let {
                 applyCSS(webView, ref)
             } ?: run {

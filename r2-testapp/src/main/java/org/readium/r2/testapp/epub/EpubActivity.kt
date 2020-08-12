@@ -575,7 +575,8 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
                             val searchStorage = getSharedPreferences("org.readium.r2.search", Context.MODE_PRIVATE)
                             Handler().postDelayed({
                                 if (publication.metadata.presentation.layout == EpubLayout.REFLOWABLE) {
-                                    val currentFragment = (resourcePager.adapter as R2PagerAdapter).getCurrentFragment() as R2EpubPageFragment
+//                                    val currentFragment = (resourcePager.adapter as R2PagerAdapter).getCurrentFragment() as R2EpubPageFragment
+                                    val currentFragment = (resourcePager.adapter as R2PagerAdapter).fm.findFragmentByTag("f${resourcePager.currentItem}") as R2EpubPageFragment
                                     val resource = publication.readingOrder[resourcePager.currentItem]
                                     val resourceHref = resource.href
                                     val resourceType = resource.type ?: ""
