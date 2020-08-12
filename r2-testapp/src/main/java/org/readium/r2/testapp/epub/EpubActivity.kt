@@ -600,7 +600,8 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
         mode?.menu?.run {
             menuInflater.inflate(R.menu.menu_action_mode, this)
             findItem(R.id.highlight).setOnMenuItemClickListener {
-                val currentFragment = ((resourcePager.adapter as R2PagerAdapter).mFragments.get((resourcePager.adapter as R2PagerAdapter).getItemId(resourcePager.currentItem))) as? R2EpubPageFragment
+//                val currentFragment = ((resourcePager.adapter as R2PagerAdapter).mFragments.get((resourcePager.adapter as R2PagerAdapter).getItemId(resourcePager.currentItem))) as? R2EpubPageFragment
+                val currentFragment = (resourcePager.adapter as R2PagerAdapter).fm.findFragmentByTag("f${resourcePager.currentItem}") as? R2EpubPageFragment
 
                 currentFragment?.webView?.getCurrentSelectionRect {
                     val rect = JSONObject(it).run {

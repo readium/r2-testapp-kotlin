@@ -27,13 +27,14 @@ class MarkJSSearchEngine(private var listener: IR2Activity) : SearchInterface {
         val searchResult = mutableListOf<Locator>()
 
         for (resourceIndex in 0 until listener.publication.readingOrder.size) {
-            val fragment = ((listener.resourcePager?.adapter as R2PagerAdapter).mFragments.get((listener.resourcePager?.adapter as R2PagerAdapter).getItemId(resourceIndex))) as R2EpubPageFragment
+//            val fragment = ((listener.resourcePager?.adapter as R2PagerAdapter).mFragments.get((listener.resourcePager?.adapter as R2PagerAdapter).getItemId(resourceIndex))) as R2EpubPageFragment
+            val fragment = (listener.resourcePager?.adapter as R2PagerAdapter).fm.findFragmentByTag("f${listener.resourcePager?.currentItem}") as? R2EpubPageFragment
             val resource = listener.publication.readingOrder[resourceIndex]
             val resourceHref = resource.href
             val resourceType = resource.type ?: ""
             val resourceTitle = resource.title ?: ""
             Handler().postDelayed({
-                fragment.webView.runJavaScript("markSearch('${keyword}', null, '$resourceHref', '$resourceType', '$resourceTitle')") { result ->
+                fragment?.webView?.runJavaScript("markSearch('${keyword}', null, '$resourceHref', '$resourceType', '$resourceTitle')") { result ->
                     if (DEBUG) Timber.tag("SEARCH").d("result $result")
 
                     if (result != "null") {

@@ -15,7 +15,7 @@
     android:layout_height="match_parent"
     tools:context="org.readium.r2.navigator.epub.R2EpubActivity">
 
-    <org.readium.r2.navigator.pager.R2ViewPager
+    <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/resourcePager"
         android:layout_width="0dp"
         android:layout_height="0dp"
