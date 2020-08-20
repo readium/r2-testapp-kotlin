@@ -150,24 +150,28 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
     }
 
     fun updateViewCSS(ref: String) {
-        for (i in 0 until resourcePager.childCount) {
-            val webView = ((resourcePager.adapter as R2PagerAdapter).fm.findFragmentByTag("f${resourcePager.currentItem}") as R2EpubPageFragment).webView as? R2WebView
-            webView?.let {
-                applyCSS(webView, ref)
-            } ?: run {
-                val zoomView = resourcePager.getChildAt(i).findViewById(R.id.r2FXLLayout) as R2FXLLayout
-                val webView1 = zoomView.findViewById(R.id.firstWebView) as? R2BasicWebView
-                val webView2 = zoomView.findViewById(R.id.secondWebView) as? R2BasicWebView
-                val webViewSingle = zoomView.findViewById(R.id.webViewSingle) as? R2BasicWebView
+        val fragments = (resourcePager.adapter as R2PagerAdapter).fm.fragments
+        fragments.forEachIndexed {i, fragment ->
+            if (fragment is R2EpubPageFragment) {
+                val webView = fragment.webView as? R2WebView
+                webView?.let {
+                    applyCSS(webView, ref)
+                } ?: run {
+                    // TODO Test what this is doing
+                    val zoomView = resourcePager.getChildAt(i).findViewById(R.id.r2FXLLayout) as R2FXLLayout
+                    val webView1 = zoomView.findViewById(R.id.firstWebView) as? R2BasicWebView
+                    val webView2 = zoomView.findViewById(R.id.secondWebView) as? R2BasicWebView
+                    val webViewSingle = zoomView.findViewById(R.id.webViewSingle) as? R2BasicWebView
 
-                webView1?.let {
-                    applyCSS(webView1, ref)
-                }
-                webView2?.let {
-                    applyCSS(webView2, ref)
-                }
-                webViewSingle?.let {
-                    applyCSS(webViewSingle, ref)
+                    webView1?.let {
+                        applyCSS(webView1, ref)
+                    }
+                    webView2?.let {
+                        applyCSS(webView2, ref)
+                    }
+                    webViewSingle?.let {
+                        applyCSS(webViewSingle, ref)
+                    }
                 }
             }
         }
