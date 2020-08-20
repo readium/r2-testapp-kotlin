@@ -151,7 +151,6 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
 
     fun updateViewCSS(ref: String) {
         for (i in 0 until resourcePager.childCount) {
-//            val webView = resourcePager.getChildAt(i).findViewById(R.id.webView) as? R2WebView
             val webView = ((resourcePager.adapter as R2PagerAdapter).fm.findFragmentByTag("f${resourcePager.currentItem}") as R2EpubPageFragment).webView as? R2WebView
             webView?.let {
                 applyCSS(webView, ref)
@@ -366,9 +365,10 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
                 updateSwitchable(scrollMode)
                 updateViewCSS(SCROLL_REF)
 
-                val currentFragment = (resourcePager.adapter as R2PagerAdapter).getCurrentFragment()
-                val previousFragment = (resourcePager.adapter as R2PagerAdapter).getPreviousFragment()
-                val nextFragment = (resourcePager.adapter as R2PagerAdapter).getNextFragment()
+                val adapter = resourcePager.adapter as R2PagerAdapter
+                val currentFragment = adapter.fm.findFragmentByTag("f${resourcePager.currentItem}")
+                val previousFragment = adapter.fm.findFragmentByTag("f${resourcePager.currentItem - 1}")
+                val nextFragment = adapter.fm.findFragmentByTag("f${resourcePager.currentItem + 1}")
                 if (currentFragment is R2EpubPageFragment) {
                     currentFragment.webView.scrollToPosition(currentFragment.webView.progression)
                     (previousFragment as? R2EpubPageFragment)?.webView?.scrollToEnd()
