@@ -44,6 +44,7 @@ import org.readium.r2.shared.extensions.toPng
 import org.readium.r2.shared.extensions.tryOrNull
 import org.readium.r2.shared.format.Format
 import org.readium.r2.shared.publication.ContentProtection
+import org.readium.r2.shared.publication.Manifest
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.cover
 import org.readium.r2.shared.publication.services.isRestricted
@@ -403,12 +404,10 @@ abstract class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewC
                         return
                     }
                 )
-            } ?: run {
-                progress?.dismiss()
-                return
             }
 
         val format = publicationFile.format()
+
         val fileName = "${UUID.randomUUID()}.${format?.fileExtension}"
         val libraryFile = R2File(
             R2DIRECTORY + fileName,
@@ -434,15 +433,13 @@ abstract class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewC
         val isRwpm = libraryFile.format()?.mediaType?.isRwpm ?: false
 
         val bddHref =
-            if (!isRwpm)
-                libraryFile.path
-            else
-                libraryFile.sourceUrl
-                    ?: run {
-                        Timber.e("Trying to add a RWPM to the database from a file without sourceUrl.")
-                        progress?.dismiss()
-                        return
-                    }
+            if (!isRwpm) libraryFile.path
+            else Manifest.fromFile(libraryFile.file)?.linkWithRel("self")?.href
+                ?: run {
+                    Timber.e("Trying to add a RWPM to the database from a file without sourceUrl.")
+                    progress?.dismiss()
+                    return
+                }
 
         streamer.open(libraryFile, allowUserInteraction = false)
             .onSuccess {
