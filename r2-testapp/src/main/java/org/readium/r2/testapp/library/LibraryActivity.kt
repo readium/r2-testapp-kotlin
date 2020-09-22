@@ -49,6 +49,7 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.cover
 import org.readium.r2.shared.publication.services.isRestricted
 import org.readium.r2.shared.publication.services.protectionError
+import org.readium.r2.shared.util.Try
 import org.readium.r2.shared.util.File as R2File
 import org.readium.r2.streamer.Streamer
 import org.readium.r2.streamer.server.Server
@@ -56,6 +57,7 @@ import org.readium.r2.testapp.BuildConfig.DEBUG
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.R2AboutActivity
 import org.readium.r2.testapp.db.*
+import org.readium.r2.testapp.drm.DRMFulfilledPublication
 import org.readium.r2.testapp.drm.DRMLibraryService
 import org.readium.r2.testapp.opds.GridAutoFitLayoutManager
 import org.readium.r2.testapp.opds.OPDSListActivity
@@ -232,7 +234,9 @@ abstract class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewC
                     if (!dir.exists()) {
                         dir.mkdirs()
                     }
-                    GlobalScope.launch(Dispatchers.Default) { copySamplesFromAssetsToStorage() }
+                    launch {
+                        copySamplesFromAssetsToStorage()
+                    }
                     preferences.edit().putBoolean("samples", true).apply()
                 }
             }
@@ -307,15 +311,11 @@ abstract class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewC
         }
     }
 
-    private suspend fun copySamplesFromAssetsToStorage() {
-        val samples = withContext(Dispatchers.IO) {
-            assets.list("Samples")
-        }?.filterNotNull().orEmpty()
+    private suspend fun copySamplesFromAssetsToStorage() = withContext(Dispatchers.IO) {
+        val samples = assets.list("Samples")?.filterNotNull().orEmpty()
 
         for (element in samples) {
-            val file = withContext(Dispatchers.IO) {
-                assets.open("Samples/$element").copyToTempFile()
-            }
+            val file = assets.open("Samples/$element").copyToTempFile()
             if (file != null)
                 importPublication(file)
             else if (BuildConfig.DEBUG)
@@ -581,8 +581,9 @@ abstract class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewC
             val book = books[position]
 
             val remoteUrl = tryOrNull { URL(book.href).copyToTempFile() }
-            val file =  remoteUrl // remote URL
-                ?: R2File(book.href, format = Format.of(fileExtension = book.ext.removePrefix("."))) // local file
+            val format = Format.of(fileExtension = book.ext.removePrefix("."))
+            val file = remoteUrl // remote file
+                ?: R2File(book.href, format = format) // local file
 
             streamer.open(file, allowUserInteraction = true)
                 .onFailure {
@@ -600,13 +601,15 @@ abstract class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewC
                         prepareToServe(it, file)
                         progress.dismiss()
                         navigatorLauncher.launch(
-                           NavigatorContract.Input(
-                              file = file,
-                              publication = it,
-                              bookId = book.id,
-                              initialLocator = book.id?.let { id -> booksDB.books.currentLocator(id) },
-                              deleteOnResult = remoteUrl != null
-                           )
+                            NavigatorContract.Input(
+                                file = file,
+                                format = format,
+                                publication = it,
+                                bookId = book.id,
+                                initialLocator = book.id?.let { id -> booksDB.books.currentLocator(id) },
+                                deleteOnResult = remoteUrl != null,
+                                baseUrl = Publication.localBaseUrlOf(file.name, localPort)
+                            )
                     	)
                     }
                 }
@@ -627,6 +630,9 @@ abstract class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewC
             outRect.bottom = verticalSpaceHeight
         }
     }
+
+    override suspend fun fulfill(file: File): Try<DRMFulfilledPublication, Exception> =
+        Try.failure(Exception("DRM not supported"))
 
     companion object {
 

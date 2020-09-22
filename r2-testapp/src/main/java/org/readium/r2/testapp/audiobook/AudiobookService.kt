@@ -11,6 +11,7 @@ import android.content.Intent
 import org.readium.r2.navigator.media.MediaService
 import org.readium.r2.shared.AudioSupport
 import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.PublicationId
 import org.readium.r2.testapp.db.BooksDatabase
 
@@ -19,7 +20,7 @@ class AudiobookService : MediaService() {
 
     private val books by lazy { BooksDatabase(this).books }
 
-    override fun onCurrentLocatorChanged(publicationId: PublicationId, locator: Locator) {
+    override fun onCurrentLocatorChanged(publication: Publication, publicationId: PublicationId, locator: Locator) {
         books.saveProgression(locator, publicationId.toLong())
     }
 
