@@ -12,27 +12,13 @@ package org.readium.r2.testapp
 
 import android.content.Context
 import org.joda.time.DateTime
-import org.readium.r2.shared.drm.DRM
-import org.readium.r2.shared.drm.DRMLicense
 import java.io.Serializable
 
 
-open class DRMViewModel(val drm: DRM, val context: Context) : Serializable {
+open class DRMViewModel(val context: Context) : Serializable {
 
-
-    companion object {
-        fun make(drm: DRM, context: Context): DRMViewModel {
-            if (DRM.Brand.lcp == drm.brand) {
-                return LCPViewModel(drm = drm, context = context)
-            }
-            return DRMViewModel(drm = drm, context = context)
-        }
-    }
-
-    val license: DRMLicense?
-        get() = drm.license
     open val type: String
-        get() = drm.brand.rawValue
+        get() = "Unknown"
     open val state: String?
         get() = null
     open val provider: String?

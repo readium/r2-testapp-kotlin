@@ -35,15 +35,13 @@ import org.jetbrains.anko.design.coordinatorLayout
 import org.jetbrains.anko.design.longSnackbar
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
+import org.readium.r2.lcp.*
 import org.readium.r2.lcp.license.model.StatusDocument
-import org.readium.r2.lcp.LCPError
-import org.readium.r2.lcp.LCPLicense
-import org.readium.r2.lcp.LCPService
-import org.readium.r2.lcp.R2MakeLCPService
-import org.readium.r2.shared.drm.DRM
 import org.readium.r2.testapp.BuildConfig.DEBUG
 import org.readium.r2.testapp.utils.color
 import timber.log.Timber
+import java.io.File
+import java.lang.IllegalArgumentException
 import kotlin.coroutines.CoroutineContext
 
 
@@ -55,31 +53,34 @@ class DRMManagementActivity : AppCompatActivity(), CoroutineScope {
     override val coroutineContext: CoroutineContext
         get() = Dispatchers.Main
 
-    private lateinit var lcpService: LCPService
+    private lateinit var lcpService: LcpService
     private lateinit var drmModel: DRMViewModel
     private lateinit var endTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        lcpService = R2MakeLCPService(this)
-
-        val drm = DRM(DRM.Brand.lcp)
-
-        lcpService.retrieveLicense(intent.getStringExtra("publication")
-                ?: throw Exception("publication required"), null) { license, error ->
-            license?.let {
-                drm.license = license
-                drmModel = DRMViewModel.make(drm, this)
-                if (DEBUG) Timber.e(error)
-                if (DEBUG) Timber.d(license.toString())
-            } ?: run {
-                error?.let {
-                    if (DEBUG) Timber.e(error)
-                }
-            }
+        lcpService = LcpService(this) ?: run {
+            finish()
+            return
         }
 
+        launch {
+            try {
+                drmModel = lcpService
+                    .retrieveLicense(
+                        file = File(intent.getStringExtra("publication") ?: throw Exception("publication required")),
+                        allowUserInteraction = true,
+                        sender = this@DRMManagementActivity
+                    )
+                    ?.getOrNull()
+                    ?.let { LCPViewModel(this@DRMManagementActivity, it) }
+                    ?: throw IllegalArgumentException("Not a protected publication")
+
+            } catch (e: Exception) {
+                if (DEBUG) Timber.e(e)
+            }
+        }
 
         val daysArray = arrayOf(1, 3, 7, 15)
 
@@ -300,10 +301,11 @@ class DRMManagementActivity : AppCompatActivity(), CoroutineScope {
                                 text = context.getString(R.string.drm_label_renew)
                                 onClick {
 
+                                    val lcpLicense = (drmModel as? LCPViewModel)?.license
                                     // if a renew URL is set in the server configuration, open the web browser
-                                    if ((drm.license as LCPLicense).status?.link(StatusDocument.Rel.renew)?.type == "text/html") {
+                                    if (lcpLicense != null && lcpLicense.status?.link(StatusDocument.Rel.renew)?.type == "text/html") {
                                         val intent = Intent(Intent.ACTION_VIEW)
-                                        intent.data = Uri.parse((drm.license as LCPLicense).status?.link(StatusDocument.Rel.renew)?.href.toString())
+                                        intent.data = Uri.parse(lcpLicense.status?.link(StatusDocument.Rel.renew)?.href.toString())
                                         startActivity(intent)
                                     } else {
 
@@ -320,9 +322,7 @@ class DRMManagementActivity : AppCompatActivity(), CoroutineScope {
                                                     drmModel.renewLoan(newEndDate) { error ->
                                                         error?.let {
                                                             dismiss()
-                                                            (error as LCPError).errorDescription?.let { errorDescription ->
-                                                                longSnackbar(errorDescription)
-                                                            }
+                                                            longSnackbar((error as LcpException).getUserMessage(context))
                                                         } ?: run {
                                                             dismiss()
                                                             launch {
@@ -355,9 +355,7 @@ class DRMManagementActivity : AppCompatActivity(), CoroutineScope {
                                             button.setOnClickListener {
                                                 drmModel.returnPublication { error ->
                                                     error?.let {
-                                                        (error as LCPError).errorDescription?.let { errorDescription ->
-                                                            longSnackbar(errorDescription)
-                                                        }
+                                                        longSnackbar((error as LcpException).getUserMessage(context))
                                                     } ?: run {
                                                         val intent = Intent()
                                                         intent.putExtra("returned", true)

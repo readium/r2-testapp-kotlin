@@ -7,9 +7,9 @@
 package org.readium.r2.testapp.pdf
 
 import android.os.Bundle
-import androidx.lifecycle.Observer
 import org.readium.r2.navigator.pdf.R2PdfActivity
 import org.readium.r2.shared.PdfSupport
+import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.db.BooksDatabase
 
 @OptIn(PdfSupport::class)
@@ -21,13 +21,11 @@ class PdfActivity : R2PdfActivity() {
         super.onCreate(savedInstanceState)
 
         bookId = intent.getLongExtra("bookId", -1)
+    }
+
+    override fun onCurrentLocatorChanged(locator: Locator) {
         val books = BooksDatabase(this).books
-
-        navigator.currentLocator.observe(this, Observer { locator ->
-            locator ?: return@Observer
-
-            books.saveProgression(locator, bookId)
-        })
+        books.saveProgression(locator, bookId)
     }
 
 }

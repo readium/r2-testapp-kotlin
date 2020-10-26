@@ -36,10 +36,7 @@ import com.github.kittinunf.fuel.Fuel
 import com.mcxiaoke.koi.ext.close
 import com.mcxiaoke.koi.ext.longToast
 import com.mcxiaoke.koi.ext.onClick
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.task
 import nl.komponents.kovenant.then
@@ -53,16 +50,22 @@ import org.json.JSONObject
 import org.readium.r2.opds.OPDS1Parser
 import org.readium.r2.opds.OPDS2Parser
 import org.readium.r2.shared.Injectable
-import org.readium.r2.shared.drm.DRM
 import org.readium.r2.shared.extensions.putPublication
+import org.readium.r2.shared.extensions.toPng
 import org.readium.r2.shared.extensions.tryOrNull
 import org.readium.r2.shared.format.Format
 import org.readium.r2.shared.opds.ParseData
 import org.readium.r2.shared.promise
+import org.readium.r2.shared.publication.ContentProtection
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.epub.pageList
 import org.readium.r2.shared.publication.opds.images
-import org.readium.r2.streamer.parser.PubBox
+import org.readium.r2.shared.publication.services.cover
+import org.readium.r2.shared.publication.services.isProtected
+import org.readium.r2.shared.publication.services.isRestricted
+import org.readium.r2.shared.publication.services.protectionError
+import org.readium.r2.shared.util.Try
+import org.readium.r2.streamer.Streamer
 import org.readium.r2.streamer.server.Server
 import org.readium.r2.testapp.BuildConfig.DEBUG
 import org.readium.r2.testapp.R
@@ -85,21 +88,19 @@ import org.readium.r2.testapp.utils.R2IntentHelper
 import org.readium.r2.testapp.utils.extension
 import org.readium.r2.testapp.utils.extensions.authorName
 import org.readium.r2.testapp.utils.extensions.format
-import org.readium.r2.testapp.utils.extensions.parse
 import org.readium.r2.testapp.utils.toFile
-import org.zeroturnaround.zip.ZipUtil
 import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.ServerSocket
-import java.net.URI
 import java.net.URL
 import java.nio.charset.Charset
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.CoroutineContext
+import org.readium.r2.shared.util.File as R2File
 
 var activitiesLaunched: AtomicInteger = AtomicInteger(0)
 
@@ -120,7 +121,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
     private lateinit var permissionHelper: PermissionHelper
     private lateinit var permissions: Permissions
     private lateinit var preferences: SharedPreferences
-    private lateinit var R2DIRECTORY: String
+    protected lateinit var R2DIRECTORY: String
 
     private lateinit var database: BooksDatabase
     private lateinit var opdsDownloader: OPDSDownloader
@@ -132,8 +133,14 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
 
     protected var listener: LibraryActivity? = null
 
+    protected val contentProtections: MutableList<ContentProtection> = mutableListOf()
+
+    private lateinit var streamer: Streamer
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        streamer = Streamer(context = this, contentProtections = contentProtections)
 
         preferences = getSharedPreferences("org.readium.r2.settings", Context.MODE_PRIVATE)
 
@@ -367,7 +374,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                                 //prepareSyntheticPageList(publication, book)
                             } ?: run {
 
-                                showDuplicateBookAlert(book, publication, false)
+                                showDuplicateBookAlert(book)
 
                             }
                         }
@@ -380,11 +387,6 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                 }
             }
 
-            selfLink != null && publication.type in setOf(Publication.TYPE.WEBPUB, Publication.TYPE.AUDIO, Publication.TYPE.DiViNa) -> {
-                progress.dismiss()
-                prepareWebPublication(selfLink.href, webPub = null, add = true)
-            }
-
             else -> {
                 progress.dismiss()
                 catalogView.snackbar("Invalid publication")
@@ -392,7 +394,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
         }
     }
 
-    private fun showDuplicateBookAlert(book: Book, publication: Publication, lcp: Boolean) {
+    private fun showDuplicateBookAlert(book: Book) {
         val duplicateAlert = alert(Appcompat, "Publication already exists") {
 
             positiveButton("Add anyway") { }
@@ -537,7 +539,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
             task {
                 ContentResolverUtil.copyFile(File(filePath), File(publicationPath))
             } then {
-                preparePublication(publicationPath, filePath, fileName, progress)
+                preparePublication(publicationPath, fileName, progress)
             }
 
         } ?: run {
@@ -564,28 +566,22 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
             task {
                 ContentResolverUtil.getContentInputStream(this, uri, publicationPath)
             } then {
-                preparePublication(publicationPath, uriString, fileName, progress)
+                preparePublication(publicationPath, fileName, progress)
             }
 
         }
     }
 
-
-    private fun preparePublication(publicationPath: String, uriString: String, fileName: String, progress: ProgressDialog) {
-
-        val file = File(publicationPath)
-
-        try {
-            launch {
-                val pub = Publication.parse(this@LibraryActivity, publicationPath)
-                if (pub != null) {
-                    prepareToServe(pub, fileName, file.absolutePath, add = true, lcp = pub.container.drm?.let { true }
-                            ?: false)
+    protected fun preparePublication(publicationPath: String, fileName: String, progress: ProgressDialog) {
+        launch {
+            openPublication(publicationPath, allowUserInteraction = false)
+                .onFailure {
+                    catalogView.snackbar(it.getUserMessage(this@LibraryActivity) )
+                }
+                .onSuccess { pub ->
+                    prepareToServe(pub, fileName, publicationPath, add = true)
                     progress.dismiss()
                 }
-            }
-        } catch (e: Throwable) {
-            e.printStackTrace()
         }
     }
 
@@ -661,74 +657,47 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
     }
 
     private fun copySamplesFromAssetsToStorage() {
-        assets.list("Samples")?.filter {
-            it.endsWith(Publication.EXTENSION.EPUB.value)
+        launch(Dispatchers.IO) {
+            assets.list("Samples")?.filter {
+                it.endsWith(Publication.EXTENSION.EPUB.value)
                     || it.endsWith(Publication.EXTENSION.CBZ.value)
                     || it.endsWith(Publication.EXTENSION.AUDIO.value)
                     || it.endsWith(Publication.EXTENSION.DIVINA.value)
-        }?.let { list ->
-            for (element in list) {
-                val input = assets.open("Samples/$element")
-                val fileName = UUID.randomUUID().toString()
-                val publicationPath = R2DIRECTORY + fileName
+            }?.let { list ->
+                for (element in list) {
+                    val fileName = UUID.randomUUID().toString()
+                    val publicationPath = R2DIRECTORY + fileName
+                    assets.open("Samples/$element").toFile(publicationPath)
 
-                when {
-                    element.endsWith(Publication.EXTENSION.DIVINA.value) -> {
-                        val output = File(publicationPath)
-                        if (!output.exists()) {
-                            if (!output.mkdir()) {
-                                throw RuntimeException("Cannot create directory")
-                            }
-                        }
-                        ZipUtil.unpack(input, output)
+                    val file = File(publicationPath)
+
+                    openPublication(publicationPath, allowUserInteraction = false).onSuccess { pub ->
+                        prepareToServe(pub, fileName, file.absolutePath, add = true)
                     }
-                    element.endsWith(Publication.EXTENSION.AUDIO.value) -> {
-                        val output = File(publicationPath)
-                        if (!output.exists()) {
-                            if (!output.mkdir()) {
-                                throw RuntimeException("Cannot create directory")
-                            }
-                        }
-                        ZipUtil.unpack(input, output)
-                    }
-                    else -> input.toFile(publicationPath)
-                }
-
-                val file = File(publicationPath)
-
-                val pub = Publication.parse(this, publicationPath)
-                if (pub != null) {
-                    prepareToServe(pub, fileName, file.absolutePath, add = true, lcp = pub.container.drm?.brand == DRM.Brand.lcp)
                 }
             }
         }
     }
 
-    protected fun prepareToServe(pub: PubBox?, fileName: String, absolutePath: String, add: Boolean, lcp: Boolean) {
-        val format = runBlocking { Format.ofFile(absolutePath) } ?: pub?.publication?.type?.format
-        if (pub == null || format == null) {
-            catalogView.snackbar("Invalid publication")
-            return
-        }
-        val publication = pub.publication
-        val container = pub.container
+    private suspend fun openPublication(path: String, allowUserInteraction: Boolean): Try<Publication, Publication.OpeningException> =
+        streamer.open(file = R2File(path), allowUserInteraction = allowUserInteraction, sender = this)
+
+    private fun prepareToServe(publication: Publication, fileName: String, absolutePath: String, add: Boolean) {
+        val format = runBlocking { Format.ofFile(absolutePath) } ?: publication.type.format
+            ?: run {
+                catalogView.snackbar("Invalid publication")
+                return
+            }
 
         launch {
             val key = publication.metadata.identifier ?: publication.metadata.title
             preferences.edit().putString("$key-publicationPort", localPort.toString()).apply()
-            server.addEpub(publication, container, "/$fileName", applicationContext.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json")
+            server.addEpub(publication, "/$fileName", applicationContext.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json")
 
             if (add) {
                 val publicationIdentifier = publication.metadata.identifier ?: ""
                 val author = publication.metadata.authorName
-                val cover = publication.coverLink?.href?.let {
-                    try {
-                        container.data(it)
-                    } catch (e: Exception) {
-                        Timber.e(e)
-                        null
-                    }
-                }
+                val cover = publication.cover()?.toPng()
                 val book = Book(title = publication.metadata.title, author = author, href = absolutePath, identifier = publicationIdentifier, cover = cover, ext = ".${format.fileExtension}", progression = "{}")
 
                 database.books.insert(book, false)?.let { id ->
@@ -737,7 +706,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
                     booksAdapter.notifyDataSetChanged()
                     catalogView.longSnackbar("publication added to your library")
                 } ?: run {
-                    showDuplicateBookAlert(book, publication, lcp)
+                    showDuplicateBookAlert(book)
                 }
             }
         }
@@ -780,98 +749,33 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
     override fun recyclerViewListClicked(v: View, position: Int) {
         val progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_preparing_book))
         progress.show()
-        task {
+        launch {
             val book = books[position]
             val publicationPath = R2DIRECTORY + book.fileName
             val file = File(book.href)
 
-            if (book.ext == Publication.EXTENSION.JSON.value) {
-                // FIXME: Use proper parser
-                prepareWebPublication(book.href, book, add = false)
-
-            } else {
-                val pub = Publication.parse(this, book.href, fileExtension = book.ext.removePrefix("."))
-                if (pub != null) {
-                    if (pub.container.drm?.brand == DRM.Brand.lcp) {
-                        prepareAndStartActivityWithLCP(pub.container.drm!!, pub, book, file, publicationPath, pub.publication, isNetworkAvailable)
+            openPublication(publicationPath, allowUserInteraction = true)
+                .onFailure { catalogView.snackbar(it.getUserMessage(this@LibraryActivity)) }
+                .onSuccess { pub ->
+                    if (pub.isRestricted) {
+                        pub.protectionError?.let {
+                            catalogView.snackbar(it.getUserMessage(this@LibraryActivity))
+                        }
                     } else {
-                        val coverByteArray: ByteArray? = null
-                        // FIXME: We shouldn't do that because if the cover is too large, it will crash the app with a TransactionTooLargeException
-//                        val coverByteArray = pub.publication.coverLink?.href?.let {
-//                            try {
-//                                pub.container.data(it)
-//                            } catch (e: Exception) {
-//                                null
-//                            }
-//                        }
-                        prepareAndStartActivity(pub, book, file, publicationPath, pub.publication, coverByteArray)
+                        prepareAndStartActivity(pub, book, file, publicationPath)
                     }
                 }
-            }
-        } then {
-            progress.dismiss()
-        } fail {
+
             progress.dismiss()
         }
     }
 
-    private fun prepareWebPublication(externalManifest: String, webPub: Book?, add: Boolean) {
-        task {
-
-            getPublicationURL(externalManifest)
-
-        } then { json ->
-
-            json?.let {
-                val externalPub = Publication.fromJSON(json)
-                    ?: throw Exception("Invalid Publication")
-                val externalURIBase = externalPub.linkWithRel("self")!!.href.substring(0, externalManifest.lastIndexOf("/") + 1)
-                val externalURIFileName = externalPub.linkWithRel("self")!!.href.substring(externalManifest.lastIndexOf("/") + 1)
-
-                var book: Book? = null
-
-                if (add) {
-
-                    externalPub.coverLink?.href?.let { href ->
-                        val bitmap: Bitmap? = if (URI(href).isAbsolute) {
-                            getBitmapFromURL(href)
-                        } else {
-                            getBitmapFromURL(externalURIBase + href)
-                        }
-                        val stream = ByteArrayOutputStream()
-                        bitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
-
-                        book = Book(title = externalPub.metadata.title, href = externalManifest, identifier = externalPub.metadata.identifier!!, cover = stream.toByteArray(), ext = Publication.EXTENSION.JSON.value)
-
-                    } ?: run {
-                        book = Book(title = externalPub.metadata.title, href = externalManifest, identifier = externalPub.metadata.identifier!!, ext = Publication.EXTENSION.JSON.value)
-                    }
-
-                    launch {
-                        database.books.insert(book!!, false)?.let { id ->
-                            book!!.id = id
-                            books.add(0, book!!)
-                            booksAdapter.notifyDataSetChanged()
-                            catalogView.longSnackbar("publication added to your library")
-                            //prepareSyntheticPageList(externalPub, book!!)
-                        } ?: run {
-                            showDuplicateBookAlert(book!!, externalPub, false)
-                        }
-                    }
-                } else {
-                    book = webPub
-                    startActivity(externalManifest, book!!, externalPub, book?.cover)
-                }
-            }
-        }
+    protected fun prepareAndStartActivity(pub: Publication, book: Book, file: File, publicationPath: String, coverByteArray: ByteArray? = null) {
+        prepareToServe(pub, book.fileName!!, file.absolutePath, add = false)
+        startActivity(publicationPath, book, pub, coverByteArray)
     }
 
-    protected fun prepareAndStartActivity(pub: PubBox?, book: Book, file: File, publicationPath: String, publication: Publication, coverByteArray: ByteArray? = null) {
-        prepareToServe(pub, book.fileName!!, file.absolutePath, add = false, lcp = false)
-        startActivity(publicationPath, book, publication, coverByteArray, drm = pub?.container?.drm != null)
-    }
-
-    private fun startActivity(publicationPath: String, book: Book, publication: Publication, coverByteArray: ByteArray? = null, drm: Boolean = false) {
+    private fun startActivity(publicationPath: String, book: Book, publication: Publication, coverByteArray: ByteArray? = null) {
         val format = runBlocking { Format.ofFile(publicationPath, fileExtension = book.ext) }
 
         val activity = when (format) {
@@ -892,7 +796,7 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
             putExtra("publicationFileName", book.fileName)
             putExtra("bookId", book.id)
             putExtra("cover", coverByteArray)
-            putExtra("drm", drm)
+            putExtra("drm", publication.isProtected)
             putExtra("locator", book.id?.let {
                 id -> BooksDatabase(this@LibraryActivity).books.currentLocator(id)
             })
@@ -949,41 +853,15 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
 
 
     private fun processEpubResult(uri: Uri?, format: Format, progress: ProgressDialog) {
-        val fileName = UUID.randomUUID().toString()
-        val publicationPath = R2DIRECTORY + fileName
-
-        val input = contentResolver.openInputStream(uri as Uri)
-
         launch {
-            when (format) {
-                Format.DIVINA, Format.READIUM_AUDIOBOOK -> {
-                    val output = File(publicationPath)
-                    if (!output.exists()) {
-                        if (!output.mkdir()) {
-                            throw RuntimeException("Cannot create directory")
-                        }
-                    }
-                    ZipUtil.unpack(input, output)
-                }
-                else -> input?.toFile(publicationPath)
+            val fileName = UUID.randomUUID().toString()
+            val publicationPath = R2DIRECTORY + fileName
+
+            withContext(Dispatchers.IO) {
+                contentResolver.openInputStream(uri as Uri)?.toFile(publicationPath)
             }
 
-            val file = File(publicationPath)
-
-            try {
-                val publication = Publication.parse(this@LibraryActivity, publicationPath, format)
-                if (publication != null) {
-                    prepareToServe(publication, fileName, file.absolutePath, add = true, lcp = publication.container.drm?.brand == DRM.Brand.lcp)
-                    progress.dismiss()
-                } else {
-                    catalogView.longSnackbar("Unsupported file")
-                    progress.dismiss()
-                    file.delete()
-                }
-            } catch (e: Throwable) {
-                e.printStackTrace()
-                progress.dismiss()
-            }
+            preparePublication(publicationPath, fileName, progress)
         }
     }
 
@@ -998,10 +876,6 @@ open class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClick
 
     override fun parseIntentLcpl(uriString: String, networkAvailable: Boolean) {
         listener?.parseIntentLcpl(uriString, networkAvailable)
-    }
-
-    override fun prepareAndStartActivityWithLCP(drm: DRM, pub: PubBox, book: Book, file: File, publicationPath: String, publication: Publication, networkAvailable: Boolean) {
-        listener?.prepareAndStartActivityWithLCP(drm, pub, book, file, publicationPath, publication, networkAvailable)
     }
 
     override fun processLcpActivityResult(uri: Uri, progress: ProgressDialog, networkAvailable: Boolean) {

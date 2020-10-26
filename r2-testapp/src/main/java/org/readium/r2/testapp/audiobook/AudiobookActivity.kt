@@ -9,6 +9,7 @@ import android.os.Handler
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ImageView
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import org.jetbrains.anko.indeterminateProgressDialog
 import org.jetbrains.anko.toast
@@ -94,6 +95,7 @@ class AudiobookActivity : R2AudiobookActivity(), NavigatorDelegate {
         return true
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
 

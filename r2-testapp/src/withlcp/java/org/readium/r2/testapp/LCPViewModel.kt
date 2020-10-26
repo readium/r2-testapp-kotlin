@@ -15,59 +15,48 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import org.joda.time.DateTime
-import org.readium.r2.lcp.LCPLicense
-import org.readium.r2.shared.drm.DRM
+import org.readium.r2.lcp.LcpLicense
 import java.io.Serializable
 import java.net.URL
 
-class LCPViewModel(drm: DRM, context: Context) : DRMViewModel(drm, context), Serializable {
+class LCPViewModel(context: Context, val license: LcpLicense) : DRMViewModel(context), Serializable {
 
-    private val lcpLicense: LCPLicense?
-        get() {
-            val license = license ?: return null
-            return license as? LCPLicense
-        }
     override val type: String
         get() = "LCP"
     override val state: String?
-        get() = lcpLicense?.status?.status?.rawValue
+        get() = license.status?.status?.rawValue
     override val provider: String?
-        get() = lcpLicense?.license?.provider
+        get() = license.license.provider
     override val issued: DateTime?
-        get() = lcpLicense?.license?.issued
+        get() = license.license.issued
     override val updated: DateTime?
-        get() = lcpLicense?.license?.updated
+        get() = license.license.updated
     override val start: DateTime?
-        get() = lcpLicense?.license?.rights?.start
+        get() = license.license.rights.start
     override val end: DateTime?
-        get() = lcpLicense?.license?.rights?.end
+        get() = license.license.rights.end
     override val copiesLeft: String
         get() {
-            lcpLicense?.charactersToCopyLeft?.let {
+            license.charactersToCopyLeft?.let {
                 return "$it characters"
             }
             return super.copiesLeft
         }
     override val printsLeft: String
         get() {
-            lcpLicense?.pagesToPrintLeft?.let {
+            license.pagesToPrintLeft?.let {
                 return "$it pages"
             }
             return super.printsLeft
         }
     override val canRenewLoan: Boolean
-        get() = lcpLicense?.canRenewLoan ?: false
+        get() = license.canRenewLoan ?: false
 
     // TODO do i need this?
 //    private var renewCallbacks: Map<Int, () -> Unit> = mapOf()
 
     override fun renewLoan(end: DateTime?, completion: (Exception?) -> Unit) {
-        val lcpLicense = lcpLicense
-        if (lcpLicense == null) {
-            completion(null)
-            return
-        }
-        lcpLicense.renewLoan(end, { url: URL, dismissed: () -> Unit ->
+        license.renewLoan(end, { url: URL, dismissed: () -> Unit ->
             val intent = Intent(Intent.ACTION_VIEW)
             intent.data = Uri.parse(url.toString())
             context.startActivity(intent)
@@ -75,14 +64,9 @@ class LCPViewModel(drm: DRM, context: Context) : DRMViewModel(drm, context), Ser
     }
 
     override val canReturnPublication: Boolean
-        get() = lcpLicense?.canReturnPublication ?: false
+        get() = license.canReturnPublication
 
     override fun returnPublication(completion: (Exception?) -> Unit) {
-        val lcpLicense = lcpLicense
-        if (lcpLicense == null) {
-            completion(null)
-            return
-        }
-        lcpLicense.returnPublication(completion = completion)
+        license.returnPublication(completion = completion)
     }
 }
