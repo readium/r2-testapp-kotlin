@@ -555,42 +555,16 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate/*, Visu
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
             if (data != null && data.getBooleanExtra("returned", false)) {
                 finish()
             }
-        } else {
-            super.onActivityResult(requestCode, resultCode, data)
-            if (requestCode == 2 && resultCode == Activity.RESULT_OK && data != null) {
-                val locator = data.getParcelableExtra("locator") as? Locator
-                locator?.let {
-                    locator.locations.fragments.firstOrNull()?.let { fragment ->
-                        val fragments = fragment.split(",")
-                                .map { it.split("=") }
-                                .filter { it.size == 2 }
-                                .associate { it[0] to it[1] }
-
-                        val index = fragments["i"]?.toInt()
-                        if (index != null) {
-                            val searchStorage = getSharedPreferences("org.readium.r2.search", Context.MODE_PRIVATE)
-                            Handler().postDelayed({
-                                if (publication.metadata.presentation.layout == EpubLayout.REFLOWABLE) {
-                                    val currentFragment = (resourcePager.adapter as R2PagerAdapter).getCurrentFragment() as R2EpubPageFragment
-                                    val resource = publication.readingOrder[resourcePager.currentItem]
-                                    val resourceHref = resource.href
-                                    val resourceType = resource.type ?: ""
-                                    val resourceTitle = resource.title ?: ""
-
-                                    currentFragment.webView?.runJavaScript("markSearch('${searchStorage.getString("term", null)}', null, '$resourceHref', '$resourceType', '$resourceTitle', '$index')") { result ->
-
-                                        if (DEBUG) Timber.d("###### $result")
-
-                                    }
-                                }
-                            }, 1200)
-                        }
-                    }
-                }
+        } else if (requestCode == 2 && resultCode == Activity.RESULT_OK && data != null) {
+            val locator = data.getParcelableExtra("locator") as? Locator
+            if (locator != null) {
+                go(locator)
             }
         }
     }
