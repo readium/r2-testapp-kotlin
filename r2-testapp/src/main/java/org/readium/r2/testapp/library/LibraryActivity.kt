@@ -599,8 +599,8 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                                 file = asset.file,
                                 mediaType = mediaType,
                                 publication = it,
-                                bookId = book.id,
-                                initialLocator = book.id?.let { id -> booksDB.books.currentLocator(id) },
+                                bookId = book.id!!,
+                                initialLocator = book.id!!.let { id -> booksDB.books.currentLocator(id) },
                                 deleteOnResult = remoteAsset != null,
                                 baseUrl = Publication.localBaseUrlOf(asset.name, localPort)
                             )

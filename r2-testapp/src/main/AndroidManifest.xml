@@ -201,12 +201,12 @@
             android:name=".comic.ComicActivity"
             android:label="@string/title_activity_epub" />
         <activity
+            android:name=".reader.ReaderActivity"
+            android:label="Reader" />
+        <activity
             android:name=".DRMManagementActivity"
             android:label="DRM Management"
             android:theme="@style/AppTheme" />
-        <activity
-            android:name=".outline.R2OutlineActivity"
-            android:label="@string/title_activity_outline" />
         <activity
             android:name=".opds.OPDSListActivity"
             android:label="@string/title_activity_opds_list" />

@@ -24,7 +24,7 @@ import org.readium.r2.testapp.BuildConfig.DEBUG
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.library.LibraryActivity
 import org.readium.r2.testapp.library.activitiesLaunched
-import org.readium.r2.testapp.outline.R2OutlineActivity
+import org.readium.r2.testapp.outline.OutlineFragment
 import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
 
@@ -60,17 +60,18 @@ class DiViNaActivity : R2DiViNaActivity(), CoroutineScope {
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.menu_divina, menu)
         menuToc = menu?.findItem(R.id.toc)
+        menuToc?.isVisible = false
         return true
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.toc -> {
-                val intent = Intent(this, R2OutlineActivity::class.java).apply {
+               /* val intent = Intent(this, R2OutlineActivity::class.java).apply {
                     putPublicationFrom(this@DiViNaActivity)
                     putExtra("bookId", bookId)
                 }
-                startActivityForResult(intent, 2)
+                startActivityForResult(intent, 2)*/
                 true
             }
             else -> false

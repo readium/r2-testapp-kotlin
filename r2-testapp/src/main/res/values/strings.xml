@@ -146,4 +146,11 @@
         <item>IA Writer Duospace</item>
     </string-array>
 
+    <!-- Outlines -->
+    <string name="contents_tab_label">Contents</string>
+    <string name="bookmarks_tab_label">Bookmarks</string>
+    <string name="highlights_tab_label">Highlights</string>
+    <string name="pagelist_tab_label">Page List</string>
+    <string name="landmarks_tab_label">Landmarks</string>
+
 </resources>

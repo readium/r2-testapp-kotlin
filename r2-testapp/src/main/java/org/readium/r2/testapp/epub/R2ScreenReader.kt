@@ -31,11 +31,11 @@ import java.util.*
  * Basic screen reader overlay that uses Android's TextToSpeech
  */
 
-class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigator: VisualNavigator, var publication: Publication, private var port: Int, private var epubName: String, initialResourceIndex: Int) {
+class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigator: VisualNavigator, var publication: Publication, private var port: Int, private var epubName: String) {
 
     private var initialized = false
 
-    private var resourceIndex = initialResourceIndex
+    private var resourceIndex = 0
         set(value) {
             when {
                 value >= items.size -> {

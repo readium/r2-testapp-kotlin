@@ -27,7 +27,7 @@ import org.readium.r2.testapp.R
 import org.readium.r2.testapp.db.BooksDatabase
 import org.readium.r2.testapp.library.LibraryActivity
 import org.readium.r2.testapp.library.activitiesLaunched
-import org.readium.r2.testapp.outline.R2OutlineActivity
+import org.readium.r2.testapp.outline.OutlineFragment
 import timber.log.Timber
 import kotlin.coroutines.CoroutineContext
 
@@ -89,7 +89,7 @@ class ComicActivity : R2CbzActivity(), CoroutineScope, NavigatorDelegate {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.toc -> {
-                val intent = Intent(this, R2OutlineActivity::class.java).apply {
+                val intent = Intent(this, OutlineFragment::class.java).apply {
                     putPublicationFrom(this@ComicActivity)
                     putExtra("bookId", bookId)
                 }
