@@ -21,11 +21,9 @@ import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.testapp.audiobook.AudiobookActivity
-import org.readium.r2.testapp.comic.DiViNaActivity
 import org.readium.r2.testapp.epub.EpubActivity
 import org.readium.r2.testapp.pdf.PdfActivity
 import org.readium.r2.testapp.reader.ReaderActivity
-import timber.log.Timber
 import java.io.File
 
 class NavigatorContract : ActivityResultContract<NavigatorContract.Input, NavigatorContract.Output>() {
