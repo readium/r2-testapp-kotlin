@@ -31,8 +31,9 @@ class BookData(context: Context, val bookId: Long, val publication: Publication)
     private val bookmarksDb = BookmarksDatabase(context)
     private val highlightsDb = HighligtsDatabase(context)
 
-    val savedLocation: Locator?
+    var savedLocation: Locator?
         get() = booksDb.books.currentLocator(bookId)
+        set(locator) { booksDb.books.saveProgression(locator, bookId) }
 
     fun addBookmark(locator: Locator): Boolean {
         val resource = publication.readingOrder.indexOfFirstWithHref(locator.href)!!

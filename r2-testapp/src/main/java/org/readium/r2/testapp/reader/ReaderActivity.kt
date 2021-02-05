@@ -19,8 +19,6 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
     private lateinit var readerFragment: ReaderFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        /*requestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY)
-        supportRequestWindowFeature(Window.FEATURE_ACTION_BAR_OVERLAY)*/
         val inputData = NavigatorContract.parseIntent(this)
         val publication = inputData.publication
         val bookId = inputData.bookId

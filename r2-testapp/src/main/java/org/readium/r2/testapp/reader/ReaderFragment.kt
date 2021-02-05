@@ -41,9 +41,6 @@ class ReaderFragment : Fragment(R.layout.fragment_reader), ImageNavigatorFragmen
 
         setHasOptionsMenu(true)
         super.onCreate(savedInstanceState)
-
-        if (savedInstanceState?.getBoolean(IS_VISIBLE_KEY) != false)
-            requireActivity().hideSystemUi()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -55,6 +52,9 @@ class ReaderFragment : Fragment(R.layout.fragment_reader), ImageNavigatorFragmen
                 .commitNow()
         }
 
+        if (savedInstanceState?.getBoolean(IS_VISIBLE_KEY) != false)
+            requireActivity().hideSystemUi()
+
         fragment = childFragmentManager.findFragmentByTag(NAVIGATOR_FRAGMENT_TAG)!!
         navigator = fragment as Navigator
     }
@@ -62,6 +62,11 @@ class ReaderFragment : Fragment(R.layout.fragment_reader), ImageNavigatorFragmen
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean(IS_VISIBLE_KEY, isVisible)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        persistence.savedLocation = navigator.currentLocator.value
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
