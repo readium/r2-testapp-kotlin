@@ -5,8 +5,10 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentResultListener
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.launch
 import org.jetbrains.anko.intentFor
+import org.jetbrains.anko.support.v4.toast
 import org.jetbrains.anko.toast
 import org.readium.r2.navigator.NavigatorDelegate
 import org.readium.r2.navigator.audiobook.R2AudiobookActivity
@@ -21,125 +23,59 @@ import org.readium.r2.testapp.library.LibraryActivity
 import org.readium.r2.testapp.library.activitiesLaunched
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
+import org.readium.r2.testapp.reader.ReaderActivity
+import org.readium.r2.testapp.reader.ReaderFragment
+import org.readium.r2.testapp.reader.ReaderNavigation
+import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.CompositeFragmentFactory
+import org.readium.r2.testapp.utils.NavigatorContract
 
-class AudiobookActivity : R2AudiobookActivity(), NavigatorDelegate {
+class AudiobookActivity : R2AudiobookActivity(), ReaderNavigation {
 
-    private lateinit var bookmarksDB: BookmarksDatabase
-
-    private lateinit var menuDrm: MenuItem
-    private lateinit var menuToc: MenuItem
-    private lateinit var menuBmk: MenuItem
-    private lateinit var menuSettings: MenuItem
-
-    private lateinit var persistence: BookData
-
-    private val navigatorFragment: Fragment
-        get() = supportFragmentManager.findFragmentByTag("audio_navigator") as AudioNavigatorFragment
+    private lateinit var modelFactory: ReaderViewModel.Factory
+    private lateinit var readerFragment: AudioNavigatorFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        if (activitiesLaunched.incrementAndGet() > 1 || !LibraryActivity.isServerStarted) {
-            finish()
-        }
+        val inputData = NavigatorContract.parseIntent(this)
+        val publication = inputData.publication
+        val bookId = inputData.bookId
+        val persistence = BookData(applicationContext, bookId, publication)
 
-        // The FragmentFactory must be set before the call to super.onCreate
-        // Let us get publication before R2AudiobookNavigator
-        publication = intent.getPublication(this)
-        val bookId = intent.getLongExtra("bookId", -1)
-        persistence = BookData(applicationContext, bookId, publication)
+        title = publication.metadata.title
+        modelFactory = ReaderViewModel.Factory(publication, persistence)
 
         supportFragmentManager.fragmentFactory = CompositeFragmentFactory(
-            AudioNavigatorFragment.createFactory(publication, bookId,  intent.getByteArrayExtra("cover")),
-            OutlineFragment.createFactory(publication, persistence, OutlineFragment::class.java.name)
+            OutlineFragment.createFactory(publication, persistence, ReaderNavigation.OUTLINE_REQUEST_KEY)
         )
 
         supportFragmentManager.setFragmentResultListener(
-            OutlineFragment::class.java.name,
+            ReaderNavigation.OUTLINE_REQUEST_KEY,
             this,
-            FragmentResultListener { _, result -> closeOutlineFragment(result)}
+            FragmentResultListener { _, result ->
+                val locator = result.getParcelable<Locator>(OutlineFragment::class.java.name)!!
+                closeOutlineFragment(locator)
+            }
         )
 
         super.onCreate(savedInstanceState)
 
-        bookmarksDB = BookmarksDatabase(this)
+        readerFragment = supportFragmentManager.findFragmentByTag(ReaderActivity.READER_FRAGMENT_TAG) as AudioNavigatorFragment
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_audio, menu)
-        menuToc = menu.findItem(R.id.toc)
-        menuBmk = menu.findItem(R.id.bookmark)
-
-        menuDrm = menu.findItem(R.id.drm)
-        menuDrm.isVisible = publication.isProtected
-
-        menuSettings = menu.findItem(R.id.settings)
-        menuSettings.isVisible = false
-
-        return true
+    override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {
+        return modelFactory
     }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-
-            R.id.toc -> {
-                showOutlineFragment()
-                return true
-            }
-            R.id.settings -> {
-                // TODO do we need any settings ?
-                return true
-            }
-            R.id.bookmark -> {
-                addBookmark()
-                return true
-            }
-            R.id.drm -> {
-                startActivityForResult(intentFor<DRMManagementActivity>("publication" to publicationPath), 1)
-                return true
-            }
-
-            else -> return false
-        }
+    override fun showOutlineFragment() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.supp_container, OutlineFragment::class.java, Bundle(), ReaderActivity.OUTLINE_FRAGMENT_TAG)
+            .hide(readerFragment)
+            .addToBackStack(null)
+            .commit()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        activitiesLaunched.getAndDecrement()
-    }
-
-    private fun addBookmark() {
-        val locator = currentLocator.value
-
-        val bookmark = Bookmark(bookId, publicationIdentifier, resourceIndex = currentResource.toLong(), locator = locator)
-        val msg = if (bookmarksDB.bookmarks.insert(bookmark) != null) {
-            "Bookmark added"
-        } else {
-            "Bookmark already exists"
-        }
-
-        launch {
-            toast(msg)
-        }
-    }
-
-    private fun showOutlineFragment() {
-        val outlineFragment = supportFragmentManager.fragmentFactory.instantiate(
-            classLoader,
-            OutlineFragment::class.java.name
-        )
-
-        supportFragmentManager.beginTransaction().apply {
-            setReorderingAllowed(true)
-            hide(navigatorFragment)
-            add(R.id.main_content, outlineFragment)
-            addToBackStack(null)
-            commit()
-        }
-    }
-
-    private fun closeOutlineFragment(result: Bundle) {
-        val locator = result.getParcelable(OutlineFragment::class.java.name) as? Locator
-        go(locator!!)
+    override fun closeOutlineFragment(locator: Locator) {
+        go(locator)
         supportFragmentManager.popBackStack()
     }
 }

@@ -1,33 +1,31 @@
 package org.readium.r2.testapp.audiobook
 
-import android.graphics.BitmapFactory
-import android.media.MediaPlayer
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentFactory
-import androidx.lifecycle.Observer
-import androidx.lifecycle.asLiveData
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import kotlinx.android.synthetic.main.fragment_audiobook.*
 import kotlinx.coroutines.launch
-import org.jetbrains.anko.indeterminateProgressDialog
 import org.jetbrains.anko.support.v4.indeterminateProgressDialog
+import org.jetbrains.anko.support.v4.toast
 import org.readium.r2.navigator.audiobook.R2MediaPlayer
-import org.readium.r2.testapp.utils.createFragmentFactory
 import org.readium.r2.shared.publication.Publication
-import org.readium.r2.shared.publication.services.positions
+import org.readium.r2.shared.publication.services.cover
+import org.readium.r2.shared.publication.services.isProtected
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.db.BooksDatabase
-import timber.log.Timber
+import org.readium.r2.testapp.reader.BookData
+import org.readium.r2.testapp.reader.ReaderNavigation
+import org.readium.r2.testapp.reader.ReaderViewModel
 
-class AudioNavigatorFragment private constructor(
-    private val publication: Publication,
-    private val bookId: Long,
-    private val cover: ByteArray?
-) : Fragment(R.layout.fragment_audiobook) {
+class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
 
-    private lateinit var booksDB: BooksDatabase
+    private lateinit var publication: Publication
+    private lateinit var persistence: BookData
+    private lateinit var navigation: ReaderNavigation
 
     private val activity: AudiobookActivity
         get() = requireActivity() as AudiobookActivity
@@ -36,45 +34,63 @@ class AudioNavigatorFragment private constructor(
         get() = activity.mediaPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        val activity = requireActivity()
+        navigation = activity as ReaderNavigation
 
-        booksDB = BooksDatabase(requireActivity())
+        val readerModel = ViewModelProvider(activity).get(ReaderViewModel::class.java)
+        publication = readerModel.publication
+        persistence = readerModel.persistence
+
+        setHasOptionsMenu(true)
+        super.onCreate(savedInstanceState)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         // Setting cover
-        if (cover != null) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                val bmp = BitmapFactory.decodeByteArray(cover, 0, cover.size)
-                imageView.setImageBitmap(bmp)
+        viewLifecycleOwner.lifecycleScope.launch {
+            publication.cover()?.let {
+                imageView.setImageBitmap(it)
             }
         }
 
         // Loads the last read location
-        booksDB.books.currentLocator(bookId)?.let {
+        persistence.savedLocation?.let {
             activity.go(it)
-        }
-
-        // Register current location listener
-        viewLifecycleOwner.lifecycleScope.launch {
-            val positionCount = publication.positions().size
-
-            activity.currentLocator.asLiveData().observe(viewLifecycleOwner, Observer { locator ->
-                locator ?: return@Observer
-
-                Timber.d("locationDidChange position ${locator.locations.position ?: 0}/${positionCount} $locator")
-                booksDB.books.saveProgression(locator, bookId)
-            })
         }
 
         mediaPlayer.progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_preparing_audiobook))
     }
 
-    companion object {
-        fun createFactory(publication: Publication, bookId: Long, cover: ByteArray?): FragmentFactory =
-            createFragmentFactory { AudioNavigatorFragment(publication, bookId, cover) }
+    override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.menu_audio, menu)
+        menu.findItem(R.id.drm).isVisible = publication.isProtected
+        menu.findItem(R.id.settings).isVisible = false
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.toc -> {
+                navigation.showOutlineFragment()
+                true
+            }
+            R.id.bookmark -> {
+                val added = persistence.addBookmark(activity.currentLocator.value)
+                toast(if (added) "Bookmark added" else "Bookmark already exists")
+                true
+            }
+            R.id.drm -> {
+                //startActivityForResult(intentFor<DRMManagementActivity>("publication" to publicationPath), 1)
+                true
+            }
+            else -> false
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        persistence.savedLocation = activity.currentLocator.value
     }
 
     override fun onDestroyView() {
