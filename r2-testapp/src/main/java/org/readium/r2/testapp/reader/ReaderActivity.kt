@@ -2,10 +2,8 @@ package org.readium.r2.testapp.reader
 
 import android.app.Activity
 import android.os.Bundle
-import android.view.Window
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentResultListener
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
@@ -16,7 +14,7 @@ import org.readium.r2.testapp.utils.NavigatorContract
 class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNavigation {
 
     private lateinit var modelFactory: ReaderViewModel.Factory
-    private lateinit var readerFragment: ReaderFragment
+    private lateinit var readerFragment: AbstractReaderFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val inputData = NavigatorContract.parseIntent(this)
@@ -42,7 +40,13 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
 
         super.onCreate(savedInstanceState)
 
-        readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as ReaderFragment
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.activity_reader_container, ImageReaderFragment::class.java, Bundle(), READER_FRAGMENT_TAG)
+                .commitNow()
+        }
+
+        readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as AbstractReaderFragment
     }
 
     override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {
@@ -56,7 +60,7 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
 
     override fun showOutlineFragment() {
         supportFragmentManager.beginTransaction()
-            .replace(R.id.supp_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
+            .replace(R.id.activity_supp_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
             .hide(readerFragment)
             .addToBackStack(null)
             .commit()

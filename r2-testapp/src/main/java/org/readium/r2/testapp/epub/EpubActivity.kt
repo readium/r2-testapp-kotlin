@@ -28,14 +28,11 @@ import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.Observer
 import androidx.lifecycle.asLiveData
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.jetbrains.anko.intentFor
 import org.jetbrains.anko.toast
 import org.json.JSONException
 import org.json.JSONObject
-import org.readium.r2.navigator.NavigatorDelegate
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.R2EpubActivity
 import org.readium.r2.navigator.epub.Style
@@ -43,7 +40,6 @@ import org.readium.r2.navigator.pager.R2EpubPageFragment
 import org.readium.r2.navigator.pager.R2PagerAdapter
 import org.readium.r2.shared.ReadiumCSSName
 import org.readium.r2.shared.SCROLL_REF
-import org.readium.r2.shared.extensions.getPublication
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.services.isProtected
 import org.readium.r2.shared.publication.services.positions
@@ -54,25 +50,13 @@ import org.readium.r2.testapp.library.LibraryActivity
 import org.readium.r2.testapp.library.activitiesLaunched
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
+import org.readium.r2.testapp.reader.ReaderActivity
+import org.readium.r2.testapp.reader.ReaderNavigation
 import org.readium.r2.testapp.utils.CompositeFragmentFactory
+import org.readium.r2.testapp.utils.NavigatorContract
 import timber.log.Timber
-import kotlin.coroutines.CoroutineContext
 
-
-/**
- * EpubActivity : Extension of the EpubActivity() from navigator
- *
- * That Activity manage everything related to the menu
- *      ( Table of content, User Settings, DRM, Bookmarks )
- *
- */
-class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate {
-
-    /**
-     * Context of this scope.
-     */
-    override val coroutineContext: CoroutineContext
-        get() = Dispatchers.Main
+class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
     //private lateinit var model: PublicationViewModel
 
@@ -117,20 +101,22 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate {
             finish()
         }
 
-        // The FragmentFactory must be set before the call to super.onCreate
-        // Let us get publication before R2EpubNavigator
-        publication = intent.getPublication(this)
-        val bookId = intent.getLongExtra("bookId", -1)
+        val inputData = NavigatorContract.parseIntent(this)
+        val publication = inputData.publication
+        val bookId = inputData.bookId
         persistence = BookData(applicationContext, bookId, publication)
 
         supportFragmentManager.fragmentFactory = CompositeFragmentFactory(
-            OutlineFragment.createFactory(publication, persistence, OutlineFragment::class.java.name)
+            OutlineFragment.createFactory(publication, persistence,  ReaderNavigation.OUTLINE_REQUEST_KEY)
         )
 
         supportFragmentManager.setFragmentResultListener(
-            OutlineFragment::class.java.name,
+            ReaderNavigation.OUTLINE_REQUEST_KEY,
             this,
-            FragmentResultListener { _, result -> closeOutlineFragment(result)}
+            FragmentResultListener { _, result ->
+                val locator = result.getParcelable<Locator>(OutlineFragment::class.java.name)!!
+                closeOutlineFragment(locator)
+            }
         )
 
         super.onCreate(savedInstanceState)
@@ -142,8 +128,6 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate {
         booksDB = BooksDatabase(this)
         positionsDB = PositionsDatabase(this)
         highlightDB = HighligtsDatabase(this)
-
-        navigatorDelegate = this
 
         launch {
             val positionCount = publication.positions().size
@@ -196,6 +180,7 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate {
                 supportFragmentManager.beginTransaction().apply {
                     setReorderingAllowed(true)
                     replace(R.id.main_content, fragment)
+                    setPrimaryNavigationFragment(fragment)
                     addToBackStack(null)
                     commit()
                 }
@@ -323,11 +308,6 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate {
             if (data != null && data.getBooleanExtra("returned", false)) {
                 finish()
             }
-        } else if (requestCode == 2 && resultCode == Activity.RESULT_OK && data != null) {
-            val locator = data.getParcelableExtra("locator") as? Locator
-            if (locator != null) {
-                go(locator)
-            }
         }
     }
 
@@ -433,7 +413,6 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate {
                 }
             }
         }
-
     }
 
     private fun changeHighlightColor(highlight: org.readium.r2.navigator.epub.Highlight? = null, color: Int) {
@@ -668,24 +647,16 @@ class EpubActivity : R2EpubActivity(), CoroutineScope, NavigatorDelegate {
         }
     }
 
-    private fun showOutlineFragment() {
-        val outlineFragment = supportFragmentManager.fragmentFactory.instantiate(
-            classLoader,
-            OutlineFragment::class.java.name
-        )
-
-        supportFragmentManager.beginTransaction().apply {
-            setReorderingAllowed(true)
-            hide(epubNavigator)
-            add(R.id.main_content, outlineFragment)
-            addToBackStack(null)
-            commit()
-        }
+    override fun showOutlineFragment() {
+        supportFragmentManager.beginTransaction()
+            .hide(epubNavigator)
+            .add(R.id.main_content, OutlineFragment::class.java, Bundle(), ReaderActivity.OUTLINE_FRAGMENT_TAG)
+            .addToBackStack(null)
+            .commit()
     }
 
-    private fun closeOutlineFragment(result: Bundle) {
-        val locator = result.getParcelable(OutlineFragment::class.java.name) as? Locator
-        go(locator!!)
+    override fun closeOutlineFragment(locator: Locator) {
+        go(locator)
         supportFragmentManager.popBackStack()
     }
 

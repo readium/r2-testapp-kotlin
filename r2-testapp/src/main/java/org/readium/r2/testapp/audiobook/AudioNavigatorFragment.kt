@@ -64,9 +64,8 @@ class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
     }
 
     override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
-        menuInflater.inflate(R.menu.menu_audio, menu)
+        menuInflater.inflate(R.menu.menu_reader, menu)
         menu.findItem(R.id.drm).isVisible = publication.isProtected
-        menu.findItem(R.id.settings).isVisible = false
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

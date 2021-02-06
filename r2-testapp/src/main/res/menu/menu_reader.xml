@@ -3,7 +3,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context='org.readium.r2.testapp.reader.ReaderFragment'>
+    tools:context='org.readium.r2.testapp.reader.AbstractReaderFragment'>
 
     <item
         android:id="@+id/drm"

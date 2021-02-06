@@ -22,6 +22,7 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.testapp.audiobook.AudiobookActivity
 import org.readium.r2.testapp.epub.EpubActivity
+import org.readium.r2.testapp.epub.EpubReaderActivity
 import org.readium.r2.testapp.pdf.PdfActivity
 import org.readium.r2.testapp.reader.ReaderActivity
 import java.io.File
@@ -46,7 +47,7 @@ class NavigatorContract : ActivityResultContract<NavigatorContract.Input, Naviga
 
     override fun createIntent(context: Context, input: Input): Intent {
         val intent = Intent(context, when (input.mediaType) {
-            MediaType.EPUB -> EpubActivity::class.java
+            MediaType.EPUB -> EpubReaderActivity::class.java
             MediaType.PDF, MediaType.LCP_PROTECTED_PDF ->
                 PdfActivity::class.java
             MediaType.ZAB, MediaType.READIUM_AUDIOBOOK,

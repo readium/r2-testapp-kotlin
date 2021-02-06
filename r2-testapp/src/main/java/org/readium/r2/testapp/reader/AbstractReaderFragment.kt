@@ -1,44 +1,28 @@
 package org.readium.r2.testapp.reader
 
-import android.graphics.PointF
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
 import org.jetbrains.anko.support.v4.toast
 import org.readium.r2.navigator.Navigator
-import org.readium.r2.navigator.image.ImageNavigatorFragment
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.isProtected
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.utils.CompositeFragmentFactory
 import org.readium.r2.testapp.utils.extensions.hideSystemUi
-import org.readium.r2.testapp.utils.extensions.toggleSystemUi
 
-class ReaderFragment : Fragment(R.layout.fragment_reader), ImageNavigatorFragment.Listener {
+abstract class AbstractReaderFragment : Fragment(R.layout.fragment_reader) {
 
-    private lateinit var publication: Publication
-    private lateinit var persistence: BookData
-    private lateinit var navigator: Navigator
-    private lateinit var fragment: Fragment
     private lateinit var navigation: ReaderNavigation
+    protected abstract var publication: Publication
+    protected abstract var persistence: BookData
+    protected abstract var navigator: Navigator
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val activity = requireActivity()
-        navigation = activity as ReaderNavigation
-
-        val readerModel = ViewModelProvider(activity).get(ReaderViewModel::class.java)
-        publication = readerModel.publication
-        persistence = readerModel.persistence
-
-        childFragmentManager.fragmentFactory = CompositeFragmentFactory(
-            ImageNavigatorFragment.createFactory(publication, persistence.savedLocation, this)
-        )
-
+        navigation = requireActivity() as ReaderNavigation
         setHasOptionsMenu(true)
         super.onCreate(savedInstanceState)
     }
@@ -46,17 +30,8 @@ class ReaderFragment : Fragment(R.layout.fragment_reader), ImageNavigatorFragmen
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        if (savedInstanceState == null) {
-            childFragmentManager.beginTransaction()
-                .add(R.id.reader_main_content, ImageNavigatorFragment::class.java,  Bundle(), NAVIGATOR_FRAGMENT_TAG)
-                .commitNow()
-        }
-
         if (savedInstanceState?.getBoolean(IS_VISIBLE_KEY) != false)
             requireActivity().hideSystemUi()
-
-        fragment = childFragmentManager.findFragmentByTag(NAVIGATOR_FRAGMENT_TAG)!!
-        navigator = fragment as Navigator
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -101,24 +76,10 @@ class ReaderFragment : Fragment(R.layout.fragment_reader), ImageNavigatorFragmen
         }
     }
 
-    override fun onTap(point: PointF): Boolean {
-        val viewWidth = requireView().width
-        val leftRange = 0.0..(0.2 * viewWidth)
-
-        when {
-            leftRange.contains(point.x) -> navigator.goBackward(animated = true)
-            leftRange.contains(viewWidth - point.x) -> navigator.goForward(animated = true)
-            else -> requireActivity().toggleSystemUi()
-        }
-
-        return true
-    }
-
     fun go(locator: Locator, animated: Boolean) =
         navigator.go(locator, animated)
 
     companion object {
-        private const val NAVIGATOR_FRAGMENT_TAG = "navigator"
         private const val IS_VISIBLE_KEY = "isVisible"
     }
 }
