@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.lifecycle.LiveData
 import androidx.recyclerview.widget.RecyclerView
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
@@ -16,7 +17,7 @@ import org.readium.r2.testapp.utils.singleClick
 /**
  * This class is an adapter for Search results' list view
  */
-class SearchLocatorAdapter(private val activity: Activity, private var results: List<Locator>, private var itemListener: RecyclerViewClickListener) : RecyclerView.Adapter<SearchLocatorAdapter.ViewHolder>() {
+class SearchLocatorAdapter(private val activity: Activity, private var results: LiveData<List<Locator>>, private var itemListener: RecyclerViewClickListener) : RecyclerView.Adapter<SearchLocatorAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = activity.applicationContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
@@ -26,7 +27,7 @@ class SearchLocatorAdapter(private val activity: Activity, private var results: 
 
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
 
-        val tmpLocator = results[position]
+        val tmpLocator = results.value!![position]
         val txtBefore = tmpLocator.text.before
         val txtAfter = tmpLocator.text.after
         val highlight = tmpLocator.text.highlight
@@ -42,7 +43,7 @@ class SearchLocatorAdapter(private val activity: Activity, private var results: 
     }
 
     override fun getItemCount(): Int {
-        return results.size
+        return results.value!!.size
     }
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {

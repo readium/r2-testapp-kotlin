@@ -191,7 +191,7 @@
             android:name=".R2AboutActivity"
             android:label="@string/title_activity_r2_about" />
         <activity
-            android:name=".epub.EpubReaderActivity"
+            android:name=".epub.EpubActivity"
             android:label="@string/title_activity_epub" />
         <activity android:name=".pdf.PdfActivity" />
         <activity

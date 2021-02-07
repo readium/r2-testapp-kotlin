@@ -7,12 +7,12 @@ import android.view.View
 import android.widget.Toast
 import androidx.core.widget.TextViewCompat
 import androidx.fragment.app.Fragment
-import kotlinx.android.synthetic.main.activity_epub.main_content
 import org.readium.r2.testapp.R
 import kotlinx.android.synthetic.main.fragment_screen_reader.*
 import org.readium.r2.navigator.IR2TTS
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.shared.publication.Publication
+import org.readium.r2.testapp.reader.EpubReaderFragment
 
 class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), IR2TTS {
 
@@ -26,7 +26,7 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), IR2TTS {
         activity.preferences
 
     private val epubNavigator: EpubNavigatorFragment get() =
-        activity.epubNavigator
+        (parentFragment as EpubReaderFragment).navigatorFragment
 
     private lateinit var screenReader: R2ScreenReader
 

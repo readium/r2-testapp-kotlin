@@ -47,7 +47,7 @@ class EpubReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNa
         super.onCreate(savedInstanceState)
 
         if (savedInstanceState == null) {
-            readerFragment = EpubReaderFragment.newInstance(baseUrl)
+            readerFragment = EpubReaderFragment.newInstance(baseUrl, bookId)
 
             supportFragmentManager.beginTransaction()
                 .replace(R.id.activity_reader_container, readerFragment, READER_FRAGMENT_TAG)

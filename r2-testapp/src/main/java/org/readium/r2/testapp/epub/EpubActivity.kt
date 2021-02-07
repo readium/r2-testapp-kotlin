@@ -26,10 +26,8 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.FragmentResultListener
-import androidx.lifecycle.Observer
-import androidx.lifecycle.asLiveData
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.launch
-import org.jetbrains.anko.intentFor
 import org.jetbrains.anko.toast
 import org.json.JSONException
 import org.json.JSONObject
@@ -41,55 +39,39 @@ import org.readium.r2.navigator.pager.R2PagerAdapter
 import org.readium.r2.shared.ReadiumCSSName
 import org.readium.r2.shared.SCROLL_REF
 import org.readium.r2.shared.publication.Locator
-import org.readium.r2.shared.publication.services.isProtected
-import org.readium.r2.shared.publication.services.positions
-import org.readium.r2.testapp.DRMManagementActivity
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.db.*
 import org.readium.r2.testapp.library.LibraryActivity
 import org.readium.r2.testapp.library.activitiesLaunched
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
-import org.readium.r2.testapp.reader.ReaderActivity
+import org.readium.r2.testapp.reader.EpubReaderFragment
 import org.readium.r2.testapp.reader.ReaderNavigation
+import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.CompositeFragmentFactory
 import org.readium.r2.testapp.utils.NavigatorContract
 import timber.log.Timber
 
 class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
-    //private lateinit var model: PublicationViewModel
+    private lateinit var modelFactory: ReaderViewModel.Factory
+    private lateinit var readerFragment: EpubReaderFragment
 
-    //UserSettings
-    private lateinit var userSettings: UserSettings
+    lateinit var userSettings: UserSettings
+    private lateinit var highlightDB: HighligtsDatabase
+    private lateinit var booksDB: BooksDatabase
+    private lateinit var positionsDB: PositionsDatabase
+    private lateinit var persistence: BookData
 
     //Accessibility
     private var isExploreByTouchEnabled = false
     private var pageEnded = false
 
-    // Provide access to the Bookmarks & Positions Databases
-    private lateinit var bookmarksDB: BookmarksDatabase
-    private lateinit var booksDB: BooksDatabase
-    private lateinit var positionsDB: PositionsDatabase
-    private lateinit var highlightDB: HighligtsDatabase
-
-    //Menu
-    private lateinit var menuDrm: MenuItem
-    private lateinit var menuToc: MenuItem
-    private lateinit var menuBmk: MenuItem
-    lateinit var menuSearch: MenuItem
-    private lateinit var menuScreenReader: MenuItem
-
     private var mode: ActionMode? = null
     private var popupWindow: PopupWindow? = null
 
-    private lateinit var persistence: BookData
-
     private val isScreenReaderVisible: Boolean get() =
         supportFragmentManager.findFragmentById(R.id.tts_overlay) != null
-
-    val epubNavigator: EpubNavigatorFragment get() =
-        supportFragmentManager.findFragmentByTag(getString(R.string.epub_navigator_tag)) as EpubNavigatorFragment
 
     /**
      * Manage activity creation.
@@ -104,7 +86,10 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         val inputData = NavigatorContract.parseIntent(this)
         val publication = inputData.publication
         val bookId = inputData.bookId
+        val baseUrl = requireNotNull(inputData.baseUrl)
+
         persistence = BookData(applicationContext, bookId, publication)
+        modelFactory = ReaderViewModel.Factory(publication, persistence)
 
         supportFragmentManager.fragmentFactory = CompositeFragmentFactory(
             OutlineFragment.createFactory(publication, persistence,  ReaderNavigation.OUTLINE_REQUEST_KEY)
@@ -119,25 +104,19 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
             }
         )
 
-        super.onCreate(savedInstanceState)
-
-        /*val modelFactory = PublicationViewModel.Factory(publication)
-        model = ViewModelProvider(this, modelFactory).get(PublicationViewModel::class.java)*/
-
-        bookmarksDB = BookmarksDatabase(this)
-        booksDB = BooksDatabase(this)
-        positionsDB = PositionsDatabase(this)
         highlightDB = HighligtsDatabase(this)
 
-        launch {
-            val positionCount = publication.positions().size
+        super.onCreate(savedInstanceState)
 
-            currentLocator.asLiveData().observe(this@EpubActivity, Observer { locator ->
-                locator ?: return@Observer
+        if (savedInstanceState == null) {
+            readerFragment = EpubReaderFragment.newInstance(baseUrl, bookId)
 
-                Timber.d("locationDidChange position ${locator.locations.position ?: 0}/${positionCount} $locator")
-                booksDB.books.saveProgression(locator, bookId)
-            })
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.activity_reader_container, readerFragment, EpubReaderActivity.READER_FRAGMENT_TAG)
+                .commitNow()
+
+        } else {
+            readerFragment = supportFragmentManager.findFragmentByTag(EpubReaderActivity.READER_FRAGMENT_TAG) as EpubReaderFragment
         }
 
         /*val appearancePref = preferences.getInt(APPEARANCE_REF, 0)
@@ -145,160 +124,15 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         val textColors = mutableListOf("#000000", "#000000", "#ffffff")
         resourcePager.setBackgroundColor(Color.parseColor(backgroundsColors[appearancePref]))
         resourcePager.offscreenPageLimit = 1*/
-
-        toggleActionBar()
-
     }
 
-    /**
-     * Override Android's option menu by inflating a custom view instead.
-     *   - Initialize the search component.
-     *
-     * @param menu: Menu? - The menu view.
-     * @return Boolean - return true.
-     */
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_epub, menu)
-
-        menuToc = menu.findItem(R.id.toc)
-        menuBmk = menu.findItem(R.id.bookmark)
-
-        menuDrm = menu.findItem(R.id.drm)
-        menuDrm.isVisible = publication.isProtected
-
-        menuScreenReader = menu.findItem(R.id.screen_reader)
-        menuScreenReader.isVisible = !isExploreByTouchEnabled
-
-        menuSearch = menu.findItem(R.id.search)
-        menuSearch.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-
-            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
-                val fragment = supportFragmentManager.fragmentFactory.instantiate(
-                    classLoader,
-                    SearchFragment::class.java.name
-                )
-                supportFragmentManager.beginTransaction().apply {
-                    setReorderingAllowed(true)
-                    replace(R.id.main_content, fragment)
-                    setPrimaryNavigationFragment(fragment)
-                    addToBackStack(null)
-                    commit()
-                }
-                resourcePager.offscreenPageLimit = publication.readingOrder.size
-                return true
-            }
-
-            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
-                supportFragmentManager.popBackStack()
-                return true
-            }
-        })
-
-        return true
+    override fun onStart() {
+        super.onStart()
+        navigatorFragment = readerFragment.childFragmentManager.findFragmentByTag(getString(R.string.epub_navigator_tag)) as EpubNavigatorFragment
     }
 
-    /**
-     * Management of the menu bar.
-     *
-     * When (TOC):
-     *   - Open TOC activity for current publication.
-     *
-     * When (Settings):
-     *   - Show settings view as a dropdown menu starting from the clicked button
-     *
-     * When (Screen Reader):
-     *   - Switch screen reader on or off.
-     *   - If screen reader was off, get reading speed from preferences, update reading speed and sync it with the
-     *       active section in the webView.
-     *   - If screen reader was on, dismiss it.
-     *
-     * When (DRM):
-     *   - Start the DRM management activity.
-     *
-     * When (Bookmark):
-     *   - Create a bookmark marking the current page and insert it inside the database.
-     *
-     * When (Search):
-     *   - Make the search overlay visible.
-     *
-     * When (Home):
-     *   - Make the search view invisible.
-     *
-     * @param item: MenuItem - The button that was pressed.
-     * @return Boolean - Return true if the button has a switch case. Return false otherwise.
-     */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.toc -> {
-                showOutlineFragment()
-                return true
-            }
-            R.id.settings -> {
-                userSettings.userSettingsPopUp().showAsDropDown(this.findViewById(R.id.settings), 0, 0, Gravity.END)
-                return true
-            }
-            R.id.screen_reader -> {
-                if (isScreenReaderVisible) {
-                    closeScreenReaderFragment()
-                } else {
-                    showScreenReaderFragment()
-                }
-                return true
-            }
-            R.id.drm -> {
-                startActivityForResult(intentFor<DRMManagementActivity>("publication" to publicationPath), 1)
-                return true
-            }
-            R.id.bookmark -> {
-                val resourceIndex = resourcePager.currentItem.toLong()
-                val locator = currentLocator.value
-
-                val bookmark = Bookmark(
-                        bookId,
-                        publicationIdentifier,
-                        resourceIndex,
-                        locator.href,
-                        locator.type,
-                        locator.title.orEmpty(),
-                        locator.locations,
-                        locator.text
-                )
-
-                val msg =
-                    if (bookmarksDB.bookmarks.insert(bookmark) != null) {
-                        locator.locations.position
-                            ?.let { "Bookmark added at page $it" }
-                            ?: "Bookmark added"
-                        } else {
-                            "Bookmark already exists"
-                        }
-
-                launch {
-                    toast(msg)
-                }
-
-                Timber.d("bookmarks ${bookmarksDB.bookmarks.list(bookId).size}")
-
-                return true
-            }
-            R.id.search -> {
-                resourcePager.offscreenPageLimit = publication.readingOrder.size
-                val searchView = menuSearch.actionView as SearchView
-                searchView.clearFocus()
-                return super.onOptionsItemSelected(item)
-            }
-
-            android.R.id.home -> {
-                supportFragmentManager.popBackStack()
-                resourcePager.offscreenPageLimit = 1
-                val searchView = menuSearch.actionView as SearchView
-                searchView.clearFocus()
-                return true
-            }
-
-            else -> return super.onOptionsItemSelected(item)
-        }
-
+    override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {
+        return modelFactory
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -649,38 +483,19 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
     override fun showOutlineFragment() {
         supportFragmentManager.beginTransaction()
-            .hide(epubNavigator)
-            .add(R.id.main_content, OutlineFragment::class.java, Bundle(), ReaderActivity.OUTLINE_FRAGMENT_TAG)
+            .replace(R.id.activity_supp_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
+            .hide(readerFragment)
             .addToBackStack(null)
             .commit()
     }
 
     override fun closeOutlineFragment(locator: Locator) {
-        go(locator)
+        readerFragment.go(locator, true)
         supportFragmentManager.popBackStack()
     }
 
-    private fun showScreenReaderFragment() {
-        menuScreenReader.title = resources.getString(R.string.epubactivity_read_aloud_stop)
-        allowToggleActionBar = false
-
-        val screenReaderFragment = supportFragmentManager.fragmentFactory.instantiate(
-            classLoader,
-            ScreenReaderFragment::class.java.name
-        )
-
-        supportFragmentManager.beginTransaction().apply {
-            setReorderingAllowed(true)
-            hide(epubNavigator)
-            add(R.id.main_content, screenReaderFragment)
-            addToBackStack(null)
-            commit()
-        }
-    }
-
-    private fun closeScreenReaderFragment() {
-        menuScreenReader.title = resources.getString(R.string.epubactivity_read_aloud_start)
-        allowToggleActionBar = true
-        supportFragmentManager.popBackStack()
+    companion object {
+        const val READER_FRAGMENT_TAG = "reader"
+        const val OUTLINE_FRAGMENT_TAG = "outline"
     }
 }
