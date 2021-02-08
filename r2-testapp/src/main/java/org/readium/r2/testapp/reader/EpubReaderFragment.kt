@@ -12,8 +12,8 @@ import android.view.MenuItem
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
-import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.widget.SearchView
+import androidx.core.content.edit
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
@@ -158,11 +158,10 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
                         if (last) {
                             // Save query and result
                             val stringResults = Gson().toJson(result)
-                            searchStorage.edit().apply {
+                            searchStorage.edit {
                                 putString("result", stringResults)
                                 putString("term", query)
                                 putLong("book", bookId)
-                                apply()
                             }
                         }
                     }
@@ -203,10 +202,9 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
                 InputMethodManager.HIDE_IMPLICIT_ONLY
             )
 
-           searchStorage.edit().apply {
+           searchStorage.edit {
                 remove("result")
                 remove("term")
-                apply()
             }
         }
     }
@@ -295,6 +293,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
 
     private fun showScreenReaderFragment() {
         menuScreenReader.title = resources.getString(R.string.epubactivity_read_aloud_stop)
+        isScreenReaderVisible = true
         childFragmentManager.beginTransaction().apply {
             replace(R.id.fragment_supp_container, ScreenReaderFragment::class.java, Bundle())
             hide(navigatorFragment)
@@ -305,6 +304,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
 
     private fun closeScreenReaderFragment() {
         menuScreenReader.title = resources.getString(R.string.epubactivity_read_aloud_start)
+        isScreenReaderVisible = false
         childFragmentManager.popBackStack()
     }
 
