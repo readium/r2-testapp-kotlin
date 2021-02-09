@@ -79,49 +79,42 @@ private class BookMarksAdapter(
     private val onBookmarkDeleteRequested: (Bookmark) -> Unit
 ) : BaseAdapter() {
 
-    private inner class ViewHolder(row: View?) {
-        internal var bookmarkChapter: TextView? = null
-        internal var bookmarkProgression: TextView? = null
-        internal var bookmarkTimestamp: TextView? = null
-        internal var bookmarkOverflow: ImageView? = null
-
-        init {
-            this.bookmarkChapter = row?.bookmark_chapter as TextView
-            this.bookmarkProgression = row.bookmark_progression as TextView
-            this.bookmarkTimestamp = row.bookmark_timestamp as TextView
-            this.bookmarkOverflow = row.overflow as ImageView
-        }
+    private class ViewHolder(row: View) {
+        val bookmarkChapter: TextView = row.bookmark_chapter
+        val bookmarkProgression: TextView = row.bookmark_progression
+        val bookmarkTimestamp: TextView = row.bookmark_timestamp
+        val bookmarkOverflow: ImageView = row.overflow
     }
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        val view: View?
-        val viewHolder: ViewHolder
-        if (convertView == null) {
-            val inflater = activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            view = inflater.inflate(R.layout.item_recycle_bookmark, null)
-            viewHolder = ViewHolder(view)
-            view?.tag = viewHolder
-        } else {
-            view = convertView
-            viewHolder = view.tag as ViewHolder
-        }
+        val view =
+            if (convertView == null) {
+                val inflater = activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+                inflater.inflate(R.layout.item_recycle_bookmark, null).also {
+                    it.tag = ViewHolder(it)
+                }
+            } else {
+                convertView
+            }
+
+        val viewHolder = view.tag as ViewHolder
 
         val bookmark = getItem(position) as Bookmark
 
         val title = getBookSpineItem(bookmark.resourceHref)
             ?:  "*Title Missing*"
 
-        viewHolder.bookmarkChapter!!.text = title
+        viewHolder.bookmarkChapter.text = title
 
         bookmark.location.progression?.let { progression ->
             val formattedProgression = "${(progression * 100).roundToInt()}% through resource"
-            viewHolder.bookmarkProgression!!.text = formattedProgression
+            viewHolder.bookmarkProgression.text = formattedProgression
         }
 
         val formattedDate = DateTime(bookmark.creationDate).toString(DateTimeFormat.shortDateTime())
-        viewHolder.bookmarkTimestamp!!.text = formattedDate
+        viewHolder.bookmarkTimestamp.text = formattedDate
 
-        viewHolder.bookmarkOverflow?.setOnClickListener {
+        viewHolder.bookmarkOverflow.setOnClickListener {
 
             val popupMenu = PopupMenu(parent?.context, viewHolder.bookmarkChapter)
             popupMenu.menuInflater.inflate(R.menu.menu_bookmark, popupMenu.menu)
@@ -137,7 +130,7 @@ private class BookMarksAdapter(
             }
         }
 
-        return view as View
+        return view
     }
 
     override fun getCount(): Int {

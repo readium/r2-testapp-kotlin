@@ -78,46 +78,37 @@ private class HighlightsAdapter(
     private val onDeleteHighlightRequested: (Highlight) -> Unit
 ) : BaseAdapter() {
 
-    private inner class ViewHolder(row: View?) {
-        internal var highlightedText: TextView? = null
-        internal var highlightTimestamp: TextView? = null
-        internal var highlightChapter: TextView? = null
-        internal var highlightOverflow: ImageView? = null
-        internal var annotation: TextView? = null
-
-        init {
-            this.highlightedText = row?.highlight_text as TextView
-            this.highlightTimestamp = row.highlight_time_stamp as TextView
-            this.highlightChapter = row.highlight_chapter as TextView
-            this.highlightOverflow = row.highlight_overflow as ImageView
-            this.annotation = row.annotation as TextView
-        }
+    private class ViewHolder(row: View) {
+        val highlightedText: TextView = row.highlight_text
+        val highlightTimestamp: TextView = row.highlight_time_stamp
+        val highlightChapter: TextView = row.highlight_chapter
+        val highlightOverflow: ImageView = row.highlight_overflow
+        val annotation: TextView = row.annotation
     }
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+        val view =
+            if (convertView == null) {
+                val inflater = activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+                inflater.inflate(R.layout.item_recycle_highlight, null).also {
+                    it.tag = ViewHolder(it)
+                }
+            } else {
+                convertView
+            }
 
-        val view: View?
-        val viewHolder: ViewHolder
-        if (convertView == null) {
-            val inflater = activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            view = inflater.inflate(R.layout.item_recycle_highlight, null)
-            viewHolder = ViewHolder(view)
-            view?.tag = viewHolder
-        } else {
-            view = convertView
-            viewHolder = view.tag as ViewHolder
-        }
+        val viewHolder = view.tag as ViewHolder
 
         val highlight = getItem(position) as Highlight
 
-        viewHolder.highlightChapter!!.text = getHighlightSpineItem(highlight.resourceHref)
-        viewHolder.highlightedText!!.text = highlight.locatorText.highlight
-        viewHolder.annotation!!.text = highlight.annotation
+        viewHolder.highlightChapter.text = getHighlightSpineItem(highlight.resourceHref)
+        viewHolder.highlightedText.text = highlight.locatorText.highlight
+        viewHolder.annotation.text = highlight.annotation
 
         val formattedDate = DateTime(highlight.creationDate).toString(DateTimeFormat.shortDateTime())
-        viewHolder.highlightTimestamp!!.text = formattedDate
+        viewHolder.highlightTimestamp.text = formattedDate
 
-        viewHolder.highlightOverflow?.setOnClickListener {
+        viewHolder.highlightOverflow.setOnClickListener {
 
             val popupMenu = PopupMenu(parent?.context, viewHolder.highlightChapter)
             popupMenu.menuInflater.inflate(R.menu.menu_bookmark, popupMenu.menu)
@@ -133,7 +124,7 @@ private class HighlightsAdapter(
             }
         }
 
-        return view as View
+        return view
     }
 
     override fun getCount(): Int {

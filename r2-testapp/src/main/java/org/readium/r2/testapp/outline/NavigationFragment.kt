@@ -93,14 +93,9 @@ private class NavigationAdapter(
     private var items: MutableList<Any>
 ) : BaseAdapter() {
 
-    private inner class ViewHolder(row: View?) {
-        var navigationTextView: TextView? = null
-        var indentationView: ImageView? = null
-
-        init {
-            this.navigationTextView = row?.navigation_textView
-            this.indentationView = row?.indentation
-        }
+    private class ViewHolder(row: View) {
+        val navigationTextView: TextView = row.navigation_textView
+        val indentationView: ImageView = row.indentation
     }
 
     /**
@@ -152,27 +147,28 @@ private class NavigationAdapter(
      * @return A View corresponding to the data at the specified position.
      */
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
-        val view: View?
-        val viewHolder: ViewHolder
-        if (convertView == null) {
-            val inflater = activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            view = inflater.inflate(R.layout.item_recycle_navigation, null)
-            viewHolder = ViewHolder(view)
-            view?.tag = viewHolder
-        } else {
-            view = convertView
-            viewHolder = view.tag as ViewHolder
-        }
+        val view: View =
+            if (convertView == null) {
+                val inflater = activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+                inflater.inflate(R.layout.item_recycle_navigation, null).also {
+                    it.tag = ViewHolder(it)
+                }
+            } else {
+                convertView
+            }
+
+        val viewHolder = view.tag as ViewHolder
+
         val item = getItem(position)
         if (item is Pair<*, *>) {
             item as Pair<Int, Link>
-            viewHolder.navigationTextView?.text = item.second.outlineTitle
-            viewHolder.indentationView?.layoutParams = LinearLayout.LayoutParams(item.first * 50, ViewGroup.LayoutParams.MATCH_PARENT)
+            viewHolder.navigationTextView.text = item.second.outlineTitle
+            viewHolder.indentationView.layoutParams = LinearLayout.LayoutParams(item.first * 50, ViewGroup.LayoutParams.MATCH_PARENT)
         } else {
             item as Link
-            viewHolder.navigationTextView?.text = item.outlineTitle
+            viewHolder.navigationTextView.text = item.outlineTitle
         }
-        return view as View
+        return view
     }
 }
 
