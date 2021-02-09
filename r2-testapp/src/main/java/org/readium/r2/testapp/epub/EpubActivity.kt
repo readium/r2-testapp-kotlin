@@ -59,7 +59,6 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
     lateinit var userSettings: UserSettings
     private lateinit var highlightDB: HighligtsDatabase
-    private lateinit var booksDB: BooksDatabase
     private lateinit var positionsDB: PositionsDatabase
     private lateinit var persistence: BookData
 
@@ -87,7 +86,7 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
         val inputData = NavigatorContract.parseIntent(this)
         val publication = inputData.publication
-        val bookId = inputData.bookId
+        bookId = inputData.bookId
         val baseUrl = requireNotNull(inputData.baseUrl)
 
         persistence = BookData(applicationContext, bookId, publication)
@@ -103,6 +102,7 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         )
 
         highlightDB = HighligtsDatabase(this)
+        positionsDB = PositionsDatabase(this)
 
         super.onCreate(savedInstanceState)
 
