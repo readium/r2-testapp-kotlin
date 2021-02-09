@@ -22,8 +22,6 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.testapp.audiobook.AudiobookActivity
 import org.readium.r2.testapp.epub.EpubActivity
-import org.readium.r2.testapp.epub.EpubReaderActivity
-import org.readium.r2.testapp.pdf.PdfActivity
 import org.readium.r2.testapp.reader.ReaderActivity
 import java.io.File
 
@@ -48,12 +46,11 @@ class NavigatorContract : ActivityResultContract<NavigatorContract.Input, Naviga
     override fun createIntent(context: Context, input: Input): Intent {
         val intent = Intent(context, when (input.mediaType) {
             MediaType.EPUB -> EpubActivity::class.java
-            MediaType.PDF, MediaType.LCP_PROTECTED_PDF ->
-                PdfActivity::class.java
             MediaType.ZAB, MediaType.READIUM_AUDIOBOOK,
             MediaType.READIUM_AUDIOBOOK_MANIFEST, MediaType.LCP_PROTECTED_AUDIOBOOK ->
                 AudiobookActivity::class.java
-            MediaType.CBZ, MediaType.DIVINA, MediaType.DIVINA_MANIFEST ->
+            MediaType.CBZ, MediaType.DIVINA, MediaType.DIVINA_MANIFEST,
+            MediaType.PDF, MediaType.LCP_PROTECTED_PDF->
                 ReaderActivity::class.java
             else -> throw IllegalArgumentException("Unknown [mediaType]")
         })
