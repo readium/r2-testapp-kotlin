@@ -216,7 +216,12 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
 
        return when (item.itemId) {
            R.id.settings -> {
-               activity.userSettings.userSettingsPopUp().showAsDropDown(requireView().findViewById(R.id.settings), 0, 0, Gravity.END)
+               activity.userSettings.userSettingsPopUp().showAsDropDown(
+                   requireActivity().findViewById(R.id.settings),
+                   0,
+                   0,
+                   Gravity.END
+               )
                true
            }
            R.id.search -> {
