@@ -8,8 +8,4 @@ interface ReaderNavigation {
     fun showOutlineFragment()
 
     fun closeOutlineFragment(locator: Locator)
-
-    companion object {
-        val OUTLINE_REQUEST_KEY: String = OutlineFragment::class.java.name
-    }
 }

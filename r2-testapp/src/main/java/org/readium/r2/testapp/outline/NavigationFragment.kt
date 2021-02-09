@@ -12,18 +12,36 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResult
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.android.synthetic.main.fragment_listview.*
 import kotlinx.android.synthetic.main.item_recycle_navigation.view.*
 import org.readium.r2.shared.publication.Link
+import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.toLocator
 import org.readium.r2.testapp.R
+import org.readium.r2.testapp.reader.BookData
+import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.extensions.outlineTitle
 
 /*
 * Fragment to show navigation links (Table of Contents, Page lists & Landmarks)
 */
-open class NavigationFragment(private val links: List<Link>, private val resultKey: String)
-    : Fragment(R.layout.fragment_listview) {
+class NavigationFragment : Fragment(R.layout.fragment_listview) {
+
+    private lateinit var publication: Publication
+    private lateinit var persistence: BookData
+    private lateinit var links: List<Link>
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
+            publication = it.publication
+            persistence = it.persistence
+        }
+
+        links = requireNotNull(requireArguments().getParcelableArrayList(LINKS_ARG))
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -39,25 +57,41 @@ open class NavigationFragment(private val links: List<Link>, private val resultK
         }
 
         list_view.adapter = NavigationAdapter(requireActivity(), flatLinks.toMutableList())
+        list_view.setOnItemClickListener { _, _, position, _ -> onLinkSelected(flatLinks[position].second) }
+    }
 
-        list_view.setOnItemClickListener { _, _, position, _ ->
-            val locator = flatLinks[position].second.toLocator().let {
-                // progression is mandatory in some contexts
-                if (it.locations.fragments.isEmpty())
-                    it.copyWithLocations(progression = 0.0)
-                else
-                    it
-            }
-
-            val bundle = Bundle().apply {
-                putParcelable(resultKey, locator)
-            }
-            setFragmentResult(resultKey, bundle)
+    private fun onLinkSelected(link: Link) {
+        val locator = link.toLocator().let {
+            // progression is mandatory in some contexts
+            if (it.locations.fragments.isEmpty())
+                it.copyWithLocations(progression = 0.0)
+            else
+                it
         }
+
+        setFragmentResult(
+            OutlineContract.REQUEST_KEY,
+            OutlineContract.createResult(locator)
+        )
+    }
+
+    companion object {
+
+        private const val LINKS_ARG = "links"
+
+        fun newInstance(links: List<Link>) =
+            NavigationFragment().apply {
+                arguments = Bundle().apply {
+                    putParcelableArrayList(LINKS_ARG, if (links is ArrayList<Link>) links else ArrayList(links))
+                }
+            }
     }
 }
 
-private class NavigationAdapter(private val activity: Activity, private var items: MutableList<Any>) : BaseAdapter() {
+private class NavigationAdapter(
+    private val activity: Activity,
+    private var items: MutableList<Any>
+) : BaseAdapter() {
 
     private inner class ViewHolder(row: View?) {
         var navigationTextView: TextView? = null

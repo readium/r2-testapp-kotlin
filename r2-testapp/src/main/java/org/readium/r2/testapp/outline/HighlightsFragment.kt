@@ -12,6 +12,7 @@ import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResult
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.android.synthetic.main.fragment_listview.*
 import kotlinx.android.synthetic.main.item_recycle_highlight.view.*
 import org.joda.time.DateTime
@@ -21,28 +22,40 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.db.Highlight
 import org.readium.r2.testapp.reader.BookData
+import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.extensions.outlineTitle
 
-class HighlightsFragment(private val publication: Publication, private val bookData: BookData, private val resultKey: String)
-    : Fragment(R.layout.fragment_listview) {
+class HighlightsFragment : Fragment(R.layout.fragment_listview) {
+
+    lateinit var publication: Publication
+    lateinit var persistence: BookData
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
+            publication = it.publication
+            persistence = it.persistence
+        }
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         val comparator: Comparator<Highlight> = compareBy( {it.resourceIndex },{ it.location.progression })
-        val highlights = bookData.getHighlights(comparator).toMutableList()
+        val highlights = persistence.getHighlights(comparator).toMutableList()
 
         list_view.adapter = HighlightsAdapter(
             requireActivity(),
             highlights,
             publication,
-            onDeleteHighlightRequested = { bookData.removeHighlight(it) }
+            onDeleteHighlightRequested = { persistence.removeHighlight(it) }
         )
 
         list_view.setOnItemClickListener { _, _, position, _ -> onHighlightSelected(highlights[position]) }
     }
 
-    fun onHighlightSelected(highlight: Highlight) {
+    private fun onHighlightSelected(highlight: Highlight) {
         val highlightProgression = highlight.location.progression
 
         val locator = Locator(
@@ -51,10 +64,10 @@ class HighlightsFragment(private val publication: Publication, private val bookD
             locations = Locator.Locations(progression = highlightProgression)
         )
 
-        val bundle = Bundle().apply {
-            putParcelable(resultKey, locator)
-        }
-        setFragmentResult(resultKey, bundle)
+        setFragmentResult(
+            OutlineContract.REQUEST_KEY,
+            OutlineContract.createResult(locator)
+        )
     }
 }
 

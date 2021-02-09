@@ -3,13 +3,13 @@ package org.readium.r2.testapp.outline
 import android.os.Bundle
 import org.readium.r2.shared.publication.Locator
 
-object OutlineFragmentContract {
+object OutlineContract {
 
-    val REQUEST_KEY: String = OutlineFragmentContract::class.java.name
+    val REQUEST_KEY: String = OutlineContract::class.java.name
 
-    fun createBundle(locator: Locator): Bundle =
+    fun createResult(locator: Locator): Bundle =
         Bundle().apply { putParcelable("result", locator) }
 
     fun parseResult(result: Bundle): Locator =
-        result.getParcelable("result")!!
+        requireNotNull(result.getParcelable("result"))
 }

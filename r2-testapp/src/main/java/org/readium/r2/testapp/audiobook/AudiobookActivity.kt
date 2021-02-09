@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.navigator.audiobook.R2AudiobookActivity
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
+import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.ReaderActivity
@@ -28,15 +29,11 @@ class AudiobookActivity : R2AudiobookActivity(), ReaderNavigation {
         title = publication.metadata.title
         modelFactory = ReaderViewModel.Factory(publication, persistence)
 
-        supportFragmentManager.fragmentFactory = CompositeFragmentFactory(
-            OutlineFragment.createFactory(publication, persistence, ReaderNavigation.OUTLINE_REQUEST_KEY)
-        )
-
         supportFragmentManager.setFragmentResultListener(
-            ReaderNavigation.OUTLINE_REQUEST_KEY,
+            OutlineContract.REQUEST_KEY,
             this,
             FragmentResultListener { _, result ->
-                val locator = result.getParcelable<Locator>(OutlineFragment::class.java.name)!!
+                val locator = OutlineContract.parseResult(result)
                 closeOutlineFragment(locator)
             }
         )

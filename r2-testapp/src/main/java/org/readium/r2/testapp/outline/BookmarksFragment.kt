@@ -12,6 +12,7 @@ import android.widget.PopupMenu
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResult
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.android.synthetic.main.fragment_listview.*
 import kotlinx.android.synthetic.main.item_recycle_bookmark.view.*
 import org.joda.time.DateTime
@@ -21,23 +22,35 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.db.Bookmark
 import org.readium.r2.testapp.reader.BookData
+import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.extensions.outlineTitle
 import kotlin.math.roundToInt
 
-class BookmarksFragment(private val publication: Publication, private val bookData: BookData, private val resultKey: String)
-    : Fragment(R.layout.fragment_listview) {
+class BookmarksFragment : Fragment(R.layout.fragment_listview) {
+
+    lateinit var publication: Publication
+    lateinit var persistence: BookData
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
+            publication = it.publication
+            persistence = it.persistence
+        }
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         val comparator: Comparator<Bookmark> = compareBy( {it.resourceIndex },{ it.location.progression })
-        val bookmarks = bookData.getBookmarks(comparator).toMutableList()
+        val bookmarks = persistence.getBookmarks(comparator).toMutableList()
 
         list_view.adapter = BookMarksAdapter(
             requireActivity(),
             bookmarks,
             publication,
-            onBookmarkDeleteRequested = { bookData.removeBookmark(it) }
+            onBookmarkDeleteRequested = { persistence.removeBookmark(it) }
         )
 
         list_view.setOnItemClickListener { _, _, position, _ -> onBookmarkSelected(bookmarks[position]) }
@@ -52,15 +65,15 @@ class BookmarksFragment(private val publication: Publication, private val bookDa
             locations = Locator.Locations(progression = bookmarkProgression)
         )
 
-        val bundle = Bundle().apply {
-            putParcelable(resultKey, locator)
-        }
-        setFragmentResult(resultKey, bundle)
+        setFragmentResult(
+            OutlineContract.REQUEST_KEY,
+            OutlineContract.createResult(locator)
+        )
     }
 }
 
 private class BookMarksAdapter(
-    val activity: Activity,
+    private val activity: Activity,
     private val bookmarks: MutableList<Bookmark>,
     private val publication: Publication,
     private val onBookmarkDeleteRequested: (Bookmark) -> Unit

@@ -42,6 +42,7 @@ import org.readium.r2.testapp.R
 import org.readium.r2.testapp.db.*
 import org.readium.r2.testapp.library.LibraryActivity
 import org.readium.r2.testapp.library.activitiesLaunched
+import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.EpubReaderFragment
@@ -92,15 +93,11 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         persistence = BookData(applicationContext, bookId, publication)
         modelFactory = ReaderViewModel.Factory(publication, persistence)
 
-        supportFragmentManager.fragmentFactory = CompositeFragmentFactory(
-            OutlineFragment.createFactory(publication, persistence,  ReaderNavigation.OUTLINE_REQUEST_KEY)
-        )
-
         supportFragmentManager.setFragmentResultListener(
-            ReaderNavigation.OUTLINE_REQUEST_KEY,
+            OutlineContract.REQUEST_KEY,
             this,
             FragmentResultListener { _, result ->
-                val locator = result.getParcelable<Locator>(OutlineFragment::class.java.name)!!
+                val locator = OutlineContract.parseResult(result)
                 closeOutlineFragment(locator)
             }
         )
