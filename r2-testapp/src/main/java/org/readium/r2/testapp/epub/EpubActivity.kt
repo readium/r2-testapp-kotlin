@@ -24,7 +24,6 @@ import android.view.accessibility.AccessibilityManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.launch
@@ -48,9 +47,9 @@ import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.EpubReaderFragment
 import org.readium.r2.testapp.reader.ReaderNavigation
 import org.readium.r2.testapp.reader.ReaderViewModel
+import org.readium.r2.testapp.tts.R2ScreenReader
 import org.readium.r2.testapp.utils.CompositeFragmentFactory
 import org.readium.r2.testapp.utils.NavigatorContract
-import timber.log.Timber
 
 class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
@@ -72,6 +71,8 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
     private val isScreenReaderVisible: Boolean get() =
         supportFragmentManager.findFragmentById(R.id.tts_overlay) != null
+
+    lateinit var screenReader: R2ScreenReader
 
     /**
      * Manage activity creation.
@@ -129,6 +130,22 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
     override fun onStart() {
         super.onStart()
         navigatorFragment = readerFragment.childFragmentManager.findFragmentByTag(getString(R.string.epub_navigator_tag)) as EpubNavigatorFragment
+
+        // R2ScreenReader doesn't handle properly the initialization state of the underlying  TTS engine,
+        // so screenReader must be started during the activity startup and access from ScreenReaderFragment
+        Handler().postDelayed({
+            val port = preferences.getString("$publicationIdentifier-publicationPort", 0.toString())?.toInt()
+            port?.let {
+                screenReader = R2ScreenReader(
+                    this,
+                    this,
+                    this,
+                    publication,
+                    port,
+                    publicationFileName
+                )
+            }
+        }, 500)
     }
 
     override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {

@@ -30,10 +30,10 @@ import org.readium.r2.shared.publication.presentation.presentation
 import org.readium.r2.testapp.BuildConfig
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.epub.EpubActivity
-import org.readium.r2.testapp.epub.ScreenReaderFragment
-import org.readium.r2.testapp.epub.SearchFragment
-import org.readium.r2.testapp.epub.SearchViewModel
-import org.readium.r2.testapp.search.MarkJSSearchEngine
+import org.readium.r2.testapp.tts.ScreenReaderFragment
+import org.readium.r2.testapp.search.SearchViewModel
+import org.readium.r2.testapp.search.MarkJsSearchEngine
+import org.readium.r2.testapp.search.SearchFragment
 import org.readium.r2.testapp.utils.CompositeFragmentFactory
 import org.readium.r2.testapp.utils.extensions.toggleSystemUi
 import timber.log.Timber
@@ -136,7 +136,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
 
     private fun prepareSearchView() {
         val searchStorage = requireActivity().getSharedPreferences("org.readium.r2.search", Context.MODE_PRIVATE)
-        val markJSSearchInterface = MarkJSSearchEngine(activity)
+        val markJsSearchEngine = MarkJsSearchEngine(activity)
         val bookId = checkNotNull(requireArguments().getLong(BOOK_ID_ARG))
 
         menuSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -151,7 +151,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
 
                 searchResult.value = emptyList()
                 Handler(Looper.getMainLooper()).postDelayed({
-                    markJSSearchInterface.search(query) { (last, result) ->
+                    markJsSearchEngine.search(query) { (last, result) ->
                         searchResult.value = result
                         progress.dismiss()
 

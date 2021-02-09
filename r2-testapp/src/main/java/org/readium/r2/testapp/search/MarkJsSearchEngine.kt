@@ -9,21 +9,12 @@ import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.BuildConfig.DEBUG
 import timber.log.Timber
 
-
 /**
- *
+ * This is our custom Search Module, this class uses MarkJS library
  */
-interface SearchInterface {
-    fun search(keyword: String, callback: (Pair<Boolean, MutableList<Locator>>) -> Unit)
-}
+class MarkJsSearchEngine(private var listener: IR2Activity) {
 
-/**
- * This is our custom Search Module, this class uses MarkJS library and implements SearchInterface
- */
-class MarkJSSearchEngine(private var listener: IR2Activity) : SearchInterface {
-
-
-    override fun search(keyword: String, callback: (Pair<Boolean, MutableList<Locator>>) -> Unit) {
+    fun search(keyword: String, callback: (Pair<Boolean, MutableList<Locator>>) -> Unit) {
         val searchResult = mutableListOf<Locator>()
 
         for (resourceIndex in 0 until listener.publication.readingOrder.size) {

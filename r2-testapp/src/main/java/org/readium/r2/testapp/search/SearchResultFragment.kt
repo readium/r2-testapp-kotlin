@@ -1,4 +1,4 @@
-package org.readium.r2.testapp.epub
+package org.readium.r2.testapp.search
 
 import android.os.Bundle
 import android.view.View

@@ -8,7 +8,7 @@
  * LICENSE file present in the project repository where this source code is maintained.
  */
 
-package org.readium.r2.testapp.epub
+package org.readium.r2.testapp.tts
 
 import android.content.Context
 import android.speech.tts.TextToSpeech

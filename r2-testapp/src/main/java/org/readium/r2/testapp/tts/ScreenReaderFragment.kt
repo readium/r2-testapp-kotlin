@@ -1,4 +1,4 @@
-package org.readium.r2.testapp.epub
+package org.readium.r2.testapp.tts
 
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -12,15 +12,21 @@ import kotlinx.android.synthetic.main.fragment_screen_reader.*
 import org.readium.r2.navigator.IR2TTS
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.shared.publication.Publication
+import org.readium.r2.testapp.epub.EpubActivity
 import org.readium.r2.testapp.reader.EpubReaderFragment
 
 class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), IR2TTS {
 
-    private val activity: EpubActivity get () =
+    private val activity: EpubActivity
+        get () =
         requireActivity() as EpubActivity
 
     private val publication: Publication get() =
         activity.publication
+
+    private val screenReader: R2ScreenReader
+        get() =
+        activity.screenReader
 
     private val preferences: SharedPreferences get() =
         activity.preferences
@@ -28,19 +34,9 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), IR2TTS {
     private val epubNavigator: EpubNavigatorFragment get() =
         (parentFragment as EpubReaderFragment).navigatorFragment
 
-    private lateinit var screenReader: R2ScreenReader
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        /*publication = ViewModelProvider(requireActivity())
-            .get(PublicationViewModel::class.java)
-            .publication*/
-
-        preferences.getString("$activity.publicationIdentifier-publicationPort", 0.toString())?.toInt()?.let {
-            screenReader = R2ScreenReader(activity, this, epubNavigator, publication, it, activity.publicationFileName)
-
-        }
 
         titleView.text = publication.metadata.title
 
