@@ -17,7 +17,9 @@ import androidx.core.content.edit
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
+import kotlinx.coroutines.launch
 import org.jetbrains.anko.support.v4.indeterminateProgressDialog
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
@@ -246,15 +248,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
     }
 
     override fun onTap(point: PointF): Boolean {
-        val viewWidth = requireView().width
-        val leftRange = 0.0..(0.2 * viewWidth)
-
-        when {
-            leftRange.contains(point.x) -> navigator.goBackward(animated = true)
-            leftRange.contains(viewWidth - point.x) -> navigator.goForward(animated = true)
-            else -> requireActivity().toggleSystemUi()
-        }
-
+        requireActivity().toggleSystemUi()
         return true
     }
 
