@@ -1,6 +1,7 @@
 package org.readium.r2.testapp.reader
 
 import android.content.Context
+import android.graphics.Color
 import android.graphics.PointF
 import android.os.Bundle
 import android.os.Handler
@@ -25,6 +26,7 @@ import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.pager.R2EpubPageFragment
 import org.readium.r2.navigator.pager.R2PagerAdapter
+import org.readium.r2.shared.APPEARANCE_REF
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.epub.EpubLayout
@@ -95,6 +97,16 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
 
         navigator = childFragmentManager.findFragmentByTag(navigatorFragmentTag) as Navigator
         navigatorFragment = navigator as EpubNavigatorFragment
+
+       /* FIXME: this is a hack to draw the right background color on top and bottom blank spaces */
+        navigatorFragment.lifecycleScope.launchWhenStarted {
+            val appearancePref = activity.preferences.getInt(APPEARANCE_REF, 0)
+            val backgroundsColors = mutableListOf("#ffffff", "#faf4e8", "#000000")
+            navigatorFragment.resourcePager.setBackgroundColor(Color.parseColor(backgroundsColors[appearancePref]))
+            //val textColors = mutableListOf("#000000", "#000000", "#ffffff")
+            /*(navigatorFragment.resourcePager.focusedChild?.findViewById(org.readium.r2.navigator.R.id.book_title) as? TextView)
+                .setTextColor(Color.parseColor(textColors[appearancePref]))*/
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {

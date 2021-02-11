@@ -100,12 +100,6 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         } else {
             readerFragment = supportFragmentManager.findFragmentByTag(EpubReaderActivity.READER_FRAGMENT_TAG) as EpubReaderFragment
         }
-
-        /*val appearancePref = preferences.getInt(APPEARANCE_REF, 0)
-        val backgroundsColors = mutableListOf("#ffffff", "#faf4e8", "#000000")
-        val textColors = mutableListOf("#000000", "#000000", "#ffffff")
-        resourcePager.setBackgroundColor(Color.parseColor(backgroundsColors[appearancePref]))
-        resourcePager.offscreenPageLimit = 1*/
     }
 
     override fun onStart() {

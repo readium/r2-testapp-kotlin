@@ -300,15 +300,15 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
                 when (i) {
                     0 -> {
                         resourcePager.setBackgroundColor(Color.parseColor("#ffffff"))
-                        (resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#000000"))
+                        //(resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#000000"))
                     }
                     1 -> {
                         resourcePager.setBackgroundColor(Color.parseColor("#faf4e8"))
-                        (resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#000000"))
+                        //(resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#000000"))
                     }
                     2 -> {
                         resourcePager.setBackgroundColor(Color.parseColor("#000000"))
-                        (resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#ffffff"))
+                        //(resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#ffffff"))
                     }
                 }
                 updateEnumerable(appearance)
