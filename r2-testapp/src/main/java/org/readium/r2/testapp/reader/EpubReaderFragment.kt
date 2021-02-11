@@ -252,6 +252,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
         return true
     }
 
+    // FIXME: the SearchFragment is drawn behind the ActionBar
     private fun showSearchFragment() {
         childFragmentManager.beginTransaction()
             .add(R.id.fragment_supp_container, SearchFragment::class.java, Bundle(), SEARCH_FRAGMENT_TAG)

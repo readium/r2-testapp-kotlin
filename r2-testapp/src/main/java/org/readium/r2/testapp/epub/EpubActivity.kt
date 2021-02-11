@@ -76,6 +76,9 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         persistence = BookData(applicationContext, bookId, publication)
         modelFactory = ReaderViewModel.Factory(publication, persistence)
 
+        /* FIXME: When the OutlineFragment is left by pressing the back button,
+        * the Webview is not updated, so removed highlights will still be visible.
+        */
         supportFragmentManager.setFragmentResultListener(
             OutlineContract.REQUEST_KEY,
             this,
@@ -109,8 +112,10 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         super.onStart()
         navigatorFragment = readerFragment.childFragmentManager.findFragmentByTag(getString(R.string.epub_navigator_tag)) as EpubNavigatorFragment
 
-        // R2ScreenReader doesn't handle properly the initialization state of the underlying  TTS engine,
-        // so screenReader must be started during the activity startup and access from ScreenReaderFragment
+        /* FIXME: R2ScreenReader doesn't handle properly the initialization state of the underlying  TTS engine,
+         * so screenReader must be started during the activity startup and access from ScreenReaderFragment
+         * This doesn't fix orientation changes while the ScreenReader fragment is visible.
+         */
         Handler().postDelayed({
             val port = preferences.getString("$publicationIdentifier-publicationPort", 0.toString())?.toInt()
             port?.let {
