@@ -26,30 +26,26 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
-import kotlinx.coroutines.launch
 import org.jetbrains.anko.toast
 import org.json.JSONException
 import org.json.JSONObject
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.epub.R2EpubActivity
-import org.readium.r2.navigator.epub.Style
 import org.readium.r2.navigator.pager.R2EpubPageFragment
 import org.readium.r2.navigator.pager.R2PagerAdapter
 import org.readium.r2.shared.ReadiumCSSName
 import org.readium.r2.shared.SCROLL_REF
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.db.*
 import org.readium.r2.testapp.library.LibraryActivity
-import org.readium.r2.testapp.library.activitiesLaunched
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.EpubReaderFragment
 import org.readium.r2.testapp.reader.ReaderNavigation
 import org.readium.r2.testapp.reader.ReaderViewModel
+import org.readium.r2.testapp.reader.toNavigatorHighlight
 import org.readium.r2.testapp.tts.R2ScreenReader
-import org.readium.r2.testapp.utils.CompositeFragmentFactory
 import org.readium.r2.testapp.utils.NavigatorContract
 
 class EpubActivity : R2EpubActivity(), ReaderNavigation {
@@ -58,34 +54,23 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
     private lateinit var readerFragment: EpubReaderFragment
 
     lateinit var userSettings: UserSettings
-    private lateinit var highlightDB: HighligtsDatabase
     private lateinit var persistence: BookData
 
     //Accessibility
     private var isExploreByTouchEnabled = false
     private var pageEnded = false
+    lateinit var screenReader: R2ScreenReader
 
+    // Highlights
     private var mode: ActionMode? = null
     private var popupWindow: PopupWindow? = null
 
-    private val isScreenReaderVisible: Boolean get() =
-        supportFragmentManager.findFragmentById(R.id.tts_overlay) != null
-
-    lateinit var screenReader: R2ScreenReader
-
-    /**
-     * Manage activity creation.
-     *   - Load data from the database
-     *   - Set background and text colors
-     */
     override fun onCreate(savedInstanceState: Bundle?) {
-        if (activitiesLaunched.incrementAndGet() > 1 || !LibraryActivity.isServerStarted) {
-            finish()
-        }
+        check(LibraryActivity.isServerStarted)
 
         val inputData = NavigatorContract.parseIntent(this)
         val publication = inputData.publication
-        bookId = inputData.bookId
+        val bookId = inputData.bookId
         val baseUrl = requireNotNull(inputData.baseUrl)
 
         persistence = BookData(applicationContext, bookId, publication)
@@ -99,8 +84,6 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
                 closeOutlineFragment(locator)
             }
         )
-
-        highlightDB = HighligtsDatabase(this)
 
         super.onCreate(savedInstanceState)
 
@@ -179,9 +162,7 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
                             null
                         }
                     }
-                    showHighlightPopup(size = rect) {
-                        mode.finish()
-                    }
+                    showHighlightPopup(size = rect)
                 }
                 true
             }
@@ -193,19 +174,14 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         this.mode = mode
     }
 
-    private fun showHighlightPopup(highlightID: String? = null, size: Rect?, dismissCallback: () -> Unit) {
+    private fun showHighlightPopup(highlightID: String? = null, size: Rect?) {
         popupWindow?.let {
             if (it.isShowing) {
                 return
             }
         }
-        var highlight: org.readium.r2.navigator.epub.Highlight? = null
-
-        highlightID?.let { id ->
-            highlightDB.highlights.list(id).forEach {
-                highlight = convertHighlight2NavigationHighlight(it)
-            }
-        }
+        val highlight: org.readium.r2.navigator.epub.Highlight? = highlightID
+            ?.let { persistence.getHighlight(it).toNavigatorHighlight() }
 
         val display = windowManager.defaultDisplay
         val rect = size ?: Rect()
@@ -248,14 +224,18 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
                 changeHighlightColor(highlight, Color.rgb(182, 153, 255))
             }
             findViewById<View>(R.id.annotation).setOnClickListener {
-                showAnnotationPopup(highlight)
                 popupWindow?.dismiss()
-                mode?.finish()
+                showAnnotationPopup(highlight)
             }
             findViewById<View>(R.id.del).run {
                 visibility = if (highlight != null) View.VISIBLE else View.GONE
                 setOnClickListener {
-                    deleteHighlight(highlight)
+                    highlight?.let {
+                        persistence.removeHighlight(highlight.id)
+                        hideHighlightWithID(highlight.id)
+                    }
+                    popupWindow?.dismiss()
+                    mode?.finish()
                 }
             }
         }
@@ -263,60 +243,15 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
     private fun changeHighlightColor(highlight: org.readium.r2.navigator.epub.Highlight? = null, color: Int) {
         if (highlight != null) {
-            val navigatorHighlight = org.readium.r2.navigator.epub.Highlight(
-                    highlight.id,
-                    highlight.locator,
-                    color,
-                    highlight.style,
-                    highlight.annotationMarkStyle
-            )
-            showHighlight(navigatorHighlight)
-            addHighlight(navigatorHighlight)
+            showHighlight(highlight.copy(color = color))
+            persistence.updateHighlight(highlight.id, color = color)
         } else {
             createHighlight(color) {
-                addHighlight(it)
+                persistence.addHighlight(it, currentLocator.value.locations.progression!!)
             }
         }
         popupWindow?.dismiss()
         mode?.finish()
-    }
-
-    private fun addHighlight(highlight: org.readium.r2.navigator.epub.Highlight) {
-        val annotation = highlightDB.highlights.list(highlight.id).run {
-            if (isNotEmpty()) first().annotation
-            else ""
-        }
-
-        highlightDB.highlights.insert(
-                convertNavigationHighlight2Highlight(
-                        highlight,
-                        annotation,
-                        highlight.annotationMarkStyle
-                )
-        )
-    }
-
-    private fun deleteHighlight(highlight: org.readium.r2.navigator.epub.Highlight?) {
-        highlight?.let {
-            highlightDB.highlights.delete(it.id)
-            hideHighlightWithID(it.id)
-            popupWindow?.dismiss()
-            mode?.finish()
-        }
-    }
-
-    private fun addAnnotation(highlight: org.readium.r2.navigator.epub.Highlight, annotation: String) {
-        highlightDB.highlights.insert(
-                convertNavigationHighlight2Highlight(highlight, annotation, "annotation")
-        )
-    }
-
-    private fun drawHighlight() {
-        val resource = publication.readingOrder[resourcePager.currentItem]
-        highlightDB.highlights.listAll(bookId, resource.href).forEach {
-            val highlight = convertHighlight2NavigationHighlight(it)
-            showHighlight(highlight)
-        }
     }
 
     private fun showAnnotationPopup(highlight: org.readium.r2.navigator.epub.Highlight? = null) {
@@ -325,32 +260,20 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
                 .setView(view)
                 .create()
 
-        val annotation = highlight?.run {
-            highlightDB.highlights.list(id).first().run {
-                if (annotation.isEmpty() and annotationMarkStyle.isEmpty()) ""
-                else annotation
-            }
+        val annotation = highlight
+            ?.let { persistence.getHighlight(highlight.id).annotation }
+            .orEmpty()
+
+        val note = view.findViewById<EditText>(R.id.note)
+
+        fun dismiss() {
+            alert.dismiss()
+            mode?.finish()
+            (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                .hideSoftInputFromWindow(note.applicationWindowToken, InputMethodManager.HIDE_NOT_ALWAYS)
         }
 
         with(view) {
-            val note = findViewById<EditText>(R.id.note)
-            findViewById<TextView>(R.id.positive).setOnClickListener {
-                if (note.text.isEmpty().not()) {
-                    createAnnotation(highlight) {
-                        addAnnotation(it, note.text.toString())
-                        (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(note.applicationWindowToken, InputMethodManager.HIDE_NOT_ALWAYS)
-                    }
-                }
-                alert.dismiss()
-                mode?.finish()
-                popupWindow?.dismiss()
-            }
-            findViewById<TextView>(R.id.negative).setOnClickListener {
-                alert.dismiss()
-                mode?.finish()
-                popupWindow?.dismiss()
-                (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(note.applicationWindowToken, InputMethodManager.HIDE_NOT_ALWAYS)
-            }
             if (highlight != null) {
                 findViewById<TextView>(R.id.select_text).text = highlight.locator.text.highlight
                 note.setText(annotation)
@@ -359,7 +282,33 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
                     findViewById<TextView>(R.id.select_text).text = it?.text?.highlight
                 }
             }
+
+            findViewById<TextView>(R.id.positive).setOnClickListener {
+                val text = note.text.toString()
+                val markStyle = if (text.isNotBlank()) "annotation" else ""
+
+                if (highlight != null) {
+                    persistence.updateHighlight(highlight.id, annotation = text, markStyle = markStyle)
+                    val updatedHighlight = persistence.getHighlight(highlight.id)
+                    val navHighlight = updatedHighlight.toNavigatorHighlight()
+                    //FIXME: the annotation mark is not destroyed before reloading when the text becomes blank,
+                    // probably because of an ID mismatch
+                    showHighlight(navHighlight)
+                 } else {
+                    val progression = currentLocator.value.locations.progression!!
+                    createAnnotation(highlight) {
+                        val navHighlight = it.copy(annotationMarkStyle = markStyle)
+                        persistence.addHighlight(navHighlight, progression, text)
+                        showHighlight(navHighlight)
+                    }
+                }
+                dismiss()
+            }
+            findViewById<TextView>(R.id.negative).setOnClickListener {
+                dismiss()
+            }
         }
+
         alert.show()
     }
 
@@ -368,54 +317,24 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         drawHighlight()
     }
 
+    private fun drawHighlight() {
+        val href = currentLocator.value.href
+        persistence.getHighlights(href = href).forEach {
+            showHighlight(it.toNavigatorHighlight())
+        }
+    }
+
     override fun highlightActivated(id: String) {
         rectangleForHighlightWithID(id) {
-            showHighlightPopup(id, it) {
-            }
+            showHighlightPopup(id, it)
         }
     }
 
     override fun highlightAnnotationMarkActivated(id: String) {
-        val highlight = highlightDB.highlights.list(id.replace("ANNOTATION", "HIGHLIGHT")).first()
-        showAnnotationPopup(convertHighlight2NavigationHighlight(highlight))
+        val realId = id.replace("ANNOTATION", "HIGHLIGHT")
+        val highlight = persistence.getHighlight(realId)
+        showAnnotationPopup(highlight.toNavigatorHighlight())
     }
-
-    private fun convertNavigationHighlight2Highlight(highlight: org.readium.r2.navigator.epub.Highlight, annotation: String? = null, annotationMarkStyle: String? = null): Highlight {
-        val resourceIndex = resourcePager.currentItem.toLong()
-        val resource = publication.readingOrder[resourcePager.currentItem]
-        val resourceHref = resource.href
-        val resourceType = resource.type ?: ""
-        val resourceTitle = resource.title ?: ""
-
-        val highlightLocations = highlight.locator.locations.copy(
-            progression = currentLocator.value.locations.progression
-        )
-        val locationText = highlight.locator.text
-
-        return Highlight(
-                highlight.id,
-                publicationIdentifier,
-                "style",
-                highlight.color,
-                annotation ?: "",
-                annotationMarkStyle ?: "",
-                resourceIndex,
-                resourceHref,
-                resourceType,
-                resourceTitle,
-                highlightLocations,
-                locationText,
-                bookID = bookId
-        )
-    }
-
-    private fun convertHighlight2NavigationHighlight(highlight: Highlight) = org.readium.r2.navigator.epub.Highlight(
-            highlight.highlightID,
-            highlight.locator,
-            highlight.color,
-            Style.highlight,
-            highlight.annotationMarkStyle
-    )
 
     /**
      * Manage what happens when the focus is put back on the EpubActivity.
@@ -451,30 +370,6 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
             userSettings = UserSettings(preferences, this, publication.userSettingsUIPreset)
             userSettings.resourcePager = resourcePager
         }
-    }
-
-    /**
-     * Determine whether the touch exploration is enabled (i.e. that description of touched elements is orally
-     * fed back to the user) and toggle the ActionBar if it is disabled and if the text to speech is invisible.
-     */
-    override fun toggleActionBar() {
-        val am = getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager
-        isExploreByTouchEnabled = am.isTouchExplorationEnabled
-
-        if (!isExploreByTouchEnabled && !isScreenReaderVisible) {
-            super.toggleActionBar()
-        }
-        launch(coroutineContext) {
-            mode?.finish()
-        }
-    }
-
-    /**
-     * Manage activity destruction.
-     */
-    override fun onDestroy() {
-        super.onDestroy()
-        activitiesLaunched.getAndDecrement()
     }
 
     /**

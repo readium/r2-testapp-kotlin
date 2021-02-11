@@ -43,13 +43,13 @@ class HighlightsFragment : Fragment(R.layout.fragment_listview) {
         super.onViewCreated(view, savedInstanceState)
 
         val comparator: Comparator<Highlight> = compareBy( {it.resourceIndex },{ it.location.progression })
-        val highlights = persistence.getHighlights(comparator).toMutableList()
+        val highlights = persistence.getHighlights(comparator = comparator).toMutableList()
 
         list_view.adapter = HighlightsAdapter(
             requireActivity(),
             highlights,
             publication,
-            onDeleteHighlightRequested = { persistence.removeHighlight(it) }
+            onDeleteHighlightRequested = { persistence.removeHighlight(it.highlightID) }
         )
 
         list_view.setOnItemClickListener { _, _, position, _ -> onHighlightSelected(highlights[position]) }

@@ -50,7 +50,7 @@ class BookmarksFragment : Fragment(R.layout.fragment_listview) {
             requireActivity(),
             bookmarks,
             publication,
-            onBookmarkDeleteRequested = { persistence.removeBookmark(it) }
+            onBookmarkDeleteRequested = { persistence.removeBookmark(it.id!!) }
         )
 
         list_view.setOnItemClickListener { _, _, position, _ -> onBookmarkSelected(bookmarks[position]) }
