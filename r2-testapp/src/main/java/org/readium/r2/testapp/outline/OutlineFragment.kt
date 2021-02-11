@@ -75,10 +75,6 @@ private class OutlineFragmentStateAdapter(fragment: Fragment, val publication: P
             Outline.Landmarks -> createLandmarksFragment()
             Outline.Contents -> createContentsFragment()
             Outline.PageList -> createPageListFragment()
-            /* if (publication.pageList.isNotEmpty())
-                   PageListFragment()
-              else
-                   SyntheticPageListFragment() */
         }
     }
 

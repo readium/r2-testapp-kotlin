@@ -59,7 +59,6 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
     lateinit var userSettings: UserSettings
     private lateinit var highlightDB: HighligtsDatabase
-    private lateinit var positionsDB: PositionsDatabase
     private lateinit var persistence: BookData
 
     //Accessibility
@@ -102,7 +101,6 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         )
 
         highlightDB = HighligtsDatabase(this)
-        positionsDB = PositionsDatabase(this)
 
         super.onCreate(savedInstanceState)
 
@@ -388,13 +386,9 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         val resourceHref = resource.href
         val resourceType = resource.type ?: ""
         val resourceTitle = resource.title ?: ""
-        val currentPage = positionsDB.positions.getCurrentPage(bookId, resourceHref, currentLocator.value.locations.progression!!)?.let {
-            it
-        }
 
         val highlightLocations = highlight.locator.locations.copy(
-            progression = currentLocator.value.locations.progression,
-            position = currentPage?.toInt()
+            progression = currentLocator.value.locations.progression
         )
         val locationText = highlight.locator.text
 
