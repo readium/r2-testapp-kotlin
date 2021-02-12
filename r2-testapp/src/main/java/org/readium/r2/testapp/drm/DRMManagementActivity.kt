@@ -53,11 +53,11 @@ class DRMManagementActivity : AppCompatActivity(), CoroutineScope {
         val pubPath = intent.getStringExtra("publication")
             ?: throw Exception("publication required")
 
-        drmModel = runBlocking { LCPViewModel.from(File(pubPath), this@DRMManagementActivity) }
+        /*drmModel = runBlocking { LCPViewModel.from(File(pubPath), this@DRMManagementActivity) }
             ?: run {
                 finish()
                 return
-            }
+            }*/
 
         coordinatorLayout {
             fitsSystemWindows = true

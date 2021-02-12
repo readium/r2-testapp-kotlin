@@ -8,4 +8,6 @@ interface ReaderNavigation {
     fun showOutlineFragment()
 
     fun closeOutlineFragment(locator: Locator)
+
+    fun showDrmManagementFragment()
 }

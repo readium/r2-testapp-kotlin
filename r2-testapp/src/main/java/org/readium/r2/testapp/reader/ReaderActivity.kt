@@ -11,6 +11,8 @@ import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.allAreBitmap
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.testapp.R
+import org.readium.r2.testapp.drm.DrmManagementContract
+import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.utils.CompositeFragmentFactory
@@ -35,8 +37,17 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
             OutlineContract.REQUEST_KEY,
             this,
             FragmentResultListener { _, result ->
-                val locator = OutlineContract.parseResult(result)
+                val locator = OutlineContract.parseResult(result).destination
                 closeOutlineFragment(locator)
+            }
+        )
+
+        supportFragmentManager.setFragmentResultListener(
+            DrmManagementContract.REQUEST_KEY,
+            this,
+            FragmentResultListener { _, result ->
+                if (DrmManagementContract.parseResult(result).hasReturned)
+                    finish()
             }
         )
 
@@ -81,8 +92,17 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
         supportFragmentManager.popBackStack()
     }
 
+    override fun showDrmManagementFragment() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.activity_supp_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
+            .hide(readerFragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
     companion object {
         const val READER_FRAGMENT_TAG = "reader"
         const val OUTLINE_FRAGMENT_TAG = "outline"
+        const val DRM_FRAGMENT_TAG = "drm"
     }
 }

@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.navigator.audiobook.R2AudiobookActivity
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
+import org.readium.r2.testapp.drm.DrmManagementContract
+import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
@@ -33,8 +35,17 @@ class AudiobookActivity : R2AudiobookActivity(), ReaderNavigation {
             OutlineContract.REQUEST_KEY,
             this,
             FragmentResultListener { _, result ->
-                val locator = OutlineContract.parseResult(result)
+                val locator = OutlineContract.parseResult(result).destination
                 closeOutlineFragment(locator)
+            }
+        )
+
+        supportFragmentManager.setFragmentResultListener(
+            DrmManagementContract.REQUEST_KEY,
+            this,
+            FragmentResultListener { _, result ->
+                if (DrmManagementContract.parseResult(result).hasReturned)
+                    finish()
             }
         )
 
@@ -64,6 +75,16 @@ class AudiobookActivity : R2AudiobookActivity(), ReaderNavigation {
     override fun closeOutlineFragment(locator: Locator) {
         go(locator)
         supportFragmentManager.popBackStack()
+    }
+
+    override fun showDrmManagementFragment() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.activity_supp_container, DrmManagementFragment::class.java, Bundle(),
+                ReaderActivity.DRM_FRAGMENT_TAG
+            )
+            .hide(readerFragment)
+            .addToBackStack(null)
+            .commit()
     }
 }
 

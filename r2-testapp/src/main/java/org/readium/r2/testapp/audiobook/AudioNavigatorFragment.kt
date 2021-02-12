@@ -80,7 +80,7 @@ class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
                 true
             }
             R.id.drm -> {
-                //startActivityForResult(intentFor<DRMManagementActivity>("publication" to publicationPath), 1)
+                navigation.showDrmManagementFragment()
                 true
             }
             else -> false

@@ -70,6 +70,7 @@ abstract class AbstractReaderFragment : Fragment(R.layout.fragment_reader) {
                 true
             }
             R.id.drm -> {
+                navigation.showDrmManagementFragment()
                 true
             }
             else -> false

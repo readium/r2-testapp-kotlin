@@ -10,13 +10,12 @@
 
 package org.readium.r2.testapp.drm
 
-import android.content.Context
 import org.readium.r2.shared.util.Try
 import java.io.Serializable
 import java.util.*
 
 
-abstract class DRMViewModel(val context: Context) : Serializable {
+abstract class DRMViewModel : Serializable {
 
     abstract val type: String
 

@@ -11,6 +11,7 @@
 
 package org.readium.r2.testapp.drm
 
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import org.readium.r2.lcp.LcpLicense
 import org.readium.r2.lcp.LcpService
@@ -20,17 +21,7 @@ import java.io.File
 import java.io.Serializable
 import java.util.*
 
-class LCPViewModel(val lcpLicense: LcpLicense, val activity: FragmentActivity) : DRMViewModel(activity), Serializable {
-
-    companion object {
-
-        suspend fun from(file: File, activity: FragmentActivity): LCPViewModel? {
-            val service = LcpService(activity) ?: return null
-            val license = service.retrieveLicense(file, allowUserInteraction = false)?.getOrNull() ?: return null
-            return LCPViewModel(license, activity)
-        }
-
-    }
+class LCPViewModel(val lcpLicense: LcpLicense, val fragment: Fragment) : DRMViewModel(), Serializable {
 
     override val type: String = "LCP"
 
@@ -63,8 +54,8 @@ class LCPViewModel(val lcpLicense: LcpLicense, val activity: FragmentActivity) :
 
     private val renewListener = MaterialRenewListener(
         license = lcpLicense,
-        caller = activity,
-        fragmentManager = activity.supportFragmentManager
+        caller = fragment,
+        fragmentManager = fragment.childFragmentManager
     )
 
     override val canReturnPublication: Boolean

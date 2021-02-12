@@ -7,6 +7,8 @@ import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
+import org.readium.r2.testapp.drm.DrmManagementContract
+import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
@@ -36,8 +38,17 @@ class EpubReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNa
             OutlineContract.REQUEST_KEY,
             this,
             FragmentResultListener { _, result ->
-                val locator = OutlineContract.parseResult(result)
+                val locator = OutlineContract.parseResult(result).destination
                 closeOutlineFragment(locator)
+            }
+        )
+
+        supportFragmentManager.setFragmentResultListener(
+            DrmManagementContract.REQUEST_KEY,
+            this,
+            FragmentResultListener { _, result ->
+                if (DrmManagementContract.parseResult(result).hasReturned)
+                    finish()
             }
         )
 
@@ -76,8 +87,18 @@ class EpubReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNa
         supportFragmentManager.popBackStack()
     }
 
+
+    override fun showDrmManagementFragment() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.activity_supp_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
+            .hide(readerFragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
     companion object {
         const val READER_FRAGMENT_TAG = "reader"
         const val OUTLINE_FRAGMENT_TAG = "outline"
+        const val DRM_FRAGMENT_TAG = "drm"
     }
 }

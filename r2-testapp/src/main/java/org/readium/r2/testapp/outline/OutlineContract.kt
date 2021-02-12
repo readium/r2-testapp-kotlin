@@ -5,11 +5,17 @@ import org.readium.r2.shared.publication.Locator
 
 object OutlineContract {
 
+    private const val DESTINATION_KEY = "locator"
+
     val REQUEST_KEY: String = OutlineContract::class.java.name
 
-    fun createResult(locator: Locator): Bundle =
-        Bundle().apply { putParcelable("result", locator) }
+    data class Result(val destination: Locator)
 
-    fun parseResult(result: Bundle): Locator =
-        requireNotNull(result.getParcelable("result"))
+    fun createResult(locator: Locator): Bundle =
+        Bundle().apply { putParcelable(DESTINATION_KEY, locator) }
+
+    fun parseResult(result: Bundle): Result {
+        val destination = requireNotNull(result.getParcelable<Locator>(DESTINATION_KEY))
+        return Result(destination)
+    }
 }

@@ -37,6 +37,8 @@ import org.readium.r2.shared.ReadiumCSSName
 import org.readium.r2.shared.SCROLL_REF
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
+import org.readium.r2.testapp.drm.DrmManagementContract
+import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.library.LibraryActivity
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
@@ -65,6 +67,9 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
     private var mode: ActionMode? = null
     private var popupWindow: PopupWindow? = null
 
+    override fun navigatorFragment(): EpubNavigatorFragment =
+        readerFragment.childFragmentManager.findFragmentByTag(getString(R.string.epub_navigator_tag)) as EpubNavigatorFragment
+
     override fun onCreate(savedInstanceState: Bundle?) {
         check(LibraryActivity.isServerStarted)
 
@@ -83,8 +88,17 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
             OutlineContract.REQUEST_KEY,
             this,
             FragmentResultListener { _, result ->
-                val locator = OutlineContract.parseResult(result)
+                val locator = OutlineContract.parseResult(result).destination
                 closeOutlineFragment(locator)
+            }
+        )
+
+        supportFragmentManager.setFragmentResultListener(
+            DrmManagementContract.REQUEST_KEY,
+            this,
+            FragmentResultListener { _, result ->
+                if (DrmManagementContract.parseResult(result).hasReturned)
+                    finish()
             }
         )
 
@@ -94,17 +108,16 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
             readerFragment = EpubReaderFragment.newInstance(baseUrl, bookId)
 
             supportFragmentManager.beginTransaction()
-                .replace(R.id.activity_reader_container, readerFragment, EpubReaderActivity.READER_FRAGMENT_TAG)
+                .replace(R.id.activity_reader_container, readerFragment, READER_FRAGMENT_TAG)
                 .commitNow()
 
         } else {
-            readerFragment = supportFragmentManager.findFragmentByTag(EpubReaderActivity.READER_FRAGMENT_TAG) as EpubReaderFragment
+            readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as EpubReaderFragment
         }
     }
 
     override fun onStart() {
         super.onStart()
-        navigatorFragment = readerFragment.childFragmentManager.findFragmentByTag(getString(R.string.epub_navigator_tag)) as EpubNavigatorFragment
 
         /* FIXME: R2ScreenReader doesn't handle properly the initialization state of the underlying  TTS engine,
          * so screenReader must be started during the activity startup and access from ScreenReaderFragment
@@ -127,16 +140,6 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
     override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {
         return modelFactory
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
-            if (data != null && data.getBooleanExtra("returned", false)) {
-                finish()
-            }
-        }
     }
 
     override fun onActionModeStarted(mode: ActionMode?) {
@@ -396,8 +399,17 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         supportFragmentManager.popBackStack()
     }
 
+    override fun showDrmManagementFragment() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.activity_supp_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
+            .hide(readerFragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
     companion object {
         const val READER_FRAGMENT_TAG = "reader"
         const val OUTLINE_FRAGMENT_TAG = "outline"
+        const val DRM_FRAGMENT_TAG = "drm"
     }
 }
