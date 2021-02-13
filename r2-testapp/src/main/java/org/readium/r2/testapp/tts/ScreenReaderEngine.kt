@@ -235,7 +235,6 @@ class ScreenReaderEngine(val context: Context, val publication: Publication) {
              */
             override fun onStart(utteranceId: String?) {
                 currentUtterance = utteranceId!!.toInt()
-
                 Handler(Looper.getMainLooper()).post {
                     notifyPlayTextChanged(utterances[currentUtterance])
                 }

@@ -25,7 +25,7 @@ class ReaderViewModel(val publication: Publication, val persistence: BookData) :
 }
 
 
-class BookData(context: Context, val bookId: Long, val publication: Publication) {
+class BookData(context: Context, private val bookId: Long, private val publication: Publication) {
 
     private val pubId: String = publication.metadata.identifier ?: publication.metadata.title
     private val booksDb = BooksDatabase(context)

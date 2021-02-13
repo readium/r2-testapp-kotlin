@@ -17,7 +17,7 @@ import org.readium.r2.testapp.utils.singleClick
 /**
  * This class is an adapter for Search results' list view
  */
-class SearchLocatorAdapter(private val activity: Activity, private var results: LiveData<List<Locator>>, private var itemListener: RecyclerViewClickListener) : RecyclerView.Adapter<SearchLocatorAdapter.ViewHolder>() {
+class SearchResultAdapter(private val activity: Activity, private var results: LiveData<List<Locator>>, private var itemListener: RecyclerViewClickListener) : RecyclerView.Adapter<SearchResultAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val inflater = activity.applicationContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater

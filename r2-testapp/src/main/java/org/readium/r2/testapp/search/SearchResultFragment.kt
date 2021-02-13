@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import kotlinx.android.synthetic.main.fragment_search.*
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.search.SearchLocatorAdapter
 
 class SearchFragment : Fragment(R.layout.fragment_search) {
 
@@ -29,7 +28,7 @@ class SearchFragment : Fragment(R.layout.fragment_search) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val adapter =  SearchLocatorAdapter(requireActivity(), searchResult, object : SearchLocatorAdapter.RecyclerViewClickListener {
+        val adapter =  SearchResultAdapter(requireActivity(), searchResult, object : SearchResultAdapter.RecyclerViewClickListener {
             override fun recyclerViewListClicked(v: View, position: Int) {
                 val result = Bundle().apply {
                     putParcelable(SearchFragment::class.java.name, searchResult.value!![position])
