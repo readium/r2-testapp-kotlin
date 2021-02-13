@@ -20,7 +20,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
-import kotlinx.coroutines.launch
 import org.jetbrains.anko.support.v4.indeterminateProgressDialog
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
@@ -111,7 +110,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
 
     override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
         super.onCreateOptionsMenu(menu, menuInflater)
-        menuInflater.inflate(R.menu.menu_epub2, menu)
+        menuInflater.inflate(R.menu.menu_epub, menu)
 
         menuScreenReader = menu.findItem(R.id.screen_reader)
         menuSearch = menu.findItem(R.id.search)

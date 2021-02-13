@@ -152,5 +152,7 @@
     <string name="highlights_tab_label">Highlights</string>
     <string name="pagelist_tab_label">Page List</string>
     <string name="landmarks_tab_label">Landmarks</string>
+    <string name="action_mode_menu_highlight">Highlight</string>
+    <string name="action_mode_menu_note">Note</string>
 
 </resources>
