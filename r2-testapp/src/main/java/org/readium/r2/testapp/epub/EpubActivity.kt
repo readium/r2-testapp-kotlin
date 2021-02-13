@@ -123,19 +123,10 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
          * so screenReader must be started during the activity startup and access from ScreenReaderFragment
          * This doesn't fix orientation changes while the ScreenReader fragment is visible.
          */
-        Handler().postDelayed({
-            val port = preferences.getString("$publicationIdentifier-publicationPort", 0.toString())?.toInt()
-            port?.let {
-                screenReader = R2ScreenReader(
-                    this,
-                    this,
-                    this,
-                    publication,
-                    port,
-                    publicationFileName
-                )
-            }
-        }, 500)
+        Handler().postDelayed(
+            { screenReader = R2ScreenReader(this, this, this, publication) },
+            500
+        )
     }
 
     override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {

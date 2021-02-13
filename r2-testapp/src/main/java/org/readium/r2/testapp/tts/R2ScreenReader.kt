@@ -14,10 +14,14 @@ import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.widget.Toast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.select.Elements
 import org.readium.r2.navigator.IR2TTS
 import org.readium.r2.navigator.VisualNavigator
+import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.testapp.BuildConfig.DEBUG
 import timber.log.Timber
@@ -31,7 +35,7 @@ import java.util.*
  * Basic screen reader overlay that uses Android's TextToSpeech
  */
 
-class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigator: VisualNavigator, var publication: Publication, private var port: Int, private var epubName: String) {
+class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigator: VisualNavigator, val publication: Publication) {
 
     private var initialized = false
 
@@ -91,10 +95,10 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
 
         //Initialize TTS
         textToSpeech = TextToSpeech(context,
-                TextToSpeech.OnInitListener { status ->
-                    initialized = (status != TextToSpeech.ERROR)
-                    if (DEBUG) Timber.tag(this::class.java.simpleName).d("textToSpeech initialization status: $initialized")
-                })
+            TextToSpeech.OnInitListener { status ->
+                initialized = (status != TextToSpeech.ERROR)
+                if (DEBUG) Timber.tag(this::class.java.simpleName).d("textToSpeech initialization status: $initialized")
+            })
     }
 
 
@@ -171,8 +175,10 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
         val language = textToSpeech.setLanguage(Locale(publication.metadata.languages.firstOrNull() ?: ""))
 
         if (language == TextToSpeech.LANG_MISSING_DATA || language == TextToSpeech.LANG_NOT_SUPPORTED) {
-            Toast.makeText(context.applicationContext, "There was an error with the TTS language, switching "
-                    + "to EN-US", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                context.applicationContext, "There was an error with the TTS language, switching "
+                        + "to EN-US", Toast.LENGTH_LONG
+            ).show()
             textToSpeech.language = Locale.US
         }
     }
@@ -182,20 +188,10 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
      *
      * @return: Boolean - Whether utterances was able to be filled or not.
      */
-    private fun setUtterances(): Boolean {
+    private suspend fun setUtterances(): Boolean {
         //Load resource as sentences
         utterances = mutableListOf()
-        val url = Publication.localUrlOf(filename = epubName, port = port, href = items[resourceIndex].href)
-        splitResourceAndAddToUtterances(url)
-
-//        while (++resourceIndex < items.size && utterances.size == 0) {
-//            val url = Publication.localUrlOf(filename = epubName, port = port, href = items[resourceIndex].href)
-//            splitResourceAndAddToUtterances(url)
-//        }
-//
-//        if (resourceIndex == items.size)
-//            --resourceIndex
-
+        splitResourceAndAddToUtterances(items[resourceIndex])
         return utterances.size != 0
     }
 
@@ -204,10 +200,10 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
      *
      * @return: Boolean - Whether executing the function was successful or not.
      */
-    private fun configure(): Boolean {
+    private suspend fun configure(): Boolean {
         setTTSLanguage()
 
-        return setUtterances()
+        return withContext(Dispatchers.Default) { setUtterances() }
                 && flushUtterancesQueue()
                 && setTTSCallbacks()
     }
@@ -280,7 +276,8 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
              * @param utteranceId The utterance ID of the utterance.
              */
             override fun onError(utteranceId: String?) {
-                if (DEBUG) Timber.tag(this::class.java.simpleName).e("Error saying: ${utterances[utteranceId!!.toInt()]}")
+                if (DEBUG) Timber.tag(this::class.java.simpleName)
+                    .e("Error saying: ${utterances[utteranceId!!.toInt()]}")
             }
         })
 
@@ -317,9 +314,10 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
      */
     private fun startReading(): Boolean {
         isPaused = false
-        if (initialized && configure()) {
+        if (initialized && runBlocking {  configure() }) {
             if (currentUtterance >= utterances.size) {
-                if (DEBUG) Timber.tag(this::class.java.simpleName).e("Invalid currentUtterance value: $currentUtterance . Expected less than $utterances.size")
+                if (DEBUG) Timber.tag(this::class.java.simpleName)
+                    .e("Invalid currentUtterance value: $currentUtterance . Expected less than $utterances.size")
                 currentUtterance = 0
             }
             val index = currentUtterance
@@ -337,8 +335,8 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
 
         if (!initialized) {
             Toast.makeText(
-                    context.applicationContext, "There was an error with the TTS initialization",
-                    Toast.LENGTH_LONG
+                context.applicationContext, "There was an error with the TTS initialization",
+                Toast.LENGTH_LONG
             ).show()
         }
 
@@ -447,7 +445,8 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
      */
     private fun addToUtterancesQueue(utterance: String, index: Int): Boolean {
         if (textToSpeech.speak(utterance, TextToSpeech.QUEUE_ADD, null, index.toString()) == TextToSpeech.ERROR) {
-            if (DEBUG) Timber.tag(this::class.java.simpleName).e("Error while adding utterance: $utterance to the TTS queue")
+            if (DEBUG) Timber.tag(this::class.java.simpleName)
+                .e("Error while adding utterance: $utterance to the TTS queue")
             return false
         }
 
@@ -481,7 +480,8 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
             val element = elements.eq(i)
 
             if (element.`is`("p") || element.`is`("h1") || element.`is`("h2")
-                    || element.`is`("h3") || element.`is`("div") || element.`is`("span")) {
+                || element.`is`("h3") || element.`is`("div") || element.`is`("span")
+            ) {
 
                 //val sentences = element.text().split(Regex("(?<=\\. |(,{1}))"))
                 val sentences = element.text().split(Regex("(?<=\\.)"))
@@ -491,7 +491,7 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
                     if (sentenceCleaned.isNotEmpty()) {
                         if (sentenceCleaned.first() == ' ') sentenceCleaned = sentenceCleaned.removeRange(0, 1)
                         if (sentenceCleaned.last() == ' ') sentenceCleaned =
-                                sentenceCleaned.removeRange(sentenceCleaned.length - 1, sentenceCleaned.length)
+                            sentenceCleaned.removeRange(sentenceCleaned.length - 1, sentenceCleaned.length)
                         utterances.add(sentenceCleaned)
                         index++
                     }
@@ -503,30 +503,22 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
     /**
      * Fetch a resource and get short sentences from it.
      *
-     * @param resourceUrl: String - The html resource to fetch from the internal server, containing the text to be
-     *   voiced.
+     * @param link: String - A link to the html resource to fetch, containing the text to be voiced.
      *
      * @return: Boolean - Whether the function executed successfully.
      */
-    private fun splitResourceAndAddToUtterances(resourceUrl: String?): Boolean {
-        var success = false
-        val thread = Thread(Runnable {
-            try {
-                val document = Jsoup.connect(resourceUrl).get()
-                val elements = document.select("*")
+    private suspend fun splitResourceAndAddToUtterances(link: Link): Boolean {
+        try {
+            val resource = publication.get(link).readAsString(charset = null).getOrThrow()
+            val document = Jsoup.parse(resource)
+            val elements = document.select("*")
 
-                splitParagraphAndAddToUtterances(elements)
+            splitParagraphAndAddToUtterances(elements)
+            return true
 
-            } catch (e: IOException) {
-                if (DEBUG) Timber.tag(this::class.java.simpleName).e(e.toString())
-                success = false
-                return@Runnable
-            }
-            success = true
-        })
-
-        thread.start()
-        thread.join()
-        return success
+        } catch (e: IOException) {
+            if (DEBUG) Timber.tag(this::class.java.simpleName).e(e.toString())
+            return false
+        }
     }
 }
