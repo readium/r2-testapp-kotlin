@@ -7,26 +7,19 @@ import android.view.View
 import android.widget.Toast
 import androidx.core.widget.TextViewCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.testapp.R
 import kotlinx.android.synthetic.main.fragment_screen_reader.*
-import org.readium.r2.navigator.IR2TTS
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.testapp.epub.EpubActivity
 import org.readium.r2.testapp.reader.EpubReaderFragment
+import org.readium.r2.testapp.reader.ReaderViewModel
 
-class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), IR2TTS {
+class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), ScreenReaderEngine.Listener {
 
     private val activity: EpubActivity
-        get () =
-        requireActivity() as EpubActivity
-
-    private val publication: Publication get() =
-        activity.publication
-
-    private val screenReader: R2ScreenReader
-        get() =
-        activity.screenReader
+        get () = requireActivity() as EpubActivity
 
     private val preferences: SharedPreferences get() =
         activity.preferences
@@ -34,43 +27,49 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), IR2TTS {
     private val epubNavigator: EpubNavigatorFragment get() =
         (parentFragment as EpubReaderFragment).navigatorFragment
 
+    private lateinit var publication: Publication
+
+    private lateinit var screenReader: ScreenReaderEngine
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        ViewModelProvider(activity).get(ReaderViewModel::class.java).let {
+            publication = it.publication
+        }
+
+        screenReader = ScreenReaderEngine(activity, publication)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        screenReader.addListener(this)
 
         titleView.text = publication.metadata.title
 
         play_pause.setOnClickListener {
             if (screenReader.isPaused) {
                 screenReader.resumeReading()
-                play_pause.setImageResource(android.R.drawable.ic_media_pause)
             } else {
                 screenReader.pauseReading()
-                play_pause.setImageResource(android.R.drawable.ic_media_play)
             }
         }
         fast_forward.setOnClickListener {
-            if (screenReader.nextSentence()) {
-                play_pause.setImageResource(android.R.drawable.ic_media_pause)
-            } else {
+            if (!screenReader.nextSentence()) {
                 next_chapter.callOnClick()
             }
         }
         next_chapter.setOnClickListener {
             screenReader.nextResource()
-            play_pause.setImageResource(android.R.drawable.ic_media_pause)
         }
 
         fast_back.setOnClickListener {
-            if (screenReader.previousSentence()) {
-                play_pause.setImageResource(android.R.drawable.ic_media_pause)
-            } else {
+            if (!screenReader.previousSentence()) {
                 prev_chapter.callOnClick()
             }
         }
         prev_chapter.setOnClickListener {
             screenReader.previousResource()
-            play_pause.setImageResource(android.R.drawable.ic_media_pause)
         }
 
         //Get user settings speed when opening the screen reader. Get a neutral percentage (corresponding to
@@ -82,48 +81,31 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), IR2TTS {
         //Convert percentage to a float value between 0.25 and 3.0
         val ttsSpeed = 0.25.toFloat() + (speed.toFloat() / 100.toFloat()) * 2.75.toFloat()
 
-        updateScreenReaderSpeed(ttsSpeed, false)
+        updateScreenReaderSpeed(ttsSpeed)
+        screenReader.goTo(epubNavigator.resourcePager.currentItem)
+    }
 
-        if (screenReader.goTo(epubNavigator.resourcePager.currentItem)) {
+    override fun onPlayStateChanged(playing: Boolean) {
+        if (playing) {
             play_pause.setImageResource(android.R.drawable.ic_media_pause)
         } else {
-            Toast.makeText(requireActivity().applicationContext, "No further chapter contains text to read", Toast.LENGTH_LONG).show()
+            play_pause.setImageResource(android.R.drawable.ic_media_play)
         }
     }
 
-    override fun playStateChanged(playing: Boolean) {
-        super.playStateChanged(playing)
-        if (playing) {
-            play_pause?.setImageResource(android.R.drawable.ic_media_pause)
-        } else {
-            play_pause?.setImageResource(android.R.drawable.ic_media_play)
-        }
+    override fun onEndReached() {
+        Toast.makeText(requireActivity().applicationContext, "No further chapter contains text to read", Toast.LENGTH_LONG).show()
     }
 
-    override fun playTextChanged(text: String) {
-        super.playTextChanged(text)
+    override fun onPlayTextChanged(text: String) {
         tts_textView.text = text
         TextViewCompat.setAutoSizeTextTypeUniformWithConfiguration(tts_textView!!, 1, 30, 1, TypedValue.COMPLEX_UNIT_DIP)
     }
 
-    override fun onResume() {
-        super.onResume()
-
-        if (screenReader.currentResource != epubNavigator.resourcePager.currentItem) {
-            screenReader.goTo(epubNavigator.resourcePager.currentItem)
-        }
-
-        if (screenReader.isPaused) {
-            screenReader.resumeReading()
-            play_pause.setImageResource(android.R.drawable.ic_media_pause)
-        } else {
-            screenReader.pauseReading()
-            play_pause.setImageResource(android.R.drawable.ic_media_play)
-        }
-        screenReader.onResume()
-
+    override fun onDestroyView() {
+        screenReader.removeListener(this)
+        super.onDestroyView()
     }
-
 
     /**
      * Shutdown sceenReader is view is destroyed.
@@ -153,12 +135,12 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), IR2TTS {
     }
 
     /**
-     * The function allows to access the [R2ScreenReader] instance and set the TextToSpeech speech speed.
+     * The function allows to access the [ScreenReaderEngine] instance and set the TextToSpeech speech speed.
      * Values are limited between 0.25 and 3.0 included.
      *
      * @param speed: Float - The speech speed we wish to use with Android's TextToSpeech.
      */
-    fun updateScreenReaderSpeed(speed: Float, restart: Boolean) {
+    private fun updateScreenReaderSpeed(speed: Float) {
         var rSpeed = speed
 
         if (speed < 0.25) {
@@ -166,7 +148,7 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), IR2TTS {
         } else if (speed > 3.0) {
             rSpeed = 3.0.toFloat()
         }
-        screenReader.setSpeechSpeed(rSpeed, restart)
+        screenReader.setSpeechSpeed(rSpeed, restart = false)
     }
 
 }

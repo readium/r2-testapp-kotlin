@@ -11,6 +11,8 @@
 package org.readium.r2.testapp.tts
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.widget.Toast
@@ -19,8 +21,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.select.Elements
-import org.readium.r2.navigator.IR2TTS
-import org.readium.r2.navigator.VisualNavigator
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.testapp.BuildConfig.DEBUG
@@ -28,16 +28,66 @@ import timber.log.Timber
 import java.io.IOException
 import java.util.*
 
-
 /**
- * R2ScreenReader
+ * ScreenReader
  *
- * Basic screen reader overlay that uses Android's TextToSpeech
+ * Basic screen reader engine that uses Android's TextToSpeech
  */
 
-class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigator: VisualNavigator, val publication: Publication) {
+class ScreenReaderEngine(val context: Context, val publication: Publication) {
+
+    interface Listener {
+
+        fun onPlayTextChanged(text: String)
+
+        fun onPlayStateChanged(playing: Boolean)
+
+        fun onEndReached()
+    }
+
+    private var listeners: MutableList<Listener> = mutableListOf()
+
+    fun addListener(listener: Listener) {
+        listeners.add(listener)
+    }
+
+    fun removeListener(listener: Listener) {
+        listeners.remove(listener)
+    }
+
+    // To avoid lifecycle issues, all `notify` functions will be called on the UI thread and
+    // dispatch events to every listener attached at this time.
+    private fun notifyPlayTextChanged(text: String) {
+        for (listener in listeners) {
+            listener.onPlayTextChanged(text)
+        }
+    }
+
+    private fun notifyPlayStateChanged(playing: Boolean) {
+        for (listener in listeners) {
+            listener.onPlayStateChanged(playing)
+        }
+    }
+
+    private fun notifyEndReached() {
+        for (listener in listeners) {
+            listener.onEndReached()
+        }
+    }
+
+    private enum class PlaySentence(val value: Int) {
+        SAME(0),
+        NEXT(1),
+        PREV(-1)
+    }
+
+    var isPaused: Boolean = false
 
     private var initialized = false
+
+    private var pendingStartReadingResource = false
+
+    private val items = publication.readingOrder
 
     private var resourceIndex = 0
         set(value) {
@@ -71,50 +121,25 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
             if (DEBUG) Timber.tag(this::class.java.simpleName).d("Current utterance index: $currentUtterance")
         }
 
-    private var items = publication.readingOrder
-
-    private enum class PLAY_SENTENCE(val value: Int) {
-        SAME(0),
-        NEXT(1),
-        PREV(-1)
-    }
-
-    private var textToSpeech: TextToSpeech
-
-    var isPaused: Boolean
-
-    val isSpeaking: Boolean
-        get() = textToSpeech.isSpeaking
-
-    val currentResource
-        get() = resourceIndex
-
-
-    init {
-        isPaused = false
-
-        //Initialize TTS
-        textToSpeech = TextToSpeech(context,
+    private var textToSpeech: TextToSpeech =
+        TextToSpeech(context,
             TextToSpeech.OnInitListener { status ->
                 initialized = (status != TextToSpeech.ERROR)
-                if (DEBUG) Timber.tag(this::class.java.simpleName).d("textToSpeech initialization status: $initialized")
+                onPrepared()
             })
-    }
 
-
-    /**
-     * - Set a temporary var to isPaused (isPaused's value may be altered by calls).
-     * - Start initialization if [utterances] is empty.
-     * - Stop [textToSpeech] if it is reading.
-     */
-    fun onResume() {
-        val paused = isPaused
-
-        if (utterances.size == 0) {
-            startReading()
+    private fun onPrepared() {
+        if (DEBUG) Timber.tag(this::class.java.simpleName).d("textToSpeech initialization status: $initialized")
+        if (!initialized) {
+            Toast.makeText(
+                context.applicationContext, "There was an error with the TTS initialization",
+                Toast.LENGTH_LONG
+            ).show()
         }
-        if (paused) {
-            pauseReading()
+
+        if (pendingStartReadingResource) {
+            pendingStartReadingResource = false
+            startReadingResource()
         }
     }
 
@@ -125,52 +150,37 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
      * - Start [textToSpeech] setup.
      *
      * @param resource: Int - The index of the resource we want read.
-     * @return: Boolean - Whether the function executed successfully.
      */
-    fun goTo(resource: Int): Boolean {
-        if (resource >= items.size)
-            return false
-
+    fun goTo(resource: Int) {
         resourceIndex = resource
         isPaused = false
 
         if (textToSpeech.isSpeaking) {
             textToSpeech.stop()
         }
-        return startReading()
+        startReadingResource()
     }
 
-    /**
-     * @return: Boolean - Whether the function executed successfully.
-     */
-    fun previousResource(): Boolean {
+    fun previousResource() {
         resourceIndex--
         isPaused = false
 
         if (textToSpeech.isSpeaking) {
             textToSpeech.stop()
         }
-
-        return startReading()
+        startReadingResource()
     }
 
-    /**
-     * @return: Boolean - Whether the function executed successfully.
-     */
-    fun nextResource(): Boolean {
+    fun nextResource() {
         resourceIndex++
         isPaused = false
 
         if (textToSpeech.isSpeaking) {
             textToSpeech.stop()
         }
-
-        return startReading()
+        startReadingResource()
     }
 
-    /**
-     * Inner function that sets the Text To Speech language.
-     */
     private fun setTTSLanguage() {
         val language = textToSpeech.setLanguage(Locale(publication.metadata.languages.firstOrNull() ?: ""))
 
@@ -226,19 +236,8 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
             override fun onStart(utteranceId: String?) {
                 currentUtterance = utteranceId!!.toInt()
 
-                ttsCallbacks.playTextChanged(utterances[currentUtterance])
-                ttsCallbacks.playStateChanged(true)
-            }
-
-            /**
-             * Called when an utterance is stopped, whether voluntarily by the user, or not.
-             *
-             * @param utteranceId The utterance ID of the utterance.
-             * @param interrupted Whether or not the speaking has been interrupted.
-             */
-            override fun onStop(utteranceId: String?, interrupted: Boolean) {
-                if (interrupted) {
-                    ttsCallbacks.playStateChanged(false)
+                Handler(Looper.getMainLooper()).post {
+                    notifyPlayTextChanged(utterances[currentUtterance])
                 }
             }
 
@@ -252,16 +251,14 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
              * @param utteranceId The utterance ID of the utterance.
              */
             override fun onDone(utteranceId: String?) {
-                ttsCallbacks.playStateChanged(false)
-
-                if (utteranceId.equals((utterances.size - 1).toString())) {
+              if (utteranceId.equals((utterances.size - 1).toString())) {
                     if (items.size - 1 == resourceIndex) {
-                        dismissScreenReader()
                         stopReading()
+                        Handler(Looper.getMainLooper()).post {
+                            notifyPlayStateChanged(false)
+                        }
                     } else {
-                        navigator.goForward(false, completion = {})
                         nextResource()
-                        startReading()
                     }
                 }
             }
@@ -290,14 +287,6 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
     }
 
     /**
-     * Dismiss the screen reader
-     */
-    private fun dismissScreenReader() {
-        pauseReading()
-        ttsCallbacks.dismissScreenReader()
-    }
-
-    /**
      * Stop reading and destroy the [textToSpeech].
      */
     fun shutdown() {
@@ -308,13 +297,18 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
 
     /**
      * Set [isPaused] to false and add the [utterances] to the [textToSpeech] queue if [configure] worked
-     * successfully (returning true)
-     *
-     * @return: Boolean - Whether the function executed successfully.
+     * successfully
      */
-    private fun startReading(): Boolean {
+    private fun startReadingResource() {
+        if (!initialized) {
+            pendingStartReadingResource = true
+            return
+        }
+
         isPaused = false
-        if (initialized && runBlocking {  configure() }) {
+        notifyPlayStateChanged(true)
+
+        if (runBlocking {  configure() }) {
             if (currentUtterance >= utterances.size) {
                 if (DEBUG) Timber.tag(this::class.java.simpleName)
                     .e("Invalid currentUtterance value: $currentUtterance . Expected less than $utterances.size")
@@ -322,25 +316,16 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
             }
             val index = currentUtterance
             for (i in index until utterances.size) {
-                if (!addToUtterancesQueue(utterances[i], i))
-                    return false
+                addToUtterancesQueue(utterances[i], i)
             }
-
-            return true
-        } else if (initialized && (items.size - 1) > resourceIndex) {
-            navigator.goForward(false, completion = {})
-            return nextResource()
+        } else if ((items.size - 1) > resourceIndex) {
+            nextResource()
+        } else {
+            Handler(Looper.getMainLooper()).post {
+                notifyPlayStateChanged(false)
+                notifyEndReached()
+            }
         }
-
-
-        if (!initialized) {
-            Toast.makeText(
-                context.applicationContext, "There was an error with the TTS initialization",
-                Toast.LENGTH_LONG
-            ).show()
-        }
-
-        return false
     }
 
     /**
@@ -350,6 +335,7 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
     fun pauseReading() {
         isPaused = true
         textToSpeech.stop()
+        notifyPlayStateChanged(false)
     }
 
     /**
@@ -359,6 +345,7 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
     fun stopReading() {
         isPaused = false
         textToSpeech.stop()
+        notifyPlayStateChanged(false)
     }
 
     /**
@@ -367,7 +354,8 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
      * @return Boolean - Whether resuming playing from the start of the current track was successful.
      */
     fun resumeReading() {
-        playSentence(PLAY_SENTENCE.SAME)
+        playSentence(PlaySentence.SAME)
+        notifyPlayStateChanged(true)
     }
 
     /**
@@ -376,7 +364,7 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
      * @return Boolean - Whether moving to the next sentence was successful.
      */
     fun nextSentence(): Boolean {
-        return playSentence(PLAY_SENTENCE.NEXT)
+        return playSentence(PlaySentence.NEXT)
     }
 
     /**
@@ -385,7 +373,7 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
      * @return Boolean - Whether moving to the previous sentence was successful.
      */
     fun previousSentence(): Boolean {
-        return playSentence(PLAY_SENTENCE.PREV)
+        return playSentence(PlaySentence.PREV)
     }
 
     /**
@@ -416,11 +404,11 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
     /**
      * Reorder the text to speech queue (after flushing it) according to the current track and the argument value.
      *
-     * @param playSentence: [PLAY_SENTENCE] - The track to play (relative to the current track).
+     * @param playSentence: [PlaySentence] - The track to play (relative to the current track).
      *
      * @return Boolean - Whether the function was executed successfully.
      */
-    private fun playSentence(playSentence: PLAY_SENTENCE): Boolean {
+    private fun playSentence(playSentence: PlaySentence): Boolean {
         isPaused = false
         val index = currentUtterance + playSentence.value
 
@@ -508,17 +496,16 @@ class R2ScreenReader(var context: Context, var ttsCallbacks: IR2TTS, var navigat
      * @return: Boolean - Whether the function executed successfully.
      */
     private suspend fun splitResourceAndAddToUtterances(link: Link): Boolean {
-        try {
+        return try {
             val resource = publication.get(link).readAsString(charset = null).getOrThrow()
             val document = Jsoup.parse(resource)
             val elements = document.select("*")
-
             splitParagraphAndAddToUtterances(elements)
-            return true
+            true
 
         } catch (e: IOException) {
             if (DEBUG) Timber.tag(this::class.java.simpleName).e(e.toString())
-            return false
+            false
         }
     }
 }

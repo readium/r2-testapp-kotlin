@@ -48,17 +48,21 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
     override lateinit var navigator: Navigator
     lateinit var navigatorFragment: EpubNavigatorFragment
 
-    private var isScreenReaderVisible = false
     private lateinit var menuScreenReader: MenuItem
-
     private lateinit var menuSearch: MenuItem
     lateinit var menuSearchView: SearchView
+
+    private var isScreenReaderVisible = false
     lateinit var searchResult: MutableLiveData<List<Locator>>
 
     private val activity: EpubActivity
         get() = requireActivity() as EpubActivity
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (savedInstanceState != null) {
+            isScreenReaderVisible = savedInstanceState.getBoolean(IS_SCREEN_READER_VISIBLE_KEY)
+        }
+
         ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
             publication = it.publication
             persistence = it.persistence
@@ -145,6 +149,11 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
         })
 
         prepareSearchView()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putBoolean(IS_SCREEN_READER_VISIBLE_KEY, isScreenReaderVisible)
     }
 
     private fun prepareSearchView() {
@@ -325,6 +334,8 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
         private const val BOOK_ID_ARG = "bookId"
 
         private const val SEARCH_FRAGMENT_TAG = "search"
+
+        private const val IS_SCREEN_READER_VISIBLE_KEY = "isScreenReaderVisible"
 
         fun newInstance(baseUrl: String, bookId: Long): EpubReaderFragment {
             return EpubReaderFragment().apply {

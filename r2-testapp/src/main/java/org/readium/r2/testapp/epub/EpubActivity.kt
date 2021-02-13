@@ -10,9 +10,7 @@
 
 package org.readium.r2.testapp.epub
 
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.graphics.Point
 import android.graphics.Rect
@@ -47,7 +45,6 @@ import org.readium.r2.testapp.reader.EpubReaderFragment
 import org.readium.r2.testapp.reader.ReaderNavigation
 import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.reader.toNavigatorHighlight
-import org.readium.r2.testapp.tts.R2ScreenReader
 import org.readium.r2.testapp.utils.NavigatorContract
 
 class EpubActivity : R2EpubActivity(), ReaderNavigation {
@@ -61,7 +58,6 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
     //Accessibility
     private var isExploreByTouchEnabled = false
     private var pageEnded = false
-    lateinit var screenReader: R2ScreenReader
 
     // Highlights
     private var mode: ActionMode? = null
@@ -114,19 +110,6 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         } else {
             readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as EpubReaderFragment
         }
-    }
-
-    override fun onStart() {
-        super.onStart()
-
-        /* FIXME: R2ScreenReader doesn't handle properly the initialization state of the underlying  TTS engine,
-         * so screenReader must be started during the activity startup and access from ScreenReaderFragment
-         * This doesn't fix orientation changes while the ScreenReader fragment is visible.
-         */
-        Handler().postDelayed(
-            { screenReader = R2ScreenReader(this, this, this, publication) },
-            500
-        )
     }
 
     override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {
