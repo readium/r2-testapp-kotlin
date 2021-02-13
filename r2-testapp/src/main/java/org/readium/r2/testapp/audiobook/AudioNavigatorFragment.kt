@@ -12,6 +12,7 @@ import kotlinx.android.synthetic.main.fragment_audiobook.*
 import kotlinx.coroutines.launch
 import org.jetbrains.anko.support.v4.indeterminateProgressDialog
 import org.jetbrains.anko.support.v4.toast
+import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.navigator.audiobook.R2MediaPlayer
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.cover
@@ -65,7 +66,7 @@ class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
 
     override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
         menuInflater.inflate(R.menu.menu_reader, menu)
-        menu.findItem(R.id.drm).isVisible = publication.isProtected
+        menu.findItem(R.id.drm).isVisible = publication.lcpLicense != null
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {

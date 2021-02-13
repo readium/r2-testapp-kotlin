@@ -11,11 +11,9 @@
 package org.readium.r2.testapp.drm
 
 import org.readium.r2.shared.util.Try
-import java.io.Serializable
 import java.util.*
 
-
-abstract class DRMViewModel : Serializable {
+abstract class DrmViewModel {
 
     abstract val type: String
 

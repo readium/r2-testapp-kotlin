@@ -12,16 +12,12 @@
 package org.readium.r2.testapp.drm
 
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import org.readium.r2.lcp.LcpLicense
-import org.readium.r2.lcp.LcpService
 import org.readium.r2.lcp.MaterialRenewListener
 import org.readium.r2.shared.util.Try
-import java.io.File
-import java.io.Serializable
 import java.util.*
 
-class LCPViewModel(val lcpLicense: LcpLicense, val fragment: Fragment) : DRMViewModel(), Serializable {
+class LcpViewModel(val lcpLicense: LcpLicense, val fragment: Fragment) : DrmViewModel() {
 
     override val type: String = "LCP"
 

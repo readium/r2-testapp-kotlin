@@ -14,25 +14,23 @@ import org.jetbrains.anko.appcompat.v7.Appcompat
 import org.jetbrains.anko.design.longSnackbar
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-import org.readium.r2.lcp.LcpContentProtectionService
+import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.shared.UserException
-import org.readium.r2.shared.publication.services.ContentProtectionService
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.reader.ReaderViewModel
 import java.util.Date
 
 class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
 
-    private lateinit var model: DRMViewModel
+    private lateinit var model: DrmViewModel
     private lateinit var endTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val publication = ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).publication
-        val service = publication.findService(ContentProtectionService::class)!! as LcpContentProtectionService
-        val license = service.license!!
-        model = LCPViewModel(license, this)
+        val license = checkNotNull(publication.lcpLicense)
+        model = LcpViewModel(license, this)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -58,7 +56,6 @@ class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
         view.findViewById<View>(R.id.drm_start).run {
             visibility = datesVisibility
         }
-
         view.findViewById<TextView>(R.id.drm_value_start).run {
             text = model.start.toFormattedString()
         }

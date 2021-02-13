@@ -7,6 +7,7 @@ import android.view.MenuItem
 import android.view.View
 import androidx.fragment.app.Fragment
 import org.jetbrains.anko.support.v4.toast
+import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
@@ -55,7 +56,7 @@ abstract class AbstractReaderFragment : Fragment(R.layout.fragment_reader) {
 
     override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
         menuInflater.inflate(R.menu.menu_reader, menu)
-        menu.findItem(R.id.drm).isVisible = publication.isProtected
+        menu.findItem(R.id.drm).isVisible = publication.lcpLicense != null
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
