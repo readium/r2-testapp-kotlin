@@ -10,6 +10,7 @@
 
 package org.readium.r2.testapp.epub
 
+import android.app.Activity
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Point

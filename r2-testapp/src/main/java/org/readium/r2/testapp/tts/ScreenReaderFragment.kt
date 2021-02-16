@@ -7,14 +7,21 @@ import android.view.View
 import android.widget.Toast
 import androidx.core.widget.TextViewCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.setFragmentResult
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.testapp.R
 import kotlinx.android.synthetic.main.fragment_screen_reader.*
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
+import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
+import org.readium.r2.shared.publication.firstWithHref
+import org.readium.r2.shared.publication.indexOfFirstWithHref
 import org.readium.r2.testapp.epub.EpubActivity
 import org.readium.r2.testapp.reader.EpubReaderFragment
 import org.readium.r2.testapp.reader.ReaderViewModel
+import timber.log.Timber
 
 class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), ScreenReaderEngine.Listener {
 
@@ -23,9 +30,6 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), ScreenRe
 
     private val preferences: SharedPreferences get() =
         activity.preferences
-
-    private val epubNavigator: EpubNavigatorFragment get() =
-        (parentFragment as EpubReaderFragment).navigatorFragment
 
     private lateinit var publication: Publication
 
@@ -82,7 +86,9 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), ScreenRe
         val ttsSpeed = 0.25.toFloat() + (speed.toFloat() / 100.toFloat()) * 2.75.toFloat()
 
         updateScreenReaderSpeed(ttsSpeed)
-        screenReader.goTo(epubNavigator.resourcePager.currentItem)
+        val initialLocator = ScreenReaderContract.parseArguments(requireArguments()).locator
+        val resourceIndex = requireNotNull(publication.readingOrder.indexOfFirstWithHref(initialLocator.href))
+        screenReader.goTo(resourceIndex)
     }
 
     override fun onPlayStateChanged(playing: Boolean) {
@@ -107,9 +113,6 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), ScreenRe
         super.onDestroyView()
     }
 
-    /**
-     * Shutdown sceenReader is view is destroyed.
-     */
     override fun onDestroy() {
         super.onDestroy()
         try {
@@ -118,20 +121,16 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), ScreenRe
         }
     }
 
-    /**
-     * Pause the screenReader if view is paused.
-     */
     override fun onPause() {
         super.onPause()
         screenReader.pauseReading()
     }
 
-    /**
-     * Stop the screenReader if app is view is stopped.
-     */
     override fun onStop() {
         super.onStop()
         screenReader.stopReading()
+        val result = ScreenReaderContract.createResult(screenReader.currentLocator)
+        setFragmentResult(ScreenReaderContract.REQUEST_KEY, result)
     }
 
     /**
@@ -150,5 +149,4 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), ScreenRe
         }
         screenReader.setSpeechSpeed(rSpeed, restart = false)
     }
-
 }

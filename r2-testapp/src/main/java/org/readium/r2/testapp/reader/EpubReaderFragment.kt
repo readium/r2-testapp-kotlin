@@ -37,7 +37,9 @@ import org.readium.r2.testapp.tts.ScreenReaderFragment
 import org.readium.r2.testapp.search.SearchViewModel
 import org.readium.r2.testapp.search.MarkJsSearchEngine
 import org.readium.r2.testapp.search.SearchFragment
+import org.readium.r2.testapp.tts.ScreenReaderContract
 import org.readium.r2.testapp.utils.CompositeFragmentFactory
+import org.readium.r2.testapp.utils.extensions.hideSystemUi
 import org.readium.r2.testapp.utils.extensions.toggleSystemUi
 import timber.log.Timber
 
@@ -80,6 +82,17 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
             FragmentResultListener { _, result ->
                 val locator = result.getParcelable<Locator>(SearchFragment::class.java.name)!!
                 closeSearchFragment(locator)
+            }
+        )
+
+        childFragmentManager.setFragmentResultListener(
+            ScreenReaderContract.REQUEST_KEY,
+            this,
+            FragmentResultListener { _, result ->
+                val locator = ScreenReaderContract.parseResult(result).locator
+                if (locator.href != navigator.currentLocator.value.href) {
+                    navigator.go(locator)
+                }
             }
         )
 
@@ -314,8 +327,9 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
     private fun showScreenReaderFragment() {
         menuScreenReader.title = resources.getString(R.string.epubactivity_read_aloud_stop)
         isScreenReaderVisible = true
+        val arguments = ScreenReaderContract.createArguments(navigator.currentLocator.value)
         childFragmentManager.beginTransaction().apply {
-            replace(R.id.fragment_supp_container, ScreenReaderFragment::class.java, Bundle())
+            replace(R.id.fragment_supp_container, ScreenReaderFragment::class.java, arguments)
             hide(navigatorFragment)
             addToBackStack(null)
             commit()
@@ -326,6 +340,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
         menuScreenReader.title = resources.getString(R.string.epubactivity_read_aloud_start)
         isScreenReaderVisible = false
         childFragmentManager.popBackStack()
+        requireActivity().hideSystemUi()
     }
 
     companion object {

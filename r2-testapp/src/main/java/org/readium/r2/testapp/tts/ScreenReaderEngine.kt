@@ -22,7 +22,9 @@ import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.select.Elements
 import org.readium.r2.shared.publication.Link
+import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
+import org.readium.r2.shared.publication.toLocator
 import org.readium.r2.testapp.BuildConfig.DEBUG
 import timber.log.Timber
 import java.io.IOException
@@ -143,6 +145,9 @@ class ScreenReaderEngine(val context: Context, val publication: Publication) {
         }
     }
 
+    val currentLocator: Locator
+        get() = publication.readingOrder[resourceIndex].toLocator()
+
     /**
      * - Update the resource index.
      * - Mark [textToSpeech] as reading.
@@ -234,8 +239,8 @@ class ScreenReaderEngine(val context: Context, val publication: Publication) {
              * @param utteranceId The utterance ID of the utterance.
              */
             override fun onStart(utteranceId: String?) {
-                currentUtterance = utteranceId!!.toInt()
                 Handler(Looper.getMainLooper()).post {
+                    currentUtterance = utteranceId!!.toInt()
                     notifyPlayTextChanged(utterances[currentUtterance])
                 }
             }
@@ -250,14 +255,16 @@ class ScreenReaderEngine(val context: Context, val publication: Publication) {
              * @param utteranceId The utterance ID of the utterance.
              */
             override fun onDone(utteranceId: String?) {
-              if (utteranceId.equals((utterances.size - 1).toString())) {
-                    if (items.size - 1 == resourceIndex) {
-                        stopReading()
-                        Handler(Looper.getMainLooper()).post {
-                            notifyPlayStateChanged(false)
+                Handler(Looper.getMainLooper()).post {
+                    if (utteranceId.equals((utterances.size - 1).toString())) {
+                        if (items.size - 1 == resourceIndex) {
+                            stopReading()
+                            Handler(Looper.getMainLooper()).post {
+                                notifyPlayStateChanged(false)
+                            }
+                        } else {
+                            nextResource()
                         }
-                    } else {
-                        nextResource()
                     }
                 }
             }
