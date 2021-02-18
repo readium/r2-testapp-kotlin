@@ -1,11 +1,12 @@
 package org.readium.r2.testapp.reader
 
 import android.app.Activity
+import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentResultListener
-import androidx.fragment.app.replace
 import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.allAreBitmap
@@ -15,7 +16,6 @@ import org.readium.r2.testapp.drm.DrmManagementContract
 import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
-import org.readium.r2.testapp.utils.CompositeFragmentFactory
 import org.readium.r2.testapp.utils.NavigatorContract
 import java.lang.IllegalArgumentException
 
@@ -51,6 +51,16 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
             }
         )
 
+        // FIXME: the title is never removed
+        supportFragmentManager.addFragmentOnAttachListener { _, fragment ->
+            val title = when (fragment) {
+                is OutlineFragment -> publication.metadata.title
+                is DrmManagementFragment -> getString(R.string.title_fragment_drm_management)
+                else -> null
+            }
+            this.title = title
+        }
+
         super.onCreate(savedInstanceState)
 
         val readerClass: Class<out Fragment> =
@@ -68,6 +78,11 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
         }
 
         readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as AbstractReaderFragment
+
+        // Add support for display cutout.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
     }
 
     override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {

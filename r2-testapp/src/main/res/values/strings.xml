@@ -50,7 +50,7 @@
     <string name="title_activity_r2_about">About R2 Reader</string>
     <string name="title_activity_opds_list">OPDS Feeds</string>
     <string name="title_activity_opds_detail">Detail</string>
-    <string name="title_activity_outline">Outline</string>
+    <string name="title_fragment_drm_management">DRM Management</string>
     <string name="title_activity_epub">Detail</string>
     <string name="floating_button_add_book">Add a Book</string>
     <string name="floating_button_add_feed">Add a OPDS Feed</string>

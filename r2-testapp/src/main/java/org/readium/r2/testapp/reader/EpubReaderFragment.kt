@@ -185,6 +185,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
                 navigatorFragment.resourcePager.offscreenPageLimit = publication.readingOrder.size
 
                 searchResult.value = emptyList()
+                // FIXME: the search should be somehow tied to the lifecycle of the SearchResultFragment
                 Handler(Looper.getMainLooper()).postDelayed({
                     markJsSearchEngine.search(query) { (last, result) ->
                         searchResult.value = result

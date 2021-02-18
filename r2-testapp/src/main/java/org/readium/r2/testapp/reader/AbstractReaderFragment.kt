@@ -13,6 +13,7 @@ import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.utils.extensions.hideSystemUi
+import org.readium.r2.testapp.utils.extensions.showSystemUi
 
 abstract class AbstractReaderFragment : Fragment(R.layout.fragment_reader) {
 
@@ -50,6 +51,8 @@ abstract class AbstractReaderFragment : Fragment(R.layout.fragment_reader) {
         requireActivity().invalidateOptionsMenu()
         if (!hidden) {
             requireActivity().hideSystemUi()
+        } else {
+            requireActivity().showSystemUi()
         }
     }
 
