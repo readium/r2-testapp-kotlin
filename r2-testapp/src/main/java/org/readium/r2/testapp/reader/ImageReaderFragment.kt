@@ -3,13 +3,16 @@ package org.readium.r2.testapp.reader
 import android.graphics.PointF
 import android.os.Bundle
 import android.view.View
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.ViewModelProvider
+import kotlinx.android.synthetic.main.fragment_reader.*
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.image.ImageNavigatorFragment
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.utils.CompositeFragmentFactory
 import org.readium.r2.testapp.utils.extensions.toggleSystemUi
+import timber.log.Timber
 
 class ImageReaderFragment : AbstractReaderFragment(), ImageNavigatorFragment.Listener {
 

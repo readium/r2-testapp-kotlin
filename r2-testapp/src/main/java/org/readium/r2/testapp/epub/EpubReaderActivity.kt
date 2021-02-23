@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
+import kotlinx.android.synthetic.main.activity_reader.*
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.drm.DrmManagementContract
@@ -18,6 +19,7 @@ import org.readium.r2.testapp.reader.ReaderNavigation
 import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.CompositeFragmentFactory
 import org.readium.r2.testapp.utils.NavigatorContract
+import timber.log.Timber
 
 class EpubReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNavigation {
 
@@ -54,6 +56,28 @@ class EpubReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNa
 
         super.onCreate(savedInstanceState)
 
+        window.decorView.setOnApplyWindowInsetsListener { view, insets ->
+            val newInsets = view.onApplyWindowInsets(insets)
+            activity_reader_container.dispatchApplyWindowInsets(newInsets)
+        }
+
+        activity_reader_container.setOnApplyWindowInsetsListener { view, insets ->
+            if (readerFragment.isHidden) {
+                Timber.d("onApplyWindowInsets while reader is hidden")
+                view.setPadding(
+                    insets.systemWindowInsetLeft,
+                    insets.systemWindowInsetTop + supportActionBar!!.height,
+                    insets.systemWindowInsetRight,
+                    insets.systemWindowInsetBottom
+                )
+                insets
+            } else {
+                Timber.d("onApplyWindowInsets while reader is visible")
+                view.setPadding(0, 0, 0, 0)
+                insets
+            }
+        }
+
         if (savedInstanceState == null) {
             readerFragment = EpubReaderFragment.newInstance(baseUrl, bookId)
 
@@ -76,7 +100,7 @@ class EpubReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNa
 
     override fun showOutlineFragment() {
         supportFragmentManager.beginTransaction()
-            .replace(R.id.activity_supp_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
+            .replace(R.id.activity_reader_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
             .hide(readerFragment)
             .addToBackStack(null)
             .commit()
@@ -90,7 +114,7 @@ class EpubReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNa
 
     override fun showDrmManagementFragment() {
         supportFragmentManager.beginTransaction()
-            .replace(R.id.activity_supp_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
+            .replace(R.id.activity_reader_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
             .hide(readerFragment)
             .addToBackStack(null)
             .commit()

@@ -17,6 +17,8 @@ import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.utils.NavigatorContract
+import kotlinx.android.synthetic.main.activity_reader.*
+import timber.log.Timber
 import java.lang.IllegalArgumentException
 
 class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNavigation {
@@ -63,6 +65,28 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
 
         super.onCreate(savedInstanceState)
 
+        window.decorView.setOnApplyWindowInsetsListener { view, insets ->
+           val newInsets = view.onApplyWindowInsets(insets)
+           activity_reader_container.dispatchApplyWindowInsets(newInsets)
+        }
+
+        activity_reader_container.setOnApplyWindowInsetsListener { view, insets ->
+              if (readerFragment.isHidden) {
+                Timber.d("onApplyWindowInsets while reader is hidden")
+                view.setPadding(
+                    insets.systemWindowInsetLeft,
+                    insets.systemWindowInsetTop + supportActionBar!!.height,
+                    insets.systemWindowInsetRight,
+                    insets.systemWindowInsetBottom
+                )
+                insets
+            } else {
+                Timber.d("onApplyWindowInsets while reader is visible")
+                view.setPadding(0, 0, 0, 0)
+                insets
+            }
+        }
+
         val readerClass: Class<out Fragment> =
             if (publication.readingOrder.all { it.mediaType == MediaType.PDF })
                 PdfReaderFragment::class.java
@@ -96,7 +120,7 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
 
     override fun showOutlineFragment() {
         supportFragmentManager.beginTransaction()
-            .replace(R.id.activity_supp_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
+            .add(R.id.activity_reader_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
             .hide(readerFragment)
             .addToBackStack(null)
             .commit()
@@ -109,7 +133,7 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
 
     override fun showDrmManagementFragment() {
         supportFragmentManager.beginTransaction()
-            .replace(R.id.activity_supp_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
+            .add(R.id.activity_reader_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
             .hide(readerFragment)
             .addToBackStack(null)
             .commit()

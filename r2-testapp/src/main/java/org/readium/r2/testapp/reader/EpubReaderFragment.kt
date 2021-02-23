@@ -15,11 +15,13 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.edit
+import androidx.core.view.ViewCompat
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
+import kotlinx.android.synthetic.main.fragment_reader.*
 import org.jetbrains.anko.support.v4.indeterminateProgressDialog
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
@@ -123,6 +125,18 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
             /*(navigatorFragment.resourcePager.focusedChild?.findViewById(org.readium.r2.navigator.R.id.book_title) as? TextView)
                 .setTextColor(Color.parseColor(textColors[appearancePref]))*/
         }
+
+
+        view.setOnApplyWindowInsetsListener { view, insets ->
+            Timber.d("onapplyfragment")
+            if (navigatorFragment.isHidden) {
+                Timber.d("navigator is hidden")
+                fragment_supp_container.dispatchApplyWindowInsets(insets)
+            } else
+                insets
+        }
+
+        ViewCompat.requestApplyInsets(view)
     }
 
     override fun onCreateOptionsMenu(menu: Menu, menuInflater: MenuInflater) {
