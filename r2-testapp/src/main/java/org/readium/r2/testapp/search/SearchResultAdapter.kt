@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.search
 
 import android.app.Activity
@@ -12,7 +18,6 @@ import androidx.recyclerview.widget.RecyclerView
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.utils.singleClick
-
 
 /**
  * This class is an adapter for Search results' list view

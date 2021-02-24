@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.reader
 
 import android.app.Activity
@@ -6,6 +12,7 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.shared.publication.Locator
@@ -18,7 +25,6 @@ import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.utils.NavigatorContract
 import kotlinx.android.synthetic.main.activity_reader.*
-import timber.log.Timber
 import java.lang.IllegalArgumentException
 
 class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNavigation {
@@ -32,8 +38,22 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
         val bookId = inputData.bookId
         val persistence = BookData(applicationContext, bookId, publication)
 
-        title = publication.metadata.title
         modelFactory = ReaderViewModel.Factory(publication, persistence)
+        super.onCreate(savedInstanceState)
+
+        val readerClass: Class<out Fragment> = when {
+            publication.readingOrder.all { it.mediaType == MediaType.PDF } -> PdfReaderFragment::class.java
+            publication.readingOrder.allAreBitmap -> ImageReaderFragment::class.java
+            else -> throw IllegalArgumentException("Cannot render publication")
+        }
+
+        if (savedInstanceState == null) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.activity_container, readerClass, Bundle(), READER_FRAGMENT_TAG)
+                .commitNow()
+        }
+
+        readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as AbstractReaderFragment
 
         supportFragmentManager.setFragmentResultListener(
             OutlineContract.REQUEST_KEY,
@@ -53,26 +73,29 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
             }
         )
 
-        // FIXME: the title is never removed
-        supportFragmentManager.addFragmentOnAttachListener { _, fragment ->
-            val title = when (fragment) {
-                is OutlineFragment -> publication.metadata.title
-                is DrmManagementFragment -> getString(R.string.title_fragment_drm_management)
-                else -> null
+        supportFragmentManager.registerFragmentLifecycleCallbacks(object : FragmentManager.FragmentLifecycleCallbacks()  {
+            override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
+                this@ReaderActivity.title =  when (f) {
+                    is OutlineFragment -> publication.metadata.title
+                    is DrmManagementFragment -> getString(R.string.title_fragment_drm_management)
+                    else -> null
+                }
             }
-            this.title = title
-        }
 
-        super.onCreate(savedInstanceState)
+            override fun onFragmentViewDestroyed(fm: FragmentManager, f: Fragment) {
+                this@ReaderActivity.title = null
+            }
+        }, false)
 
         window.decorView.setOnApplyWindowInsetsListener { view, insets ->
            val newInsets = view.onApplyWindowInsets(insets)
-           activity_reader_container.dispatchApplyWindowInsets(newInsets)
+            // Without this, activity_reader_container receives the insets only once,
+            // although we need a call every time the reader is hidden
+           activity_container.dispatchApplyWindowInsets(newInsets)
         }
 
-        activity_reader_container.setOnApplyWindowInsetsListener { view, insets ->
+        activity_container.setOnApplyWindowInsetsListener { view, insets ->
               if (readerFragment.isHidden) {
-                Timber.d("onApplyWindowInsets while reader is hidden")
                 view.setPadding(
                     insets.systemWindowInsetLeft,
                     insets.systemWindowInsetTop + supportActionBar!!.height,
@@ -81,27 +104,10 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
                 )
                 insets
             } else {
-                Timber.d("onApplyWindowInsets while reader is visible")
                 view.setPadding(0, 0, 0, 0)
                 insets
             }
         }
-
-        val readerClass: Class<out Fragment> =
-            if (publication.readingOrder.all { it.mediaType == MediaType.PDF })
-                PdfReaderFragment::class.java
-            else if (publication.readingOrder.allAreBitmap)
-                ImageReaderFragment::class.java
-            else
-                throw IllegalArgumentException("Cannot render publication")
-
-        if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.activity_reader_container, readerClass, Bundle(), READER_FRAGMENT_TAG)
-                .commitNow()
-        }
-
-        readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as AbstractReaderFragment
 
         // Add support for display cutout.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
@@ -120,7 +126,7 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
 
     override fun showOutlineFragment() {
         supportFragmentManager.beginTransaction()
-            .add(R.id.activity_reader_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
+            .add(R.id.activity_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
             .hide(readerFragment)
             .addToBackStack(null)
             .commit()
@@ -133,7 +139,7 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
 
     override fun showDrmManagementFragment() {
         supportFragmentManager.beginTransaction()
-            .add(R.id.activity_reader_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
+            .add(R.id.activity_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
             .hide(readerFragment)
             .addToBackStack(null)
             .commit()

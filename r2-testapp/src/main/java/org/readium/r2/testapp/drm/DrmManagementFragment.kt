@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.drm
 
 import android.os.Bundle
@@ -53,27 +59,23 @@ class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
             else
                 View.GONE
 
-        view.findViewById<View>(R.id.drm_start).run {
-            visibility = datesVisibility
-        }
-        view.findViewById<TextView>(R.id.drm_value_start).run {
-            text = model.start.toFormattedString()
-        }
-        view.findViewById<View>(R.id.drm_end).run {
-            visibility = datesVisibility
-        }
+        view.findViewById<View>(R.id.drm_start).visibility = datesVisibility
+        view.findViewById<TextView>(R.id.drm_value_start).text = model.start.toFormattedString()
+        view.findViewById<View>(R.id.drm_end).visibility = datesVisibility
+
         endTextView = view.findViewById<TextView>(R.id.drm_value_end).apply {
             text = model.end?.toFormattedString()
         }
 
         // Actions
-        view.findViewById<TextView>(R.id.drm_label_actions).run {
-            visibility = if (model.canRenewLoan || model.canReturnPublication) View.VISIBLE else View.GONE
-        }
+        view.findViewById<TextView>(R.id.drm_label_actions).visibility =
+            if (model.canRenewLoan || model.canReturnPublication) View.VISIBLE else View.GONE
+
         view.findViewById<Button>(R.id.drm_button_renew).run {
             visibility = if (model.canRenewLoan) View.VISIBLE else View.GONE
             setOnClickListener {onRenewLoan() }
         }
+
         view.findViewById<Button>(R.id.drm_button_return).run {
             visibility = if (model.canReturnPublication) View.VISIBLE else View.GONE
             setOnClickListener { onReturnPublication() }

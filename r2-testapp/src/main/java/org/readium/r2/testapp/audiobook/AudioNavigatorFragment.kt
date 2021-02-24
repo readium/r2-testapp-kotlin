@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.audiobook
 
 import android.os.Bundle
@@ -16,7 +22,6 @@ import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.navigator.audiobook.R2MediaPlayer
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.cover
-import org.readium.r2.shared.publication.services.isProtected
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.ReaderNavigation

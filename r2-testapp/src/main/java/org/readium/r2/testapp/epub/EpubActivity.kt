@@ -10,7 +10,6 @@
 
 package org.readium.r2.testapp.epub
 
-import android.app.Activity
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Point
@@ -105,10 +104,10 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
         window.decorView.setOnApplyWindowInsetsListener { view, insets ->
             val newInsets = view.onApplyWindowInsets(insets)
-            activity_reader_container.dispatchApplyWindowInsets(newInsets)
+            activity_container.dispatchApplyWindowInsets(newInsets)
         }
 
-        activity_reader_container.setOnApplyWindowInsetsListener { view, insets ->
+        activity_container.setOnApplyWindowInsetsListener { view, insets ->
             if (readerFragment.isHidden) {
                 Timber.d("onApplyWindowInsets while reader is hidden")
                 view.setPadding(
@@ -130,7 +129,7 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
             readerFragment = EpubReaderFragment.newInstance(baseUrl, bookId)
 
             supportFragmentManager.beginTransaction()
-                .replace(R.id.activity_reader_container, readerFragment, READER_FRAGMENT_TAG)
+                .replace(R.id.activity_container, readerFragment, READER_FRAGMENT_TAG)
                 .commitNow()
 
         } else {
@@ -388,7 +387,7 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
     override fun showOutlineFragment() {
         supportFragmentManager.beginTransaction()
-            .add(R.id.activity_reader_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
+            .add(R.id.activity_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
             .hide(readerFragment)
             .addToBackStack(null)
             .commit()
@@ -401,7 +400,7 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
     override fun showDrmManagementFragment() {
         supportFragmentManager.beginTransaction()
-            .add(R.id.activity_reader_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
+            .add(R.id.activity_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
             .hide(readerFragment)
             .addToBackStack(null)
             .commit()

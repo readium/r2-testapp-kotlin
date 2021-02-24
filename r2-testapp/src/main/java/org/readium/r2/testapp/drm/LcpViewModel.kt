@@ -1,12 +1,7 @@
-//TODO
 /*
- * Module: r2-testapp-kotlin
- * Developers: Aferdita Muriqi
- *
- * Copyright (c) 2019. European Digital Reading Lab. All rights reserved.
- * Licensed to the Readium Foundation under one or more contributor license agreements.
- * Use of this source code is governed by a BSD-style license which is detailed in the
- * LICENSE file present in the project repository where this source code is maintained.
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
  */
 
 package org.readium.r2.testapp.drm
@@ -17,7 +12,7 @@ import org.readium.r2.lcp.MaterialRenewListener
 import org.readium.r2.shared.util.Try
 import java.util.*
 
-class LcpViewModel(val lcpLicense: LcpLicense, val fragment: Fragment) : DrmViewModel() {
+class LcpViewModel(private val lcpLicense: LcpLicense, fragment: Fragment) : DrmViewModel() {
 
     override val type: String = "LCP"
 

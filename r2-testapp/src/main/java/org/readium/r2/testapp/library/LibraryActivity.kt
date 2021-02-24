@@ -537,7 +537,6 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
             val deleted = database.books.delete(book)
             if (deleted > 0) {
                 BookmarksDatabase(this).bookmarks.delete(deleted.toLong())
-                PositionsDatabase(this).positions.delete(deleted.toLong())
             }
             popup.dismiss()
             catalogView.longSnackbar("publication deleted from your library")

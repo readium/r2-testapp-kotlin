@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.reader
 
 import android.os.Bundle
@@ -6,7 +12,6 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import androidx.fragment.app.Fragment
-import kotlinx.android.synthetic.main.fragment_reader.*
 import org.jetbrains.anko.support.v4.toast
 import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.navigator.Navigator
@@ -15,7 +20,6 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.utils.extensions.hideSystemUi
 import org.readium.r2.testapp.utils.extensions.showSystemUi
-import timber.log.Timber
 
 abstract class AbstractReaderFragment : Fragment(R.layout.fragment_reader) {
 
@@ -51,8 +55,6 @@ abstract class AbstractReaderFragment : Fragment(R.layout.fragment_reader) {
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        Timber.d("onHidden $hidden")
-        requireView().requestApplyInsets()
         setMenuVisibility(!hidden)
         requireActivity().invalidateOptionsMenu()
         if (!hidden) {
