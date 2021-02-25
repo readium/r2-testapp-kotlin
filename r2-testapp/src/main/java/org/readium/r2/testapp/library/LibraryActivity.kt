@@ -42,7 +42,6 @@ import org.readium.r2.shared.extensions.extension
 import org.readium.r2.shared.extensions.mediaType
 import org.readium.r2.shared.extensions.toPng
 import org.readium.r2.shared.extensions.tryOrNull
-import org.readium.r2.shared.publication.ContentProtection
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.asset.FileAsset
 import org.readium.r2.shared.publication.asset.PublicationAsset
@@ -536,7 +535,8 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
             tryOrNull { File(book.href).delete() }
             val deleted = database.books.delete(book)
             if (deleted > 0) {
-                BookmarksDatabase(this).bookmarks.delete(deleted.toLong())
+                BookmarksDatabase(this).bookmarks.deleteBook(deleted.toLong())
+                HighlightsDatabase(this).highlights.deleteBook(deleted.toLong())
             }
             popup.dismiss()
             catalogView.longSnackbar("publication deleted from your library")

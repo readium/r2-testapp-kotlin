@@ -17,7 +17,7 @@ import org.readium.r2.testapp.db.Bookmark
 import org.readium.r2.testapp.db.BookmarksDatabase
 import org.readium.r2.testapp.db.BooksDatabase
 import org.readium.r2.testapp.db.Highlight
-import org.readium.r2.testapp.db.HighligtsDatabase
+import org.readium.r2.testapp.db.HighlightsDatabase
 
 class ReaderViewModel(val publication: Publication, val persistence: BookData) : ViewModel() {
 
@@ -36,7 +36,7 @@ class BookData(context: Context, private val bookId: Long, private val publicati
     private val pubId: String = publication.metadata.identifier ?: publication.metadata.title
     private val booksDb = BooksDatabase(context)
     private val bookmarksDb = BookmarksDatabase(context)
-    private val highlightsDb = HighligtsDatabase(context)
+    private val highlightsDb = HighlightsDatabase(context)
 
     var savedLocation: Locator?
         get() = booksDb.books.currentLocator(bookId)

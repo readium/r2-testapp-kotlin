@@ -48,6 +48,7 @@ import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.reader.toNavigatorHighlight
 import org.readium.r2.testapp.utils.NavigatorContract
 import timber.log.Timber
+import java.lang.IllegalStateException
 
 class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
@@ -181,8 +182,14 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
                 return
             }
         }
-        val highlight: org.readium.r2.navigator.epub.Highlight? = highlightID
-            ?.let { persistence.getHighlight(it).toNavigatorHighlight() }
+
+        val highlight: org.readium.r2.navigator.epub.Highlight? = try {
+            highlightID
+                ?.let { persistence.getHighlight(it).toNavigatorHighlight() }
+        } catch (e: IllegalStateException) {
+            return // FIXME: This is required as long as the navigator highlight is not deleted
+            // when the corresponding highlight in DB is.
+        }
 
         val display = windowManager.defaultDisplay
         val rect = size ?: Rect()
@@ -333,7 +340,12 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
     override fun highlightAnnotationMarkActivated(id: String) {
         val realId = id.replace("ANNOTATION", "HIGHLIGHT")
-        val highlight = persistence.getHighlight(realId)
+        val highlight = try {
+            persistence.getHighlight(realId)
+        } catch (e: IllegalStateException) {
+            return // FIXME: This is required as long as the navigator highlight is not deleted
+            // when the corresponding highlight in DB is.
+        }
         showAnnotationPopup(highlight.toNavigatorHighlight())
     }
 

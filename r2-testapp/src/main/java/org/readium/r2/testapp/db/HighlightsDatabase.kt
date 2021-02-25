@@ -42,7 +42,7 @@ class Highlight(
     )
 }
 
-class HighligtsDatabase(context: Context) {
+class HighlightsDatabase(context: Context) {
 
     val shared: HighlightsDatabaseOpenHelper = HighlightsDatabaseOpenHelper(context)
     var highlights: HIGHLIGHTS
@@ -211,6 +211,16 @@ class HIGHLIGHTS(private var database: HighlightsDatabaseOpenHelper) {
         database.use {
             delete(HIGHLIGHTSTable.NAME, "id = {id}",
                     "id" to locator.id!!)
+        }
+    }
+
+
+    fun deleteBook(book_id: Long?) {
+        book_id?.let {
+            database.use {
+                delete(HIGHLIGHTSTable.NAME, "${HIGHLIGHTSTable.BOOK_ID} = {bookID}",
+                    "bookID" to book_id)
+            }
         }
     }
 
