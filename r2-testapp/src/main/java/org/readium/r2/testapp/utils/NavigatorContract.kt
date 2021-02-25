@@ -24,6 +24,7 @@ import org.readium.r2.testapp.audiobook.AudiobookActivity
 import org.readium.r2.testapp.epub.EpubActivity
 import org.readium.r2.testapp.reader.ReaderActivity
 import java.io.File
+import java.net.URL
 
 class NavigatorContract : ActivityResultContract<NavigatorContract.Input, NavigatorContract.Output>() {
 
@@ -34,7 +35,7 @@ class NavigatorContract : ActivityResultContract<NavigatorContract.Input, Naviga
         val bookId: Long,
         val initialLocator: Locator? = null,
         val deleteOnResult: Boolean = false,
-        val baseUrl: String? = null
+        val baseUrl: URL? = null
     )
 
     data class Output(
@@ -61,7 +62,7 @@ class NavigatorContract : ActivityResultContract<NavigatorContract.Input, Naviga
             putExtra("publicationPath", input.file.path)
             putExtra("publicationFileName", input.file.name)
             putExtra("deleteOnResult", input.deleteOnResult)
-            putExtra("baseUrl", input.baseUrl)
+            putExtra("baseUrl", input.baseUrl?.toString())
             putExtra("locator", input.initialLocator)
         }
     }
