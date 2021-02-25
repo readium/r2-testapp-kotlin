@@ -593,15 +593,13 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                             catalogView.longSnackbar(error.getUserMessage(this@LibraryActivity))
                         }
                     } else {
-                        prepareToServe(it, asset)
-                        progress.dismiss()
                         navigatorLauncher.launch(
                             NavigatorContract.Input(
                                 file = asset.file,
                                 mediaType = mediaType,
                                 publication = publication,
-                                bookId = book.id,
-                                initialLocator = book.id?.let { id -> booksDB.books.currentLocator(id) },
+                                bookId = book.id!!,
+                                initialLocator = booksDB.books.currentLocator(book.id!!),
                                 deleteOnResult = remoteAsset != null,
                                 baseUrl = prepareToServe(publication, asset)
                             )

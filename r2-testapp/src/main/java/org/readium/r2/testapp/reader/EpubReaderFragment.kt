@@ -55,6 +55,7 @@ import org.readium.r2.testapp.utils.extensions.hideSystemUi
 import org.readium.r2.testapp.utils.extensions.showSystemUi
 import org.readium.r2.testapp.utils.extensions.toggleSystemUi
 import timber.log.Timber
+import java.net.URL
 
 class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Listener {
 
@@ -394,10 +395,10 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
 
         private const val IS_SCREEN_READER_VISIBLE_KEY = "isScreenReaderVisible"
 
-        fun newInstance(baseUrl: String, bookId: Long): EpubReaderFragment {
+        fun newInstance(baseUrl: URL, bookId: Long): EpubReaderFragment {
             return EpubReaderFragment().apply {
                 arguments = Bundle().apply {
-                    putString(BASE_URL_ARG, baseUrl)
+                    putString(BASE_URL_ARG, baseUrl.toString())
                     putLong(BOOK_ID_ARG, bookId)
                 }
             }

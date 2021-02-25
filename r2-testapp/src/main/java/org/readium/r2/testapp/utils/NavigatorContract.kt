@@ -93,7 +93,7 @@ class NavigatorContract : ActivityResultContract<NavigatorContract.Input, Naviga
                 bookId = intent.getLongExtra("bookId", -1),
                 initialLocator = intent.getParcelableExtra("locator"),
                 deleteOnResult = intent.getBooleanExtra("deleteOnResult", false),
-                baseUrl = intent.getStringExtra("baseUrl")
+                baseUrl = URL(intent.getStringExtra("baseUrl"))
             )
         }
     }
