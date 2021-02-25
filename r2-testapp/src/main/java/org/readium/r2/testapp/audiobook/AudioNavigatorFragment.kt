@@ -26,6 +26,8 @@ import org.readium.r2.testapp.R
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.ReaderNavigation
 import org.readium.r2.testapp.reader.ReaderViewModel
+import org.readium.r2.testapp.utils.extensions.hideSystemUi
+import org.readium.r2.testapp.utils.extensions.showSystemUi
 
 class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
 
@@ -96,6 +98,12 @@ class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
     override fun onStop() {
         super.onStop()
         persistence.savedLocation = activity.currentLocator.value
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        setMenuVisibility(!hidden)
+        requireActivity().invalidateOptionsMenu()
     }
 
     override fun onDestroyView() {
