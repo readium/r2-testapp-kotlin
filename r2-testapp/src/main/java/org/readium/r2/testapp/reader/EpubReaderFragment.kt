@@ -22,7 +22,6 @@ import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.edit
-import androidx.core.view.ViewCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentResultListener
@@ -30,7 +29,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
-import kotlinx.android.synthetic.main.activity_reader.*
 import kotlinx.android.synthetic.main.fragment_reader.*
 import org.jetbrains.anko.support.v4.indeterminateProgressDialog
 import org.readium.r2.navigator.Navigator
@@ -69,6 +67,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
     lateinit var menuSearchView: SearchView
 
     private var isScreenReaderVisible = false
+    private var isSearchViewIconified = true
     lateinit var searchResult: MutableLiveData<List<Locator>>
 
     private val activity: EpubActivity
@@ -77,6 +76,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
     override fun onCreate(savedInstanceState: Bundle?) {
         if (savedInstanceState != null) {
             isScreenReaderVisible = savedInstanceState.getBoolean(IS_SCREEN_READER_VISIBLE_KEY)
+            isSearchViewIconified = savedInstanceState.getBoolean(IS_SEARCH_VIEW_ICONIFIED)
         }
 
         ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
@@ -179,43 +179,64 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
         ViewModelProvider(this).get(SearchViewModel::class.java).let {
             searchResult = it.result
         }
-
-        menuSearch.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
-
-            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
-                showSearchFragment()
-                // Try to preload all resources once the SearchView has been expanded
-                // Delay to allow the keyboard to be shown immediately
-                Handler(Looper.getMainLooper()).postDelayed({
-                    navigatorFragment.resourcePager.offscreenPageLimit = publication.readingOrder.size
-                }, 100)
-                menuSearchView.clearFocus()
-                return true
-            }
-
-            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
-                childFragmentManager.popBackStack()
-                childFragmentManager.executePendingTransactions()
-                Handler(Looper.getMainLooper()).postDelayed({
-                    navigatorFragment.resourcePager.offscreenPageLimit = 1
-                }, 100)
-                menuSearchView.clearFocus()
-                return true
-            }
-        })
-
-        prepareSearchView()
+        connectSearch()
+        if (!isSearchViewIconified) menuSearch.expandActionView()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean(IS_SCREEN_READER_VISIBLE_KEY, isScreenReaderVisible)
+        outState.putBoolean(IS_SEARCH_VIEW_ICONIFIED, isSearchViewIconified)
     }
 
-    private fun prepareSearchView() {
+    private fun connectSearch() {
         val searchStorage = requireActivity().getSharedPreferences("org.readium.r2.search", Context.MODE_PRIVATE)
         val markJsSearchEngine = MarkJsSearchEngine(activity)
         val bookId = checkNotNull(requireArguments().getLong(BOOK_ID_ARG))
+
+        menuSearch.setOnActionExpandListener(object : MenuItem.OnActionExpandListener {
+
+            override fun onMenuItemActionExpand(item: MenuItem?): Boolean {
+                if (isSearchViewIconified) { // It is not a state restoration.
+                    showSearchFragment()
+                }
+
+                isSearchViewIconified = false
+                // Try to preload all resources once the SearchView has been expanded
+                // Delay to allow the keyboard to be shown immediately
+                Handler(Looper.getMainLooper()).postDelayed({
+                    navigatorFragment.resourcePager.offscreenPageLimit = publication.readingOrder.size
+                }, 100)
+
+                val previouslySearchBook = searchStorage.getLong("book", -1)
+                if (previouslySearchBook == bookId) {
+                    // Load previous research
+                    searchStorage.getString("term", null)?.let {
+                        // SearchView.setQuery doesn't work until the SearchView has been expanded
+                        Handler(Looper.getMainLooper()).post {
+                            menuSearchView.setQuery(it, false)
+                            menuSearchView.clearFocus()
+                        }
+                    }
+                    // Load previous result
+                    searchStorage.getString("result", null)?.let {
+                        searchResult.value = (Gson().fromJson(it, Array<Locator>::class.java)).toList()
+                    }
+                }
+                return true
+            }
+
+            override fun onMenuItemActionCollapse(item: MenuItem?): Boolean {
+                isSearchViewIconified = true
+                childFragmentManager.popBackStack()
+                Handler(Looper.getMainLooper()).postDelayed({
+                    navigatorFragment.resourcePager.offscreenPageLimit = 1
+                }, 100)
+                menuSearchView.clearFocus()
+
+                return true
+            }
+        })
 
         menuSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
@@ -255,23 +276,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
             }
         })
 
-        menuSearchView.setOnSearchClickListener {
-            val previouslySearchBook = searchStorage.getLong("book", -1)
-            if (previouslySearchBook == bookId) {
-                // Load previous research
-                searchStorage.getString("term", null)?.let {
-                    menuSearchView.setQuery(it, false)
-                }
-                // Load previous result and give up focus
-                searchStorage.getString("result", null)?.let {
-                    searchResult.value = (Gson().fromJson(it, Array<Locator>::class.java)).toList()
-                    menuSearchView.clearFocus()
-                }
-            }
-        }
-
-        val closeButton = menuSearchView.findViewById(R.id.search_close_btn) as ImageView
-        closeButton.setOnClickListener {
+        menuSearchView.findViewById<ImageView>(R.id.search_close_btn).setOnClickListener {
             menuSearchView.requestFocus()
             searchResult.value = emptyList()
             menuSearchView.setQuery("", false)
@@ -329,7 +334,6 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
         return true
     }
 
-    // FIXME: the SearchFragment is drawn behind the ActionBar
     private fun showSearchFragment() {
         childFragmentManager.beginTransaction()
             .add(R.id.fragment_reader_container, SearchFragment::class.java, Bundle(), SEARCH_FRAGMENT_TAG)
@@ -394,6 +398,8 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
         private const val SEARCH_FRAGMENT_TAG = "search"
 
         private const val IS_SCREEN_READER_VISIBLE_KEY = "isScreenReaderVisible"
+
+        private const val IS_SEARCH_VIEW_ICONIFIED = "isSearchViewIconified"
 
         fun newInstance(baseUrl: URL, bookId: Long): EpubReaderFragment {
             return EpubReaderFragment().apply {

@@ -22,6 +22,8 @@ import android.view.accessibility.AccessibilityManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.android.synthetic.main.activity_reader.*
@@ -79,6 +81,7 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
         persistence = BookData(applicationContext, bookId, publication)
         modelFactory = ReaderViewModel.Factory(publication, persistence)
+        super.onCreate(savedInstanceState)
 
         /* FIXME: When the OutlineFragment is left by pressing the back button,
         * the Webview is not updated, so removed highlights will still be visible.
@@ -101,7 +104,19 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
             }
         )
 
-        super.onCreate(savedInstanceState)
+        supportFragmentManager.registerFragmentLifecycleCallbacks(object : FragmentManager.FragmentLifecycleCallbacks()  {
+            override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
+                this@EpubActivity.title =  when (f) {
+                    is OutlineFragment -> publication.metadata.title
+                    is DrmManagementFragment -> getString(R.string.title_fragment_drm_management)
+                    else -> null
+                }
+            }
+
+            override fun onFragmentViewDestroyed(fm: FragmentManager, f: Fragment) {
+                this@EpubActivity.title = null
+            }
+        }, false)
 
         window.decorView.setOnApplyWindowInsetsListener { view, insets ->
             val newInsets = view.onApplyWindowInsets(insets)
@@ -110,7 +125,6 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
 
         activity_container.setOnApplyWindowInsetsListener { view, insets ->
             if (readerFragment.isHidden) {
-                Timber.d("onApplyWindowInsets while reader is hidden")
                 view.setPadding(
                     insets.systemWindowInsetLeft,
                     insets.systemWindowInsetTop + supportActionBar!!.height,
@@ -119,7 +133,6 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
                 )
                 insets
             } else {
-                Timber.d("onApplyWindowInsets while reader is visible")
                 view.setPadding(0, 0, 0, 0)
                 insets
             }
