@@ -25,7 +25,7 @@ import org.readium.r2.testapp.epub.EpubActivity
 import java.io.File
 import java.net.URL
 
-class ReaderActivityContract : ActivityResultContract<ReaderActivityContract.Input, ReaderActivityContract.Output>() {
+class ReaderContract : ActivityResultContract<ReaderContract.Input, ReaderContract.Output>() {
 
     data class Input(
         val file: File,

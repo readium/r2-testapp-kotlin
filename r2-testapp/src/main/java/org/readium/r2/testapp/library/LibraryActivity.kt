@@ -62,7 +62,7 @@ import org.readium.r2.testapp.opds.OPDSListActivity
 import org.readium.r2.testapp.permissions.PermissionHelper
 import org.readium.r2.testapp.permissions.Permissions
 import org.readium.r2.testapp.utils.ContentResolverUtil
-import org.readium.r2.testapp.reader.ReaderActivityContract
+import org.readium.r2.testapp.reader.ReaderContract
 import org.readium.r2.testapp.utils.extensions.*
 import timber.log.Timber
 import java.io.File
@@ -103,7 +103,7 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
     private lateinit var catalogView: androidx.recyclerview.widget.RecyclerView
     private lateinit var alertDialog: AlertDialog
     private lateinit var documentPickerLauncher: ActivityResultLauncher<String>
-    private lateinit var readerLauncher: ActivityResultLauncher<ReaderActivityContract.Input>
+    private lateinit var readerLauncher: ActivityResultLauncher<ReaderContract.Input>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -150,7 +150,7 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
             uri?.let { importPublicationFromUri(it) }
         }
 
-        readerLauncher = registerForActivityResult(ReaderActivityContract()) { pubData: ReaderActivityContract.Output? ->
+        readerLauncher = registerForActivityResult(ReaderContract()) { pubData: ReaderContract.Output? ->
             if (pubData == null)
                 return@registerForActivityResult
 
@@ -593,7 +593,7 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                         }
                     } else {
                         readerLauncher.launch(
-                            ReaderActivityContract.Input(
+                            ReaderContract.Input(
                                 file = asset.file,
                                 mediaType = mediaType,
                                 publication = publication,

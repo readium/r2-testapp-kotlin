@@ -31,7 +31,7 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
     private lateinit var readerFragment: AbstractReaderFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val inputData = ReaderActivityContract.parseIntent(this)
+        val inputData = ReaderContract.parseIntent(this)
         val publication = inputData.publication
         val bookId = inputData.bookId
         val persistence = BookData(applicationContext, bookId, publication)

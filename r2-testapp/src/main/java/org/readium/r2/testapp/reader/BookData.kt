@@ -103,12 +103,3 @@ class BookData(context: Context, private val bookId: Long, private val publicati
         return highlights
     }
 }
-
-fun Highlight.toNavigatorHighlight() =
-    org.readium.r2.navigator.epub.Highlight(
-        highlightID,
-        locator,
-        color,
-        Style.highlight,
-        annotationMarkStyle
-    )

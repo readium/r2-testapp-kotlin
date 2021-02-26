@@ -46,8 +46,7 @@ import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.EpubReaderFragment
 import org.readium.r2.testapp.reader.ReaderViewModel
-import org.readium.r2.testapp.reader.toNavigatorHighlight
-import org.readium.r2.testapp.reader.ReaderActivityContract
+import org.readium.r2.testapp.reader.ReaderContract
 import java.lang.IllegalStateException
 
 class EpubActivity : R2EpubActivity() {
@@ -72,7 +71,7 @@ class EpubActivity : R2EpubActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         check(LibraryActivity.isServerStarted)
 
-        val inputData = ReaderActivityContract.parseIntent(this)
+        val inputData = ReaderContract.parseIntent(this)
         val publication = inputData.publication
         val bookId = inputData.bookId
         val baseUrl = requireNotNull(inputData.baseUrl)

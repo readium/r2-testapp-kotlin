@@ -14,6 +14,7 @@ import android.database.sqlite.SQLiteDatabase
 import org.jetbrains.anko.db.*
 import org.joda.time.DateTime
 import org.json.JSONObject
+import org.readium.r2.navigator.epub.Style
 import org.readium.r2.shared.publication.Locator
 
 class Highlight(
@@ -40,6 +41,15 @@ class Highlight(
         locations = location,
         text = locatorText
     )
+
+    fun toNavigatorHighlight() =
+        org.readium.r2.navigator.epub.Highlight(
+            highlightID,
+            locator,
+            color,
+            Style.highlight,
+            annotationMarkStyle
+        )
 }
 
 class HighlightsDatabase(context: Context) {
