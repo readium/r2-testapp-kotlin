@@ -16,17 +16,23 @@ class LcpViewModel(private val lcpLicense: LcpLicense, fragment: Fragment) : Drm
 
     override val type: String = "LCP"
 
-    override val state: String? = lcpLicense.status?.status?.rawValue
+    override val state: String?
+        get() = lcpLicense.status?.status?.rawValue
 
-    override val provider: String? = lcpLicense.license.provider
+    override val provider: String?
+        get() = lcpLicense.license.provider
 
-    override val issued: Date? = lcpLicense.license.issued
+    override val issued: Date?
+        get() = lcpLicense.license.issued
 
-    override val updated: Date? = lcpLicense.license.updated
+    override val updated: Date?
+        get() = lcpLicense.license.updated
 
-    override val start: Date? = lcpLicense.license.rights.start
+    override val start: Date?
+        get() = lcpLicense.license.rights.start
 
-    override val end: Date? = lcpLicense.license.rights.end
+    override val end: Date?
+        get() = lcpLicense.license.rights.end
 
     override val copiesLeft: String =
         lcpLicense.charactersToCopyLeft
@@ -38,7 +44,8 @@ class LcpViewModel(private val lcpLicense: LcpLicense, fragment: Fragment) : Drm
             ?.let { "$it pages" }
             ?: super.printsLeft
 
-    override val canRenewLoan: Boolean = lcpLicense.canRenewLoan
+    override val canRenewLoan: Boolean
+        get() = lcpLicense.canRenewLoan
 
     override suspend fun renewLoan(): Try<Date?, Exception> =
         lcpLicense.renewLoan(renewListener)

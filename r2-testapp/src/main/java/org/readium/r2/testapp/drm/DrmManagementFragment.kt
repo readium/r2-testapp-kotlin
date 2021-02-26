@@ -24,12 +24,12 @@ import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.shared.UserException
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.reader.ReaderViewModel
+import timber.log.Timber
 import java.util.Date
 
 class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
 
     private lateinit var model: DrmViewModel
-    private lateinit var endTextView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +41,6 @@ class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         // Information
         view.findViewById<TextView>(R.id.drm_value_license_type).text = model.type
         view.findViewById<TextView>(R.id.drm_value_state).text = model.state
@@ -62,10 +61,7 @@ class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
         view.findViewById<View>(R.id.drm_start).visibility = datesVisibility
         view.findViewById<TextView>(R.id.drm_value_start).text = model.start.toFormattedString()
         view.findViewById<View>(R.id.drm_end).visibility = datesVisibility
-
-        endTextView = view.findViewById<TextView>(R.id.drm_value_end).apply {
-            text = model.end?.toFormattedString()
-        }
+        view.findViewById<TextView>(R.id.drm_value_end).text = model.end?.toFormattedString()
 
         // Actions
         view.findViewById<TextView>(R.id.drm_label_actions).visibility =
@@ -73,28 +69,27 @@ class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
 
         view.findViewById<Button>(R.id.drm_button_renew).run {
             visibility = if (model.canRenewLoan) View.VISIBLE else View.GONE
-            setOnClickListener {onRenewLoan() }
+            setOnClickListener {onRenewLoanClicked() }
         }
 
         view.findViewById<Button>(R.id.drm_button_return).run {
             visibility = if (model.canReturnPublication) View.VISIBLE else View.GONE
-            setOnClickListener { onReturnPublication() }
+            setOnClickListener { onReturnPublicationClicked() }
         }
     }
 
-    private fun onRenewLoan() {
+    private fun onRenewLoanClicked() {
         lifecycleScope.launch {
             model.renewLoan()
                 .onSuccess { newDate ->
-                    endTextView.text = newDate.toFormattedString()
+                    requireView().findViewById<TextView>(R.id.drm_value_end).text = newDate.toFormattedString()
                 }.onFailure { exception ->
-                    (exception as? UserException)?.getUserMessage(requireContext())
-                        ?.let { requireView().longSnackbar(it) }
+                    exception.toastUserMessage(requireView())
                 }
         }
     }
 
-    private fun onReturnPublication() {
+    private fun onReturnPublicationClicked() {
         requireContext().alert(Appcompat, "This will return the publication") {
             negativeButton("Cancel") { }
             positiveButton("Return") {
@@ -104,8 +99,7 @@ class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
                             val result = DrmManagementContract.createResult(hasReturned = true)
                             setFragmentResult(DrmManagementContract.REQUEST_KEY, result)
                         }.onFailure { exception ->
-                            (exception as? UserException)?.getUserMessage(requireContext())
-                                ?.let { requireView().longSnackbar(it) }
+                            exception.toastUserMessage(requireView())
                         }
                 }
             }
@@ -119,3 +113,11 @@ class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
 
 private fun Date?.toFormattedString() =
     DateTime(this).toString(DateTimeFormat.shortDateTime()).orEmpty()
+
+// FIXME: the toast is draw behind the navigation bar
+private fun Exception.toastUserMessage(view: View)  {
+    if (this is UserException)
+        view.longSnackbar(getUserMessage(view.context))
+
+    Timber.d(this)
+}
