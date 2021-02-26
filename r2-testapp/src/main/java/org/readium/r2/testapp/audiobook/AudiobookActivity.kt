@@ -85,7 +85,7 @@ class AudiobookActivity : R2AudiobookActivity(), ReaderNavigation {
             .commit()
     }
 
-    override fun closeOutlineFragment(locator: Locator) {
+    private fun closeOutlineFragment(locator: Locator) {
         go(locator)
         supportFragmentManager.popBackStack()
     }

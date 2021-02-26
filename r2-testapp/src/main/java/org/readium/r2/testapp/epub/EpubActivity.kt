@@ -418,7 +418,7 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
             .commit()
     }
 
-    override fun closeOutlineFragment(locator: Locator) {
+    private fun closeOutlineFragment(locator: Locator) {
         readerFragment.go(locator, true)
         supportFragmentManager.popBackStack()
     }

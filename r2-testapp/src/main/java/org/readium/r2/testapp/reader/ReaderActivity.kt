@@ -132,7 +132,7 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader), ReaderNaviga
             .commit()
     }
 
-    override fun closeOutlineFragment(locator: Locator) {
+    private fun closeOutlineFragment(locator: Locator) {
         readerFragment.go(locator, true)
         supportFragmentManager.popBackStack()
     }
