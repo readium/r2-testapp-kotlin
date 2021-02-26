@@ -7,12 +7,22 @@
 package org.readium.r2.testapp.drm
 
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.lcp.LcpLicense
 import org.readium.r2.lcp.MaterialRenewListener
 import org.readium.r2.shared.util.Try
 import java.util.*
 
-class LcpViewModel(private val lcpLicense: LcpLicense, fragment: Fragment) : DrmViewModel() {
+class LcpManagementViewModel(private val lcpLicense: LcpLicense) : DrmManagementViewModel() {
+
+    class Factory(private val lcpLicense: LcpLicense)
+        : ViewModelProvider.NewInstanceFactory() {
+
+        override fun <T : ViewModel?> create(modelClass: Class<T>): T =
+            modelClass.getDeclaredConstructor(LcpLicense::class.java)
+                .newInstance(lcpLicense)
+    }
 
     override val type: String = "LCP"
 
@@ -47,14 +57,14 @@ class LcpViewModel(private val lcpLicense: LcpLicense, fragment: Fragment) : Drm
     override val canRenewLoan: Boolean
         get() = lcpLicense.canRenewLoan
 
-    override suspend fun renewLoan(): Try<Date?, Exception> =
-        lcpLicense.renewLoan(renewListener)
-
-    private val renewListener = MaterialRenewListener(
-        license = lcpLicense,
-        caller = fragment,
-        fragmentManager = fragment.childFragmentManager
-    )
+    override suspend fun renewLoan(fragment: Fragment): Try<Date?, Exception> {
+        val renewListener = MaterialRenewListener(
+            license = lcpLicense,
+            caller = fragment,
+            fragmentManager = fragment.childFragmentManager
+        )
+        return lcpLicense.renewLoan(renewListener)
+    }
 
     override val canReturnPublication: Boolean
         get() = lcpLicense.canReturnPublication

@@ -6,10 +6,12 @@
 
 package org.readium.r2.testapp.drm
 
+import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModel
 import org.readium.r2.shared.util.Try
 import java.util.*
 
-abstract class DrmViewModel {
+abstract class DrmManagementViewModel : ViewModel() {
 
     abstract val type: String
 
@@ -31,7 +33,7 @@ abstract class DrmViewModel {
 
     open val canRenewLoan: Boolean = false
 
-    open suspend fun renewLoan(): Try<Date?, Exception> =
+    open suspend fun renewLoan(fragment: Fragment): Try<Date?, Exception> =
         Try.failure(Exception("Renewing a loan is not supported"))
 
     open val canReturnPublication: Boolean = false

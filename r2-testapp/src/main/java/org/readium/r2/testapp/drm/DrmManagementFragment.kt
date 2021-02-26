@@ -29,14 +29,15 @@ import java.util.Date
 
 class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
 
-    private lateinit var model: DrmViewModel
+    private lateinit var model: DrmManagementViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val publication = ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).publication
         val license = checkNotNull(publication.lcpLicense)
-        model = LcpViewModel(license, this)
+        val modelFactory = LcpManagementViewModel.Factory(license)
+        model = ViewModelProvider(this, modelFactory).get(LcpManagementViewModel::class.java)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -81,7 +82,7 @@ class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
 
     private fun onRenewLoanClicked() {
         lifecycleScope.launch {
-            model.renewLoan()
+            model.renewLoan(this@DrmManagementFragment)
                 .onSuccess { newDate ->
                     requireView().findViewById<TextView>(R.id.drm_value_end).text = newDate.toFormattedString()
                 }.onFailure { exception ->
