@@ -138,6 +138,9 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
         childFragmentManager.registerFragmentLifecycleCallbacks( object: FragmentManager.FragmentLifecycleCallbacks() {
 
             override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
+                if (isHidden)
+                    return
+
                 if (f is EpubNavigatorFragment) {
                     requireActivity().hideSystemUi()
                 } else {
@@ -146,6 +149,9 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
             }
 
             override fun onFragmentStopped(fm: FragmentManager, f: Fragment) {
+                if (isHidden)
+                    return
+
                 requireActivity().hideSystemUi()
             }
 
