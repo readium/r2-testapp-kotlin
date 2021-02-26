@@ -12,10 +12,6 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.launch
 import org.jetbrains.anko.support.v4.toast
 import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.navigator.Navigator

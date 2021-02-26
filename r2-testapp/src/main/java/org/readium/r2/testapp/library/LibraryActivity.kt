@@ -42,7 +42,6 @@ import org.readium.r2.shared.extensions.extension
 import org.readium.r2.shared.extensions.mediaType
 import org.readium.r2.shared.extensions.toPng
 import org.readium.r2.shared.extensions.tryOrNull
-import org.readium.r2.shared.publication.ContentProtection
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.asset.FileAsset
 import org.readium.r2.shared.publication.asset.PublicationAsset
@@ -63,7 +62,7 @@ import org.readium.r2.testapp.opds.OPDSListActivity
 import org.readium.r2.testapp.permissions.PermissionHelper
 import org.readium.r2.testapp.permissions.Permissions
 import org.readium.r2.testapp.utils.ContentResolverUtil
-import org.readium.r2.testapp.utils.NavigatorContract
+import org.readium.r2.testapp.reader.ReaderActivityContract
 import org.readium.r2.testapp.utils.extensions.*
 import timber.log.Timber
 import java.io.File
@@ -104,7 +103,7 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
     private lateinit var catalogView: androidx.recyclerview.widget.RecyclerView
     private lateinit var alertDialog: AlertDialog
     private lateinit var documentPickerLauncher: ActivityResultLauncher<String>
-    private lateinit var navigatorLauncher: ActivityResultLauncher<NavigatorContract.Input>
+    private lateinit var readerLauncher: ActivityResultLauncher<ReaderActivityContract.Input>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -151,7 +150,7 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
             uri?.let { importPublicationFromUri(it) }
         }
 
-        navigatorLauncher = registerForActivityResult(NavigatorContract()) { pubData: NavigatorContract.Output? ->
+        readerLauncher = registerForActivityResult(ReaderActivityContract()) { pubData: ReaderActivityContract.Output? ->
             if (pubData == null)
                 return@registerForActivityResult
 
@@ -593,8 +592,8 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                             catalogView.longSnackbar(error.getUserMessage(this@LibraryActivity))
                         }
                     } else {
-                        navigatorLauncher.launch(
-                            NavigatorContract.Input(
+                        readerLauncher.launch(
+                            ReaderActivityContract.Input(
                                 file = asset.file,
                                 mediaType = mediaType,
                                 publication = publication,

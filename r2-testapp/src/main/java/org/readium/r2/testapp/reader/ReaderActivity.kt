@@ -15,6 +15,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
+import kotlinx.android.synthetic.main.activity_reader.*
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.allAreBitmap
 import org.readium.r2.shared.util.mediatype.MediaType
@@ -23,10 +24,6 @@ import org.readium.r2.testapp.drm.DrmManagementContract
 import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
-import org.readium.r2.testapp.utils.NavigatorContract
-import kotlinx.android.synthetic.main.activity_reader.*
-import org.readium.r2.testapp.utils.observeWhenStarted
-import java.lang.IllegalArgumentException
 
 class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
 
@@ -34,7 +31,7 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
     private lateinit var readerFragment: AbstractReaderFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val inputData = NavigatorContract.parseIntent(this)
+        val inputData = ReaderActivityContract.parseIntent(this)
         val publication = inputData.publication
         val bookId = inputData.bookId
         val persistence = BookData(applicationContext, bookId, publication)

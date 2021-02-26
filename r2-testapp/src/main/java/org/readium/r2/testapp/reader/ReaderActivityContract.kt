@@ -8,7 +8,7 @@
  * LICENSE file present in the project repository where this source code is maintained.
  */
 
-package org.readium.r2.testapp.utils
+package org.readium.r2.testapp.reader
 
 import android.app.Activity
 import android.content.Context
@@ -22,11 +22,10 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.testapp.audiobook.AudiobookActivity
 import org.readium.r2.testapp.epub.EpubActivity
-import org.readium.r2.testapp.reader.ReaderActivity
 import java.io.File
 import java.net.URL
 
-class NavigatorContract : ActivityResultContract<NavigatorContract.Input, NavigatorContract.Output>() {
+class ReaderActivityContract : ActivityResultContract<ReaderActivityContract.Input, ReaderActivityContract.Output>() {
 
     data class Input(
         val file: File,

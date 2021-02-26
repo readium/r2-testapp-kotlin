@@ -15,7 +15,7 @@ import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.ReaderActivity
 import org.readium.r2.testapp.reader.ReaderViewModel
-import org.readium.r2.testapp.utils.NavigatorContract
+import org.readium.r2.testapp.reader.ReaderActivityContract
 
 class AudiobookActivity : R2AudiobookActivity() {
 
@@ -23,7 +23,7 @@ class AudiobookActivity : R2AudiobookActivity() {
     private lateinit var readerFragment: AudioNavigatorFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val inputData = NavigatorContract.parseIntent(this)
+        val inputData = ReaderActivityContract.parseIntent(this)
         val publication = inputData.publication
         val bookId = inputData.bookId
         val persistence = BookData(applicationContext, bookId, publication)

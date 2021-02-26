@@ -160,9 +160,9 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
         }, false)
 
 
-        fragment_reader_container.setOnApplyWindowInsetsListener { view, insets ->
+        fragment_reader_container.setOnApplyWindowInsetsListener { container, insets ->
             if (navigatorFragment.isHidden) {
-                view.setPadding(
+                container.setPadding(
                     insets.systemWindowInsetLeft,
                     insets.systemWindowInsetTop + (requireActivity() as AppCompatActivity).supportActionBar!!.height,
                     insets.systemWindowInsetRight,
@@ -170,7 +170,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
                 )
                 insets
             } else {
-                view.setPadding(0, 0, 0, 0)
+                container.setPadding(0, 0, 0, 0)
                 insets
             }
         }
@@ -361,7 +361,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
             val index = fragments["i"]?.toInt()
             if (index != null) {
                 val searchStorage = activity.getSharedPreferences("org.readium.r2.search", Context.MODE_PRIVATE)
-                Handler().postDelayed({
+                Handler(Looper.getMainLooper()).postDelayed({
                     if (publication.metadata.presentation.layout == EpubLayout.REFLOWABLE) {
                         val currentFragment = (navigatorFragment.resourcePager.adapter as R2PagerAdapter).getCurrentFragment() as R2EpubPageFragment
                         val resource = publication.readingOrder[navigatorFragment.resourcePager.currentItem]
