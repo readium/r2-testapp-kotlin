@@ -41,6 +41,7 @@ class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         // Information
         view.findViewById<TextView>(R.id.drm_value_license_type).text = model.type
         view.findViewById<TextView>(R.id.drm_value_state).text = model.state
@@ -114,7 +115,7 @@ class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
 private fun Date?.toFormattedString() =
     DateTime(this).toString(DateTimeFormat.shortDateTime()).orEmpty()
 
-// FIXME: the toast is draw behind the navigation bar
+// FIXME: the toast is drawn behind the navigation bar
 private fun Exception.toastUserMessage(view: View)  {
     if (this is UserException)
         view.longSnackbar(getUserMessage(view.context))
