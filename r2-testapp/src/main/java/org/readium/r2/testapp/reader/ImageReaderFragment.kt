@@ -22,12 +22,14 @@ import timber.log.Timber
 
 class ImageReaderFragment : AbstractReaderFragment(), ImageNavigatorFragment.Listener {
 
+    override lateinit var model: ReaderViewModel
     override lateinit var publication: Publication
     override lateinit var persistence: BookData
     override lateinit var navigator: Navigator
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
+            model = it
             publication = it.publication
             persistence = it.persistence
         }

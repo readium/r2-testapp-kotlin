@@ -24,16 +24,14 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.cover
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.reader.BookData
-import org.readium.r2.testapp.reader.ReaderNavigation
+import org.readium.r2.testapp.reader.ReaderFragmentEvent
 import org.readium.r2.testapp.reader.ReaderViewModel
-import org.readium.r2.testapp.utils.extensions.hideSystemUi
-import org.readium.r2.testapp.utils.extensions.showSystemUi
 
 class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
 
+    private lateinit var model: ReaderViewModel
     private lateinit var publication: Publication
     private lateinit var persistence: BookData
-    private lateinit var navigation: ReaderNavigation
 
     private val activity: AudiobookActivity
         get() = requireActivity() as AudiobookActivity
@@ -43,11 +41,13 @@ class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val activity = requireActivity()
-        navigation = activity as ReaderNavigation
 
-        val readerModel = ViewModelProvider(activity).get(ReaderViewModel::class.java)
-        publication = readerModel.publication
-        persistence = readerModel.persistence
+        ViewModelProvider(activity).get(ReaderViewModel::class.java).let {
+            model = it
+            publication = it.publication
+            persistence = it.persistence
+        }
+
 
         setHasOptionsMenu(true)
         super.onCreate(savedInstanceState)
@@ -79,7 +79,7 @@ class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.toc -> {
-                navigation.showOutlineFragment()
+                model.sendEvent(ReaderFragmentEvent.OpenOutlineRequested)
                 true
             }
             R.id.bookmark -> {
@@ -88,7 +88,7 @@ class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
                 true
             }
             R.id.drm -> {
-                navigation.showDrmManagementFragment()
+                model.sendEvent(ReaderFragmentEvent.OpenDrmManagementRequested)
                 true
             }
             else -> false

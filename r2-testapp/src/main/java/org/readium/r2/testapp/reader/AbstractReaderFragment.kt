@@ -12,6 +12,10 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.SendChannel
+import kotlinx.coroutines.launch
 import org.jetbrains.anko.support.v4.toast
 import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.navigator.Navigator
@@ -23,13 +27,12 @@ import org.readium.r2.testapp.utils.extensions.showSystemUi
 
 abstract class AbstractReaderFragment : Fragment(R.layout.fragment_reader) {
 
-    private lateinit var navigation: ReaderNavigation
+    protected abstract var model: ReaderViewModel
     protected abstract var publication: Publication
     protected abstract var persistence: BookData
     protected abstract var navigator: Navigator
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        navigation = requireActivity() as ReaderNavigation
         setHasOptionsMenu(true)
         super.onCreate(savedInstanceState)
     }
@@ -72,7 +75,7 @@ abstract class AbstractReaderFragment : Fragment(R.layout.fragment_reader) {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.toc -> {
-                navigation.showOutlineFragment()
+                model.sendEvent(ReaderFragmentEvent.OpenOutlineRequested)
                 true
             }
             R.id.bookmark -> {
@@ -81,7 +84,7 @@ abstract class AbstractReaderFragment : Fragment(R.layout.fragment_reader) {
                 true
             }
             R.id.drm -> {
-                navigation.showDrmManagementFragment()
+                model.sendEvent(ReaderFragmentEvent.OpenDrmManagementRequested)
                 true
             }
             else -> false

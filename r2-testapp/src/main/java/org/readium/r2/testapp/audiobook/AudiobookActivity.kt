@@ -14,11 +14,11 @@ import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.ReaderActivity
-import org.readium.r2.testapp.reader.ReaderNavigation
+import org.readium.r2.testapp.reader.ReaderFragmentEvent
 import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.NavigatorContract
 
-class AudiobookActivity : R2AudiobookActivity(), ReaderNavigation {
+class AudiobookActivity : R2AudiobookActivity() {
 
     private lateinit var modelFactory: ReaderViewModel.Factory
     private lateinit var readerFragment: AudioNavigatorFragment
@@ -31,6 +31,14 @@ class AudiobookActivity : R2AudiobookActivity(), ReaderNavigation {
 
         modelFactory = ReaderViewModel.Factory(publication, persistence)
         super.onCreate(savedInstanceState)
+
+        ViewModelProvider(this).get(ReaderViewModel::class.java)
+            .subscribeEvents(this) {
+                when(it) {
+                    is ReaderFragmentEvent.OpenOutlineRequested -> showOutlineFragment()
+                    is ReaderFragmentEvent.OpenDrmManagementRequested -> showDrmManagementFragment()
+                }
+            }
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
@@ -77,7 +85,7 @@ class AudiobookActivity : R2AudiobookActivity(), ReaderNavigation {
         return modelFactory
     }
 
-    override fun showOutlineFragment() {
+    private fun showOutlineFragment() {
         supportFragmentManager.beginTransaction()
             .add(R.id.activity_container, OutlineFragment::class.java, Bundle(), ReaderActivity.OUTLINE_FRAGMENT_TAG)
             .hide(readerFragment)
@@ -90,7 +98,7 @@ class AudiobookActivity : R2AudiobookActivity(), ReaderNavigation {
         supportFragmentManager.popBackStack()
     }
 
-    override fun showDrmManagementFragment() {
+    private fun showDrmManagementFragment() {
         supportFragmentManager.beginTransaction()
             .add(R.id.activity_container, DrmManagementFragment::class.java, Bundle(), ReaderActivity.DRM_FRAGMENT_TAG)
             .hide(readerFragment)

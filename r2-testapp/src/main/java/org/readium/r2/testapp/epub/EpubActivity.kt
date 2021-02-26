@@ -45,14 +45,13 @@ import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.EpubReaderFragment
-import org.readium.r2.testapp.reader.ReaderNavigation
+import org.readium.r2.testapp.reader.ReaderFragmentEvent
 import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.reader.toNavigatorHighlight
 import org.readium.r2.testapp.utils.NavigatorContract
-import timber.log.Timber
 import java.lang.IllegalStateException
 
-class EpubActivity : R2EpubActivity(), ReaderNavigation {
+class EpubActivity : R2EpubActivity() {
 
     private lateinit var modelFactory: ReaderViewModel.Factory
     private lateinit var readerFragment: EpubReaderFragment
@@ -82,6 +81,14 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         persistence = BookData(applicationContext, bookId, publication)
         modelFactory = ReaderViewModel.Factory(publication, persistence)
         super.onCreate(savedInstanceState)
+
+        ViewModelProvider(this).get(ReaderViewModel::class.java)
+            .subscribeEvents(this) {
+                when(it) {
+                    is ReaderFragmentEvent.OpenOutlineRequested -> showOutlineFragment()
+                    is ReaderFragmentEvent.OpenDrmManagementRequested -> showDrmManagementFragment()
+                }
+            }
 
         /* FIXME: When the OutlineFragment is left by pressing the back button,
         * the Webview is not updated, so removed highlights will still be visible.
@@ -410,7 +417,7 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         }
     }
 
-    override fun showOutlineFragment() {
+    private fun showOutlineFragment() {
         supportFragmentManager.beginTransaction()
             .add(R.id.activity_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
             .hide(readerFragment)
@@ -423,7 +430,7 @@ class EpubActivity : R2EpubActivity(), ReaderNavigation {
         supportFragmentManager.popBackStack()
     }
 
-    override fun showDrmManagementFragment() {
+    private fun showDrmManagementFragment() {
         supportFragmentManager.beginTransaction()
             .add(R.id.activity_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
             .hide(readerFragment)

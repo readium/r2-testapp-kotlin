@@ -57,6 +57,7 @@ import java.net.URL
 
 class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Listener {
 
+    override lateinit var model: ReaderViewModel
     override lateinit var publication: Publication
     override lateinit var persistence: BookData
     override lateinit var navigator: Navigator
@@ -80,6 +81,7 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
         }
 
         ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
+            model = it
             publication = it.publication
             persistence = it.persistence
         }

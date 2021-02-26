@@ -7,8 +7,13 @@
 package org.readium.r2.testapp.reader
 
 import android.content.Context
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
 import org.readium.r2.navigator.epub.Style
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
@@ -18,6 +23,7 @@ import org.readium.r2.testapp.db.BookmarksDatabase
 import org.readium.r2.testapp.db.BooksDatabase
 import org.readium.r2.testapp.db.Highlight
 import org.readium.r2.testapp.db.HighlightsDatabase
+import org.readium.r2.testapp.utils.observeWhenStarted
 
 class ReaderViewModel(val publication: Publication, val persistence: BookData) : ViewModel() {
 
@@ -27,6 +33,18 @@ class ReaderViewModel(val publication: Publication, val persistence: BookData) :
         override fun <T : ViewModel?> create(modelClass: Class<T>): T =
             modelClass.getDeclaredConstructor(Publication::class.java, BookData::class.java)
                 .newInstance(publication, persistence)
+    }
+
+    private val channel = Channel<ReaderFragmentEvent>(Channel.BUFFERED)
+
+    fun sendEvent(event: ReaderFragmentEvent) {
+        viewModelScope.launch {
+            channel.send(event)
+        }
+    }
+
+    fun subscribeEvents(lifecycleOwner: LifecycleOwner, collector: suspend (ReaderFragmentEvent) -> Unit) {
+        channel.receiveAsFlow().observeWhenStarted(lifecycleOwner, collector)
     }
 }
 
