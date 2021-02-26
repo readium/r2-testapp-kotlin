@@ -45,8 +45,8 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
         ViewModelProvider(this).get(ReaderViewModel::class.java)
             .subscribeEvents(this) {
                 when(it) {
-                    is ReaderFragmentEvent.OpenOutlineRequested -> showOutlineFragment()
-                    is ReaderFragmentEvent.OpenDrmManagementRequested -> showDrmManagementFragment()
+                    is ReaderViewModel.Event.OpenOutlineRequested -> showOutlineFragment()
+                    is ReaderViewModel.Event.OpenDrmManagementRequested -> showDrmManagementFragment()
                 }
         }
 

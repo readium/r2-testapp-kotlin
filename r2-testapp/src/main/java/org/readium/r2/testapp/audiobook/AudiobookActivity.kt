@@ -14,7 +14,6 @@ import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.ReaderActivity
-import org.readium.r2.testapp.reader.ReaderFragmentEvent
 import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.NavigatorContract
 
@@ -35,8 +34,8 @@ class AudiobookActivity : R2AudiobookActivity() {
         ViewModelProvider(this).get(ReaderViewModel::class.java)
             .subscribeEvents(this) {
                 when(it) {
-                    is ReaderFragmentEvent.OpenOutlineRequested -> showOutlineFragment()
-                    is ReaderFragmentEvent.OpenDrmManagementRequested -> showDrmManagementFragment()
+                    is ReaderViewModel.Event.OpenOutlineRequested -> showOutlineFragment()
+                    is ReaderViewModel.Event.OpenDrmManagementRequested -> showDrmManagementFragment()
                 }
             }
 

@@ -45,7 +45,6 @@ import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.EpubReaderFragment
-import org.readium.r2.testapp.reader.ReaderFragmentEvent
 import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.reader.toNavigatorHighlight
 import org.readium.r2.testapp.utils.NavigatorContract
@@ -85,8 +84,8 @@ class EpubActivity : R2EpubActivity() {
         ViewModelProvider(this).get(ReaderViewModel::class.java)
             .subscribeEvents(this) {
                 when(it) {
-                    is ReaderFragmentEvent.OpenOutlineRequested -> showOutlineFragment()
-                    is ReaderFragmentEvent.OpenDrmManagementRequested -> showDrmManagementFragment()
+                    is ReaderViewModel.Event.OpenOutlineRequested -> showOutlineFragment()
+                    is ReaderViewModel.Event.OpenDrmManagementRequested -> showDrmManagementFragment()
                 }
             }
 

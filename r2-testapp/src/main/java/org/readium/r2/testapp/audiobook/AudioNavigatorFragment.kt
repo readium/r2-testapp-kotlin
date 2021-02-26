@@ -24,7 +24,6 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.cover
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.reader.BookData
-import org.readium.r2.testapp.reader.ReaderFragmentEvent
 import org.readium.r2.testapp.reader.ReaderViewModel
 
 class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
@@ -79,7 +78,7 @@ class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.toc -> {
-                model.sendEvent(ReaderFragmentEvent.OpenOutlineRequested)
+                model.sendEvent(ReaderViewModel.Event.OpenOutlineRequested)
                 true
             }
             R.id.bookmark -> {
@@ -88,7 +87,7 @@ class AudioNavigatorFragment : Fragment(R.layout.fragment_audiobook) {
                 true
             }
             R.id.drm -> {
-                model.sendEvent(ReaderFragmentEvent.OpenDrmManagementRequested)
+                model.sendEvent(ReaderViewModel.Event.OpenDrmManagementRequested)
                 true
             }
             else -> false

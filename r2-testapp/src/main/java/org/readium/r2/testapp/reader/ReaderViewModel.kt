@@ -35,15 +35,22 @@ class ReaderViewModel(val publication: Publication, val persistence: BookData) :
                 .newInstance(publication, persistence)
     }
 
-    private val channel = Channel<ReaderFragmentEvent>(Channel.BUFFERED)
+    sealed class Event {
 
-    fun sendEvent(event: ReaderFragmentEvent) {
+        object OpenOutlineRequested : Event()
+
+        object OpenDrmManagementRequested : Event()
+    }
+
+    private val channel = Channel<Event>(Channel.BUFFERED)
+
+    fun sendEvent(event: Event) {
         viewModelScope.launch {
             channel.send(event)
         }
     }
 
-    fun subscribeEvents(lifecycleOwner: LifecycleOwner, collector: suspend (ReaderFragmentEvent) -> Unit) {
+    fun subscribeEvents(lifecycleOwner: LifecycleOwner, collector: suspend (Event) -> Unit) {
         channel.receiveAsFlow().observeWhenStarted(lifecycleOwner, collector)
     }
 }
