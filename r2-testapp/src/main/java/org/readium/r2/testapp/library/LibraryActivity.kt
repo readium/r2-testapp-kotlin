@@ -573,9 +573,8 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
             val book = books[position]
 
             val remoteAsset: FileAsset? = tryOrNull { URL(book.href).copyToTempFile()?.let { FileAsset(it) } }
-            val mediaType = MediaType.of(fileExtension = book.ext.removePrefix("."))
             val asset = remoteAsset // remote file
-                ?: FileAsset(File(book.href), mediaType = mediaType) // local file
+                ?: FileAsset(File(book.href)) // local file
 
             streamer.open(asset, allowUserInteraction = true, sender = this@LibraryActivity)
                 .onFailure {
@@ -595,7 +594,7 @@ class LibraryActivity : AppCompatActivity(), BooksAdapter.RecyclerViewClickListe
                         readerLauncher.launch(
                             ReaderContract.Input(
                                 file = asset.file,
-                                mediaType = mediaType,
+                                mediaType = asset.mediaType(),
                                 publication = publication,
                                 bookId = book.id!!,
                                 initialLocator = booksDB.books.currentLocator(book.id!!),
