@@ -12,6 +12,7 @@ import org.readium.r2.testapp.drm.DrmManagementContract
 import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
+import org.readium.r2.testapp.reader.AudioReaderFragment
 import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.ReaderActivity
 import org.readium.r2.testapp.reader.ReaderViewModel
@@ -20,7 +21,7 @@ import org.readium.r2.testapp.reader.ReaderContract
 class AudiobookActivity : R2AudiobookActivity() {
 
     private lateinit var modelFactory: ReaderViewModel.Factory
-    private lateinit var readerFragment: AudioNavigatorFragment
+    private lateinit var readerFragment: AudioReaderFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val inputData = ReaderContract.parseIntent(this)
@@ -41,11 +42,11 @@ class AudiobookActivity : R2AudiobookActivity() {
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
-                .add(R.id.activity_container, AudioNavigatorFragment::class.java, Bundle(), ReaderActivity.READER_FRAGMENT_TAG)
+                .add(R.id.activity_container, AudioReaderFragment::class.java, Bundle(), ReaderActivity.READER_FRAGMENT_TAG)
                 .commitNow()
         }
 
-        readerFragment = supportFragmentManager.findFragmentByTag(ReaderActivity.READER_FRAGMENT_TAG) as AudioNavigatorFragment
+        readerFragment = supportFragmentManager.findFragmentByTag(ReaderActivity.READER_FRAGMENT_TAG) as AudioReaderFragment
 
         supportFragmentManager.setFragmentResultListener(
             OutlineContract.REQUEST_KEY,

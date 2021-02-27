@@ -55,12 +55,12 @@ import org.readium.r2.testapp.utils.extensions.toggleSystemUi
 import timber.log.Timber
 import java.net.URL
 
-class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Listener {
+class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listener {
 
     override lateinit var model: ReaderViewModel
-    override lateinit var publication: Publication
-    override lateinit var persistence: BookData
     override lateinit var navigator: Navigator
+    private lateinit var publication: Publication
+    private  lateinit var persistence: BookData
     lateinit var navigatorFragment: EpubNavigatorFragment
 
     private lateinit var menuScreenReader: MenuItem
@@ -88,9 +88,8 @@ class EpubReaderFragment : AbstractReaderFragment(), EpubNavigatorFragment.Liste
 
         val baseUrl = checkNotNull(requireArguments().getString(BASE_URL_ARG))
 
-        childFragmentManager.fragmentFactory = CompositeFragmentFactory(
+        childFragmentManager.fragmentFactory =
             EpubNavigatorFragment.createFactory(publication, baseUrl, persistence.savedLocation, this)
-        )
 
         childFragmentManager.setFragmentResultListener(
             SearchFragment::class.java.name,

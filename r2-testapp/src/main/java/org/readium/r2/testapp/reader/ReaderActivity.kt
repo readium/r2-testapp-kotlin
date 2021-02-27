@@ -28,7 +28,7 @@ import org.readium.r2.testapp.outline.OutlineFragment
 class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
 
     private lateinit var modelFactory: ReaderViewModel.Factory
-    private lateinit var readerFragment: AbstractReaderFragment
+    private lateinit var readerFragment: VisualReaderFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val inputData = ReaderContract.parseIntent(this)
@@ -59,7 +59,7 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
                 .commitNow()
         }
 
-        readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as AbstractReaderFragment
+        readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as VisualReaderFragment
 
         supportFragmentManager.setFragmentResultListener(
             OutlineContract.REQUEST_KEY,

@@ -78,6 +78,7 @@ class EpubActivity : R2EpubActivity() {
 
         persistence = BookData(applicationContext, bookId, publication)
         modelFactory = ReaderViewModel.Factory(publication, persistence)
+
         super.onCreate(savedInstanceState)
 
         ViewModelProvider(this).get(ReaderViewModel::class.java)

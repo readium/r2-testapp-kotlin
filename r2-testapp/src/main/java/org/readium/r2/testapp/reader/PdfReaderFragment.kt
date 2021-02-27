@@ -20,12 +20,12 @@ import org.readium.r2.testapp.R
 import org.readium.r2.testapp.utils.CompositeFragmentFactory
 import org.readium.r2.testapp.utils.extensions.toggleSystemUi
 
-class PdfReaderFragment : AbstractReaderFragment(), PdfNavigatorFragment.Listener {
+class PdfReaderFragment : VisualReaderFragment(), PdfNavigatorFragment.Listener {
 
     override lateinit var model: ReaderViewModel
-    override lateinit var publication: Publication
-    override lateinit var persistence: BookData
     override lateinit var navigator: Navigator
+    private lateinit var publication: Publication
+    private lateinit var persistence: BookData
 
     override fun onCreate(savedInstanceState: Bundle?) {
         ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
@@ -34,9 +34,8 @@ class PdfReaderFragment : AbstractReaderFragment(), PdfNavigatorFragment.Listene
             persistence = it.persistence
         }
 
-        childFragmentManager.fragmentFactory = CompositeFragmentFactory(
+        childFragmentManager.fragmentFactory =
             PdfNavigatorFragment.createFactory(publication, persistence.savedLocation, this)
-        )
 
         super.onCreate(savedInstanceState)
     }
