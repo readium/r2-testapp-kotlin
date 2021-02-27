@@ -26,10 +26,8 @@ class AudiobookActivity : R2AudiobookActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val inputData = ReaderContract.parseIntent(this)
         val publication = inputData.publication
-        val bookId = inputData.bookId
-        val persistence = BookData(applicationContext, bookId, publication)
 
-        modelFactory = ReaderViewModel.Factory(publication, persistence)
+        modelFactory = ReaderViewModel.Factory(applicationContext, inputData)
         super.onCreate(savedInstanceState)
 
         ViewModelProvider(this).get(ReaderViewModel::class.java)

@@ -81,7 +81,7 @@ class EpubActivity : R2EpubActivity() {
         val baseUrl = requireNotNull(inputData.baseUrl)
 
         persistence = BookData(applicationContext, bookId, publication)
-        modelFactory = ReaderViewModel.Factory(publication, persistence)
+        modelFactory = ReaderViewModel.Factory(applicationContext, inputData)
 
         super.onCreate(savedInstanceState)
 
