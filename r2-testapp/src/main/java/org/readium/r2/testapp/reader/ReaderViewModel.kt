@@ -6,17 +6,16 @@
 
 package org.readium.r2.testapp.reader
 
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
 import org.readium.r2.shared.publication.Publication
-import org.readium.r2.testapp.utils.observeWhenStarted
+import org.readium.r2.testapp.utils.EventChannel
 
 class ReaderViewModel(val publication: Publication, val persistence: BookData) : ViewModel() {
+
+    val channel = EventChannel(Channel<Event>(Channel.BUFFERED), viewModelScope)
 
     class Factory(private val publication: Publication, private val persistence: BookData)
         : ViewModelProvider.NewInstanceFactory() {
@@ -31,18 +30,6 @@ class ReaderViewModel(val publication: Publication, val persistence: BookData) :
         object OpenOutlineRequested : Event()
 
         object OpenDrmManagementRequested : Event()
-    }
-
-    private val channel = Channel<Event>(Channel.BUFFERED)
-
-    fun sendEvent(event: Event) {
-        viewModelScope.launch {
-            channel.send(event)
-        }
-    }
-
-    fun subscribeEvents(lifecycleOwner: LifecycleOwner, collector: suspend (Event) -> Unit) {
-        channel.receiveAsFlow().observeWhenStarted(lifecycleOwner, collector)
     }
 }
 

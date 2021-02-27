@@ -46,7 +46,7 @@ abstract class BaseReaderFragment : Fragment(R.layout.fragment_reader) {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.toc -> {
-                model.sendEvent(ReaderViewModel.Event.OpenOutlineRequested)
+                model.channel.send(ReaderViewModel.Event.OpenOutlineRequested)
                 true
             }
             R.id.bookmark -> {
@@ -55,7 +55,7 @@ abstract class BaseReaderFragment : Fragment(R.layout.fragment_reader) {
                 true
             }
             R.id.drm -> {
-                model.sendEvent(ReaderViewModel.Event.OpenDrmManagementRequested)
+                model.channel.send(ReaderViewModel.Event.OpenDrmManagementRequested)
                 true
             }
             else -> false

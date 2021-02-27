@@ -86,7 +86,7 @@ class EpubActivity : R2EpubActivity() {
         super.onCreate(savedInstanceState)
 
         ViewModelProvider(this).get(ReaderViewModel::class.java)
-            .subscribeEvents(this) {
+            .channel.receive(this) {
                 when(it) {
                     is ReaderViewModel.Event.OpenOutlineRequested -> showOutlineFragment()
                     is ReaderViewModel.Event.OpenDrmManagementRequested -> showDrmManagementFragment()
