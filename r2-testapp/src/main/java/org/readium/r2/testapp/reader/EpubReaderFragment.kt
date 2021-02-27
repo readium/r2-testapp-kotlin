@@ -13,23 +13,21 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.edit
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
-import kotlinx.android.synthetic.main.fragment_reader.*
 import org.jetbrains.anko.support.v4.indeterminateProgressDialog
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
@@ -48,10 +46,8 @@ import org.readium.r2.testapp.search.SearchViewModel
 import org.readium.r2.testapp.search.MarkJsSearchEngine
 import org.readium.r2.testapp.search.SearchFragment
 import org.readium.r2.testapp.tts.ScreenReaderContract
-import org.readium.r2.testapp.utils.CompositeFragmentFactory
-import org.readium.r2.testapp.utils.extensions.hideSystemUi
-import org.readium.r2.testapp.utils.extensions.showSystemUi
-import org.readium.r2.testapp.utils.extensions.toggleSystemUi
+import org.readium.r2.testapp.utils.hideSystemUi
+import org.readium.r2.testapp.utils.toggleSystemUi
 import timber.log.Timber
 import java.net.URL
 
@@ -115,9 +111,8 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
         super.onCreate(savedInstanceState)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+        val view = super.onCreateView(inflater, container, savedInstanceState)
         val navigatorFragmentTag = getString(R.string.epub_navigator_tag)
 
         if (savedInstanceState == null) {
@@ -125,53 +120,19 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
                 .add(R.id.fragment_reader_container, EpubNavigatorFragment::class.java,  Bundle(), navigatorFragmentTag)
                 .commitNow()
         }
-
         navigator = childFragmentManager.findFragmentByTag(navigatorFragmentTag) as Navigator
         navigatorFragment = navigator as EpubNavigatorFragment
+        return view
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
 
        // This is a hack to draw the right background color on top and bottom blank spaces
         navigatorFragment.lifecycleScope.launchWhenStarted {
             val appearancePref = activity.preferences.getInt(APPEARANCE_REF, 0)
             val backgroundsColors = mutableListOf("#ffffff", "#faf4e8", "#000000")
             navigatorFragment.resourcePager.setBackgroundColor(Color.parseColor(backgroundsColors[appearancePref]))
-        }
-
-        childFragmentManager.registerFragmentLifecycleCallbacks( object: FragmentManager.FragmentLifecycleCallbacks() {
-
-            override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
-                if (isHidden)
-                    return
-
-                if (f is EpubNavigatorFragment) {
-                    requireActivity().hideSystemUi()
-                } else {
-                    requireActivity().showSystemUi()
-                }
-            }
-
-            override fun onFragmentStopped(fm: FragmentManager, f: Fragment) {
-                if (isHidden)
-                    return
-
-                requireActivity().hideSystemUi()
-            }
-
-        }, false)
-
-
-        fragment_reader_container.setOnApplyWindowInsetsListener { container, insets ->
-            if (navigatorFragment.isHidden) {
-                container.setPadding(
-                    insets.systemWindowInsetLeft,
-                    insets.systemWindowInsetTop + (requireActivity() as AppCompatActivity).supportActionBar!!.height,
-                    insets.systemWindowInsetRight,
-                    insets.systemWindowInsetBottom
-                )
-                insets
-            } else {
-                container.setPadding(0, 0, 0, 0)
-                insets
-            }
         }
     }
 
@@ -394,7 +355,6 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
         menuScreenReader.title = resources.getString(R.string.epubactivity_read_aloud_start)
         isScreenReaderVisible = false
         childFragmentManager.popBackStack()
-        requireActivity().hideSystemUi()
     }
 
     companion object {

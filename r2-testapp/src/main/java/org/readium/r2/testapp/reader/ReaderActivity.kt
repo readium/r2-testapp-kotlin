@@ -24,6 +24,9 @@ import org.readium.r2.testapp.drm.DrmManagementContract
 import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
+import org.readium.r2.testapp.utils.clearPadding
+import org.readium.r2.testapp.utils.padSystemUi
+import timber.log.Timber
 
 class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
 
@@ -102,16 +105,11 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
 
         activity_container.setOnApplyWindowInsetsListener { view, insets ->
               if (readerFragment.isHidden) {
-                view.setPadding(
-                    insets.systemWindowInsetLeft,
-                    insets.systemWindowInsetTop + supportActionBar!!.height,
-                    insets.systemWindowInsetRight,
-                    insets.systemWindowInsetBottom
-                )
-                insets
+                  view.padSystemUi(insets, this)
+                  insets
             } else {
-                view.setPadding(0, 0, 0, 0)
-                insets
+                  view.clearPadding()
+                  insets
             }
         }
 

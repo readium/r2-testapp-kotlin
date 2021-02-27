@@ -8,25 +8,55 @@ package org.readium.r2.testapp.reader
 
 import android.os.Bundle
 import android.view.View
-import org.readium.r2.testapp.utils.extensions.hideSystemUi
-import org.readium.r2.testapp.utils.extensions.showSystemUi
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import kotlinx.android.synthetic.main.fragment_reader.*
+import org.readium.r2.navigator.Navigator
+import org.readium.r2.testapp.utils.clearPadding
+import org.readium.r2.testapp.utils.padSystemUi
+import org.readium.r2.testapp.utils.setSystemUiVisibility
 
 abstract class VisualReaderFragment : BaseReaderFragment() {
+
+    private lateinit var navigatorFragment: Fragment
+
+    private val systemUiCallbacks = object : FragmentManager.FragmentLifecycleCallbacks() {
+        override fun onFragmentResumed(fm: FragmentManager, f: Fragment) =
+            setSystemUiVisibility(f !is Navigator)
+
+        override fun onFragmentPaused(fm: FragmentManager, f: Fragment) =
+            setSystemUiVisibility(f is Navigator)
+    }
+
+    private val windowInsetsListener = View.OnApplyWindowInsetsListener { container, insets ->
+        if (navigatorFragment.isHidden) {
+            container.padSystemUi(insets, requireActivity())
+        } else {
+            container.clearPadding()
+        }
+        insets
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setSystemUiVisibility(isHidden)
+        if (!isHidden) {
+            fragment_reader_container.setOnApplyWindowInsetsListener(windowInsetsListener)
+            childFragmentManager.registerFragmentLifecycleCallbacks(systemUiCallbacks, false)
+        }
+
+        navigatorFragment = navigator as Fragment
     }
 
     override fun onHiddenChanged(hidden: Boolean) {
         super.onHiddenChanged(hidden)
-        setSystemUiVisibility(hidden)
-    }
-
-    private fun setSystemUiVisibility(hidden: Boolean) {
-        if (hidden)
-            requireActivity().showSystemUi()
-        else
-            requireActivity().hideSystemUi()
+        setSystemUiVisibility(hidden || navigatorFragment.isHidden)
+        if(hidden) {
+            fragment_reader_container.setOnApplyWindowInsetsListener(null)
+            childFragmentManager.unregisterFragmentLifecycleCallbacks(systemUiCallbacks)
+        } else {
+            fragment_reader_container.setOnApplyWindowInsetsListener(windowInsetsListener)
+            childFragmentManager.registerFragmentLifecycleCallbacks(systemUiCallbacks, false)
+        }
     }
 }

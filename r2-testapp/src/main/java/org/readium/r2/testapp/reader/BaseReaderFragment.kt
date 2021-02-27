@@ -17,7 +17,7 @@ import org.readium.r2.navigator.Navigator
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
 
-abstract class BaseReaderFragment() : Fragment(R.layout.fragment_reader) {
+abstract class BaseReaderFragment : Fragment(R.layout.fragment_reader) {
 
     protected abstract var model: ReaderViewModel
     protected abstract var navigator: Navigator

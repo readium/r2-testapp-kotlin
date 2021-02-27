@@ -4,10 +4,14 @@
  * available in the top-level LICENSE file of the project.
  */
 
-package org.readium.r2.testapp.utils.extensions
+package org.readium.r2.testapp.utils
 
+import android.app.ActionBar
 import android.app.Activity
 import android.view.View
+import android.view.WindowInsets
+import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 
 /** Returns `true` if fullscreen or immersive mode is not set. */
 private fun Activity.isSystemUiVisible(): Boolean {
@@ -43,3 +47,24 @@ fun Activity.toggleSystemUi() {
         this.showSystemUi()
     }
 }
+
+fun Fragment.setSystemUiVisibility(visible: Boolean) {
+    if (visible)
+        requireActivity().showSystemUi()
+    else
+        requireActivity().hideSystemUi()
+
+    // Seems to be required to adjust padding when moving from the outlines to the screen reader
+    requireView().requestApplyInsets()
+}
+
+fun View.padSystemUi(insets: WindowInsets, activity: Activity) =
+    setPadding(
+        insets.systemWindowInsetLeft,
+        insets.systemWindowInsetTop + (activity as AppCompatActivity).supportActionBar!!.height,
+        insets.systemWindowInsetRight,
+        insets.systemWindowInsetBottom
+    )
+
+fun View.clearPadding() =
+    setPadding(0, 0, 0,0)

@@ -47,6 +47,9 @@ import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.EpubReaderFragment
 import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.reader.ReaderContract
+import org.readium.r2.testapp.utils.clearPadding
+import org.readium.r2.testapp.utils.padSystemUi
+import timber.log.Timber
 import java.lang.IllegalStateException
 
 class EpubActivity : R2EpubActivity() {
@@ -131,19 +134,13 @@ class EpubActivity : R2EpubActivity() {
 
         activity_container.setOnApplyWindowInsetsListener { view, insets ->
             if (readerFragment.isHidden) {
-                view.setPadding(
-                    insets.systemWindowInsetLeft,
-                    insets.systemWindowInsetTop + supportActionBar!!.height,
-                    insets.systemWindowInsetRight,
-                    insets.systemWindowInsetBottom
-                )
+                view.padSystemUi(insets, this)
                 insets
             } else {
-                view.setPadding(0, 0, 0, 0)
+                view.clearPadding()
                 insets
             }
         }
-
 
         if (savedInstanceState == null) {
             readerFragment = EpubReaderFragment.newInstance(baseUrl, bookId)
