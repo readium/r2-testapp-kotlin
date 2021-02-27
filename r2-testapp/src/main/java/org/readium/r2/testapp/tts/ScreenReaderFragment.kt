@@ -14,20 +14,13 @@ import android.widget.Toast
 import androidx.core.widget.TextViewCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResult
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.testapp.R
 import kotlinx.android.synthetic.main.fragment_screen_reader.*
-import org.readium.r2.navigator.epub.EpubNavigatorFragment
-import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
-import org.readium.r2.shared.publication.firstWithHref
 import org.readium.r2.shared.publication.indexOfFirstWithHref
 import org.readium.r2.testapp.epub.EpubActivity
-import org.readium.r2.testapp.reader.EpubReaderFragment
 import org.readium.r2.testapp.reader.ReaderViewModel
-import timber.log.Timber
 
 class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), ScreenReaderEngine.Listener {
 
@@ -40,6 +33,14 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), ScreenRe
     private lateinit var publication: Publication
 
     private lateinit var screenReader: ScreenReaderEngine
+
+    // A reference to the listener must be kept in order to prevent garbage collection
+    // See https://developer.android.com/reference/android/content/SharedPreferences#registerOnSharedPreferenceChangeListener(android.content.SharedPreferences.OnSharedPreferenceChangeListener)
+    private val preferencesListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == "reader_TTS_speed") {
+            updateScreenReaderSpeed(restart = true)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,16 +83,9 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), ScreenRe
             screenReader.previousResource()
         }
 
-        //Get user settings speed when opening the screen reader. Get a neutral percentage (corresponding to
-        //the normal speech speed) if no user settings exist.
-        val speed = preferences.getInt(
-            "reader_TTS_speed",
-            (2.75 * 3.toDouble() / 11.toDouble() * 100).toInt()
-        )
-        //Convert percentage to a float value between 0.25 and 3.0
-        val ttsSpeed = 0.25.toFloat() + (speed.toFloat() / 100.toFloat()) * 2.75.toFloat()
+        updateScreenReaderSpeed(restart = false)
+        preferences.registerOnSharedPreferenceChangeListener(preferencesListener)
 
-        updateScreenReaderSpeed(ttsSpeed)
         val initialLocator = ScreenReaderContract.parseArguments(requireArguments()).locator
         val resourceIndex = requireNotNull(publication.readingOrder.indexOfFirstWithHref(initialLocator.href))
         screenReader.goTo(resourceIndex)
@@ -139,20 +133,16 @@ class ScreenReaderFragment : Fragment(R.layout.fragment_screen_reader), ScreenRe
         setFragmentResult(ScreenReaderContract.REQUEST_KEY, result)
     }
 
-    /**
-     * The function allows to access the [ScreenReaderEngine] instance and set the TextToSpeech speech speed.
-     * Values are limited between 0.25 and 3.0 included.
-     *
-     * @param speed: Float - The speech speed we wish to use with Android's TextToSpeech.
-     */
-    private fun updateScreenReaderSpeed(speed: Float) {
-        var rSpeed = speed
+    private fun updateScreenReaderSpeed(restart: Boolean) {
+        // Get user settings speed when opening the screen reader. Get a neutral percentage (corresponding to
+        // the normal speech speed) if no user settings exist.
+        val speed = preferences.getInt(
+            "reader_TTS_speed",
+            (2.75 * 3.toDouble() / 11.toDouble() * 100).toInt()
+        )
+        // Convert percentage to a float value between 0.25 and 3.0
+        val ttsRate = 0.25.toFloat() + (speed.toFloat() / 100.toFloat()) * 2.75.toFloat()
 
-        if (speed < 0.25) {
-            rSpeed = 0.25.toFloat()
-        } else if (speed > 3.0) {
-            rSpeed = 3.0.toFloat()
-        }
-        screenReader.setSpeechSpeed(rSpeed, restart = false)
+        screenReader.setSpeechSpeed(ttsRate, restart)
     }
 }
