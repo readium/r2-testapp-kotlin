@@ -49,6 +49,7 @@ import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.reader.ReaderContract
 import org.readium.r2.testapp.utils.clearPadding
 import org.readium.r2.testapp.utils.padSystemUi
+import org.readium.r2.testapp.utils.showSystemUi
 import timber.log.Timber
 import java.lang.IllegalStateException
 
@@ -127,21 +128,6 @@ class EpubActivity : R2EpubActivity() {
             }
         }, false)
 
-        window.decorView.setOnApplyWindowInsetsListener { view, insets ->
-            val newInsets = view.onApplyWindowInsets(insets)
-            activity_container.dispatchApplyWindowInsets(newInsets)
-        }
-
-        activity_container.setOnApplyWindowInsetsListener { view, insets ->
-            if (readerFragment.isHidden) {
-                view.padSystemUi(insets, this)
-                insets
-            } else {
-                view.clearPadding()
-                insets
-            }
-        }
-
         if (savedInstanceState == null) {
             readerFragment = EpubReaderFragment.newInstance(baseUrl, bookId)
 
@@ -152,6 +138,44 @@ class EpubActivity : R2EpubActivity() {
         } else {
             readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as EpubReaderFragment
         }
+
+        // Without this, activity_reader_container receives the insets only once,
+        // although we need a call every time the reader is hidden
+        window.decorView.setOnApplyWindowInsetsListener { view, insets ->
+            val newInsets = view.onApplyWindowInsets(insets)
+            activity_container.dispatchApplyWindowInsets(newInsets)
+        }
+
+        activity_container.setOnApplyWindowInsetsListener { container, insets ->
+            updateSystemUiPadding(container, insets)
+            insets
+        }
+
+        supportFragmentManager.addOnBackStackChangedListener {
+            updateSystemUiVisibility()
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        updateSystemUiVisibility()
+    }
+
+    private fun updateSystemUiVisibility() {
+        if (readerFragment.isHidden)
+            showSystemUi()
+        else
+            readerFragment.updateSystemUiVisibility()
+
+        // Seems to be required to adjust padding when transitioning from the outlines to the screen reader
+        activity_container.requestApplyInsets()
+    }
+
+    private fun updateSystemUiPadding(container: View, insets: WindowInsets) {
+        if (readerFragment.isHidden)
+            container.padSystemUi(insets, this)
+        else
+            container.clearPadding()
     }
 
     override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {

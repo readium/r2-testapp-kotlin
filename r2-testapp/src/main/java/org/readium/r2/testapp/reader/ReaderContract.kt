@@ -51,7 +51,7 @@ class ReaderContract : ActivityResultContract<ReaderContract.Input, ReaderContra
                 AudiobookActivity::class.java
             MediaType.CBZ, MediaType.DIVINA, MediaType.DIVINA_MANIFEST,
             MediaType.PDF, MediaType.LCP_PROTECTED_PDF->
-                ReaderActivity::class.java
+                VisualReaderActivity::class.java
             else -> throw IllegalArgumentException("Unknown [mediaType]")
         })
 

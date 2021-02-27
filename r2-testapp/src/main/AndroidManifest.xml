@@ -198,6 +198,9 @@
             android:name=".reader.ReaderActivity"
             android:label="Reader" />
         <activity
+            android:name=".reader.VisualReaderActivity"
+            android:label="Reader" />
+        <activity
             android:name=".opds.OPDSListActivity"
             android:label="@string/title_activity_opds_list" />
         <activity

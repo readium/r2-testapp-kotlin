@@ -15,8 +15,8 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
-import kotlinx.android.synthetic.main.activity_reader.*
 import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.allAreBitmap
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.testapp.R
@@ -24,14 +24,11 @@ import org.readium.r2.testapp.drm.DrmManagementContract
 import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
-import org.readium.r2.testapp.utils.clearPadding
-import org.readium.r2.testapp.utils.padSystemUi
-import timber.log.Timber
 
-class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
+open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
 
+    protected lateinit var readerFragment: VisualReaderFragment
     private lateinit var modelFactory: ReaderViewModel.Factory
-    private lateinit var readerFragment: VisualReaderFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val inputData = ReaderContract.parseIntent(this)
@@ -50,16 +47,26 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
                 }
         }
 
-        val readerClass: Class<out Fragment> = when {
-            publication.readingOrder.all { it.mediaType == MediaType.PDF } -> PdfReaderFragment::class.java
-            publication.readingOrder.allAreBitmap -> ImageReaderFragment::class.java
-            else -> throw IllegalArgumentException("Cannot render publication")
-        }
-
         if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.activity_container, readerClass, Bundle(), READER_FRAGMENT_TAG)
-                .commitNow()
+
+            if (publication.type == Publication.TYPE.EPUB) {
+                val baseUrl = requireNotNull(inputData.baseUrl)
+                readerFragment = EpubReaderFragment.newInstance(baseUrl, bookId)
+
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.activity_container, readerFragment, READER_FRAGMENT_TAG)
+                    .commitNow()
+            } else {
+                val readerClass: Class<out Fragment> = when {
+                    publication.readingOrder.all { it.mediaType == MediaType.PDF } -> PdfReaderFragment::class.java
+                    publication.readingOrder.allAreBitmap -> ImageReaderFragment::class.java
+                    else -> throw IllegalArgumentException("Cannot render publication")
+                }
+
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.activity_container, readerClass, Bundle(), READER_FRAGMENT_TAG)
+                    .commitNow()
+            }
         }
 
         readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as VisualReaderFragment
@@ -95,23 +102,6 @@ class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
                 this@ReaderActivity.title = null
             }
         }, false)
-
-        window.decorView.setOnApplyWindowInsetsListener { view, insets ->
-           val newInsets = view.onApplyWindowInsets(insets)
-            // Without this, activity_reader_container receives the insets only once,
-            // although we need a call every time the reader is hidden
-           activity_container.dispatchApplyWindowInsets(newInsets)
-        }
-
-        activity_container.setOnApplyWindowInsetsListener { view, insets ->
-              if (readerFragment.isHidden) {
-                  view.padSystemUi(insets, this)
-                  insets
-            } else {
-                  view.clearPadding()
-                  insets
-            }
-        }
 
         // Add support for display cutout.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
