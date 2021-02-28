@@ -22,8 +22,6 @@ import android.view.accessibility.AccessibilityManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.android.synthetic.main.activity_reader.*
@@ -50,7 +48,6 @@ import org.readium.r2.testapp.reader.ReaderContract
 import org.readium.r2.testapp.utils.clearPadding
 import org.readium.r2.testapp.utils.padSystemUi
 import org.readium.r2.testapp.utils.showSystemUi
-import timber.log.Timber
 import java.lang.IllegalStateException
 
 class EpubActivity : R2EpubActivity() {
@@ -76,22 +73,13 @@ class EpubActivity : R2EpubActivity() {
         check(LibraryActivity.isServerStarted)
 
         val inputData = ReaderContract.parseIntent(this)
-        val publication = inputData.publication
-        val bookId = inputData.bookId
-        val baseUrl = requireNotNull(inputData.baseUrl)
-
-        persistence = BookData(applicationContext, bookId, publication)
         modelFactory = ReaderViewModel.Factory(applicationContext, inputData)
-
         super.onCreate(savedInstanceState)
 
-        ViewModelProvider(this).get(ReaderViewModel::class.java)
-            .channel.receive(this) {
-                when(it) {
-                    is ReaderViewModel.Event.OpenOutlineRequested -> showOutlineFragment()
-                    is ReaderViewModel.Event.OpenDrmManagementRequested -> showDrmManagementFragment()
-                }
-            }
+        ViewModelProvider(this).get(ReaderViewModel::class.java).let { model ->
+            persistence = model.persistence
+            model.channel.receive(this) {handleReaderFragmentEvent(it) }
+        }
 
         /* FIXME: When the OutlineFragment is left by pressing the back button,
         * the Webview is not updated, so removed highlights will still be visible.
@@ -114,21 +102,13 @@ class EpubActivity : R2EpubActivity() {
             }
         )
 
-        supportFragmentManager.registerFragmentLifecycleCallbacks(object : FragmentManager.FragmentLifecycleCallbacks()  {
-            override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
-                this@EpubActivity.title =  when (f) {
-                    is OutlineFragment -> publication.metadata.title
-                    is DrmManagementFragment -> getString(R.string.title_fragment_drm_management)
-                    else -> null
-                }
-            }
-
-            override fun onFragmentViewDestroyed(fm: FragmentManager, f: Fragment) {
-                this@EpubActivity.title = null
-            }
-        }, false)
+        supportFragmentManager.addOnBackStackChangedListener {
+             updateActivityTitle()
+        }
 
         if (savedInstanceState == null) {
+            val bookId = inputData.bookId
+            val baseUrl = requireNotNull(inputData.baseUrl)
             readerFragment = EpubReaderFragment.newInstance(baseUrl, bookId)
 
             supportFragmentManager.beginTransaction()
@@ -159,6 +139,7 @@ class EpubActivity : R2EpubActivity() {
     override fun onStart() {
         super.onStart()
         updateSystemUiVisibility()
+        updateActivityTitle()
     }
 
     private fun updateSystemUiVisibility() {
@@ -176,6 +157,14 @@ class EpubActivity : R2EpubActivity() {
             container.padSystemUi(insets, this)
         else
             container.clearPadding()
+    }
+
+    private fun updateActivityTitle() {
+        title = when (supportFragmentManager.fragments.last()) {
+            is OutlineFragment -> publication.metadata.title
+            is DrmManagementFragment -> getString(R.string.title_fragment_drm_management)
+            else -> null
+        }
     }
 
     override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {
@@ -434,6 +423,13 @@ class EpubActivity : R2EpubActivity() {
                 toast("End of chapter")
             }
             pageEnded = end
+        }
+    }
+
+    private fun handleReaderFragmentEvent(event: ReaderViewModel.Event) {
+        when(event) {
+            is ReaderViewModel.Event.OpenOutlineRequested -> showOutlineFragment()
+            is ReaderViewModel.Event.OpenDrmManagementRequested -> showDrmManagementFragment()
         }
     }
 

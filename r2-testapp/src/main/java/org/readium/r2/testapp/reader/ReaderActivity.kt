@@ -12,7 +12,6 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.shared.publication.Locator
@@ -29,28 +28,25 @@ open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
 
     protected lateinit var readerFragment: VisualReaderFragment
     private lateinit var modelFactory: ReaderViewModel.Factory
+    private lateinit var publication: Publication
+    private lateinit var persistence: BookData
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val inputData = ReaderContract.parseIntent(this)
-        val bookId = inputData.bookId
-        val publication = inputData.publication
-
         modelFactory = ReaderViewModel.Factory(applicationContext, inputData)
         super.onCreate(savedInstanceState)
 
-        ViewModelProvider(this).get(ReaderViewModel::class.java)
-            .channel.receive(this) {
-                when(it) {
-                    is ReaderViewModel.Event.OpenOutlineRequested -> showOutlineFragment()
-                    is ReaderViewModel.Event.OpenDrmManagementRequested -> showDrmManagementFragment()
-                }
+        ViewModelProvider(this).get(ReaderViewModel::class.java).let { model ->
+            publication = model.publication
+            persistence = model.persistence
+            model.channel.receive(this) { handleReaderFragmentEvent(it) }
         }
 
         if (savedInstanceState == null) {
 
             if (publication.type == Publication.TYPE.EPUB) {
                 val baseUrl = requireNotNull(inputData.baseUrl)
-                readerFragment = EpubReaderFragment.newInstance(baseUrl, bookId)
+                readerFragment = EpubReaderFragment.newInstance(baseUrl, inputData.bookId)
 
                 supportFragmentManager.beginTransaction()
                     .replace(R.id.activity_container, readerFragment, READER_FRAGMENT_TAG)
@@ -88,23 +84,26 @@ open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
             }
         )
 
-        supportFragmentManager.registerFragmentLifecycleCallbacks(object : FragmentManager.FragmentLifecycleCallbacks()  {
-            override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
-                this@ReaderActivity.title =  when (f) {
-                    is OutlineFragment -> publication.metadata.title
-                    is DrmManagementFragment -> getString(R.string.title_fragment_drm_management)
-                    else -> null
-                }
-            }
-
-            override fun onFragmentViewDestroyed(fm: FragmentManager, f: Fragment) {
-                this@ReaderActivity.title = null
-            }
-        }, false)
+        supportFragmentManager.addOnBackStackChangedListener {
+            updateActivityTitle()
+        }
 
         // Add support for display cutout.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        updateActivityTitle()
+    }
+
+    private fun updateActivityTitle() {
+        title = when (supportFragmentManager.fragments.last()) {
+            is OutlineFragment -> publication.metadata.title
+            is DrmManagementFragment -> getString(R.string.title_fragment_drm_management)
+            else -> null
         }
     }
 
@@ -115,6 +114,13 @@ open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
     override fun finish() {
         setResult(Activity.RESULT_OK, intent)
         super.finish()
+    }
+
+    private fun handleReaderFragmentEvent(event: ReaderViewModel.Event) {
+        when(event) {
+            is ReaderViewModel.Event.OpenOutlineRequested -> showOutlineFragment()
+            is ReaderViewModel.Event.OpenDrmManagementRequested -> showDrmManagementFragment()
+        }
     }
 
     private fun showOutlineFragment() {

@@ -1,8 +1,6 @@
 package org.readium.r2.testapp.audiobook
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentResultListener
 import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.navigator.audiobook.R2AudiobookActivity
@@ -13,7 +11,6 @@ import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.AudioReaderFragment
-import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.ReaderActivity
 import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.reader.ReaderContract
@@ -25,18 +22,11 @@ class AudiobookActivity : R2AudiobookActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val inputData = ReaderContract.parseIntent(this)
-        val publication = inputData.publication
-
         modelFactory = ReaderViewModel.Factory(applicationContext, inputData)
         super.onCreate(savedInstanceState)
 
         ViewModelProvider(this).get(ReaderViewModel::class.java)
-            .channel.receive(this) {
-                when(it) {
-                    is ReaderViewModel.Event.OpenOutlineRequested -> showOutlineFragment()
-                    is ReaderViewModel.Event.OpenDrmManagementRequested -> showDrmManagementFragment()
-                }
-            }
+            .channel.receive(this) {handleReaderFragmentEvent(it) }
 
         if (savedInstanceState == null) {
             supportFragmentManager.beginTransaction()
@@ -64,23 +54,34 @@ class AudiobookActivity : R2AudiobookActivity() {
             }
         )
 
-        supportFragmentManager.registerFragmentLifecycleCallbacks(object : FragmentManager.FragmentLifecycleCallbacks()  {
-            override fun onFragmentResumed(fm: FragmentManager, f: Fragment) {
-                this@AudiobookActivity.title =  when (f) {
-                    is OutlineFragment -> publication.metadata.title
-                    is DrmManagementFragment -> getString(R.string.title_fragment_drm_management)
-                    else -> null
-                }
-            }
+        supportFragmentManager.addOnBackStackChangedListener {
+            updateActivityTitle()
+        }
+    }
 
-            override fun onFragmentViewDestroyed(fm: FragmentManager, f: Fragment) {
-                this@AudiobookActivity.title = null
-            }
-        }, false)
+    override fun onStart() {
+        super.onStart()
+        updateActivityTitle()
+    }
+
+
+    private fun updateActivityTitle() {
+        title = when (supportFragmentManager.fragments.last()) {
+            is OutlineFragment -> publication.metadata.title
+            is DrmManagementFragment -> getString(R.string.title_fragment_drm_management)
+            else -> null
+        }
     }
 
     override fun getDefaultViewModelProviderFactory(): ViewModelProvider.Factory {
         return modelFactory
+    }
+
+    private fun handleReaderFragmentEvent(event: ReaderViewModel.Event) {
+        when(event) {
+            is ReaderViewModel.Event.OpenOutlineRequested -> showOutlineFragment()
+            is ReaderViewModel.Event.OpenDrmManagementRequested -> showDrmManagementFragment()
+        }
     }
 
     private fun showOutlineFragment() {
