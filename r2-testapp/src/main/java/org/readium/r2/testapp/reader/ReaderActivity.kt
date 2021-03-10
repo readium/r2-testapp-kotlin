@@ -13,6 +13,8 @@ import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentResultListener
+import androidx.fragment.app.commit
+import androidx.fragment.app.commitNow
 import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
@@ -48,9 +50,9 @@ open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
                 val baseUrl = requireNotNull(inputData.baseUrl)
                 readerFragment = EpubReaderFragment.newInstance(baseUrl, inputData.bookId)
 
-                supportFragmentManager.beginTransaction()
-                    .replace(R.id.activity_container, readerFragment, READER_FRAGMENT_TAG)
-                    .commitNow()
+                supportFragmentManager.commitNow {
+                    replace(R.id.activity_container, readerFragment, READER_FRAGMENT_TAG)
+                }
             } else {
                 val readerClass: Class<out Fragment> = when {
                     publication.readingOrder.all { it.mediaType == MediaType.PDF } -> PdfReaderFragment::class.java
@@ -58,9 +60,9 @@ open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
                     else -> throw IllegalArgumentException("Cannot render publication")
                 }
 
-                supportFragmentManager.beginTransaction()
-                    .replace(R.id.activity_container, readerClass, Bundle(), READER_FRAGMENT_TAG)
-                    .commitNow()
+                supportFragmentManager.commitNow {
+                    replace(R.id.activity_container, readerClass, Bundle(), READER_FRAGMENT_TAG)
+                }
             }
         }
 
@@ -124,11 +126,11 @@ open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
     }
 
     private fun showOutlineFragment() {
-        supportFragmentManager.beginTransaction()
-            .add(R.id.activity_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
-            .hide(readerFragment)
-            .addToBackStack(null)
-            .commit()
+        supportFragmentManager.commit {
+            add(R.id.activity_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
+            hide(readerFragment)
+            addToBackStack(null)
+        }
     }
 
     private fun closeOutlineFragment(locator: Locator) {
@@ -137,11 +139,11 @@ open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
     }
 
     private fun showDrmManagementFragment() {
-        supportFragmentManager.beginTransaction()
-            .add(R.id.activity_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
-            .hide(readerFragment)
-            .addToBackStack(null)
-            .commit()
+        supportFragmentManager.commit {
+            add(R.id.activity_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
+            hide(readerFragment)
+            addToBackStack(null)
+        }
     }
 
     companion object {

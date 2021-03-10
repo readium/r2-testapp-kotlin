@@ -2,6 +2,8 @@ package org.readium.r2.testapp.audiobook
 
 import android.os.Bundle
 import androidx.fragment.app.FragmentResultListener
+import androidx.fragment.app.commit
+import androidx.fragment.app.commitNow
 import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.navigator.audiobook.R2AudiobookActivity
 import org.readium.r2.shared.publication.Locator
@@ -29,9 +31,10 @@ class AudiobookActivity : R2AudiobookActivity() {
             .channel.receive(this) {handleReaderFragmentEvent(it) }
 
         if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .add(R.id.activity_container, AudioReaderFragment::class.java, Bundle(), ReaderActivity.READER_FRAGMENT_TAG)
-                .commitNow()
+            supportFragmentManager.commitNow {
+                add(R.id.activity_container, AudioReaderFragment::class.java, Bundle(), ReaderActivity.READER_FRAGMENT_TAG)
+            }
+
         }
 
         readerFragment = supportFragmentManager.findFragmentByTag(ReaderActivity.READER_FRAGMENT_TAG) as AudioReaderFragment
@@ -85,11 +88,11 @@ class AudiobookActivity : R2AudiobookActivity() {
     }
 
     private fun showOutlineFragment() {
-        supportFragmentManager.beginTransaction()
-            .add(R.id.activity_container, OutlineFragment::class.java, Bundle(), ReaderActivity.OUTLINE_FRAGMENT_TAG)
-            .hide(readerFragment)
-            .addToBackStack(null)
-            .commit()
+        supportFragmentManager.commit {
+            add(R.id.activity_container, OutlineFragment::class.java, Bundle(), ReaderActivity.OUTLINE_FRAGMENT_TAG)
+            hide(readerFragment)
+            addToBackStack(null)
+        }
     }
 
     private fun closeOutlineFragment(locator: Locator) {
@@ -98,11 +101,11 @@ class AudiobookActivity : R2AudiobookActivity() {
     }
 
     private fun showDrmManagementFragment() {
-        supportFragmentManager.beginTransaction()
-            .add(R.id.activity_container, DrmManagementFragment::class.java, Bundle(), ReaderActivity.DRM_FRAGMENT_TAG)
-            .hide(readerFragment)
-            .addToBackStack(null)
-            .commit()
+        supportFragmentManager.commit {
+            add(R.id.activity_container, DrmManagementFragment::class.java, Bundle(), ReaderActivity.DRM_FRAGMENT_TAG)
+            hide(readerFragment)
+            addToBackStack(null)
+        }
     }
 }
 

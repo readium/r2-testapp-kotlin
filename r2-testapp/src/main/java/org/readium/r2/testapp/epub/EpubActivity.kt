@@ -23,6 +23,8 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentResultListener
+import androidx.fragment.app.commit
+import androidx.fragment.app.commitNow
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.android.synthetic.main.activity_reader.*
 import org.jetbrains.anko.toast
@@ -111,9 +113,9 @@ class EpubActivity : R2EpubActivity() {
             val baseUrl = requireNotNull(inputData.baseUrl)
             readerFragment = EpubReaderFragment.newInstance(baseUrl, bookId)
 
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.activity_container, readerFragment, READER_FRAGMENT_TAG)
-                .commitNow()
+            supportFragmentManager.commitNow {
+                replace(R.id.activity_container, readerFragment, READER_FRAGMENT_TAG)
+            }
 
         } else {
             readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as EpubReaderFragment
@@ -434,11 +436,11 @@ class EpubActivity : R2EpubActivity() {
     }
 
     private fun showOutlineFragment() {
-        supportFragmentManager.beginTransaction()
-            .add(R.id.activity_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
-            .hide(readerFragment)
-            .addToBackStack(null)
-            .commit()
+        supportFragmentManager.commit {
+            add(R.id.activity_container, OutlineFragment::class.java, Bundle(), OUTLINE_FRAGMENT_TAG)
+            hide(readerFragment)
+            addToBackStack(null)
+        }
     }
 
     private fun closeOutlineFragment(locator: Locator) {
@@ -447,11 +449,11 @@ class EpubActivity : R2EpubActivity() {
     }
 
     private fun showDrmManagementFragment() {
-        supportFragmentManager.beginTransaction()
-            .add(R.id.activity_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
-            .hide(readerFragment)
-            .addToBackStack(null)
-            .commit()
+        supportFragmentManager.commit {
+            add(R.id.activity_container, DrmManagementFragment::class.java, Bundle(), DRM_FRAGMENT_TAG)
+            hide(readerFragment)
+            addToBackStack(null)
+        }
     }
 
     companion object {

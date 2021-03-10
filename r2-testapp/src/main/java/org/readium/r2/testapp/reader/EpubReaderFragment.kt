@@ -24,6 +24,8 @@ import android.widget.ImageView
 import androidx.appcompat.widget.SearchView
 import androidx.core.content.edit
 import androidx.fragment.app.FragmentResultListener
+import androidx.fragment.app.commit
+import androidx.fragment.app.commitNow
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -116,9 +118,9 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
         val navigatorFragmentTag = getString(R.string.epub_navigator_tag)
 
         if (savedInstanceState == null) {
-            childFragmentManager.beginTransaction()
-                .add(R.id.fragment_reader_container, EpubNavigatorFragment::class.java,  Bundle(), navigatorFragmentTag)
-                .commitNow()
+            childFragmentManager.commitNow {
+                add(R.id.fragment_reader_container, EpubNavigatorFragment::class.java, Bundle(), navigatorFragmentTag)
+            }
         }
         navigator = childFragmentManager.findFragmentByTag(navigatorFragmentTag) as Navigator
         navigatorFragment = navigator as EpubNavigatorFragment
@@ -303,11 +305,11 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
     }
 
     private fun showSearchFragment() {
-        childFragmentManager.beginTransaction()
-            .add(R.id.fragment_reader_container, SearchFragment::class.java, Bundle(), SEARCH_FRAGMENT_TAG)
-            .hide(navigatorFragment)
-            .addToBackStack(SEARCH_FRAGMENT_TAG)
-            .commit()
+        childFragmentManager.commit {
+            add(R.id.fragment_reader_container, SearchFragment::class.java, Bundle(), SEARCH_FRAGMENT_TAG)
+            hide(navigatorFragment)
+            addToBackStack(SEARCH_FRAGMENT_TAG)
+        }
     }
 
     private fun closeSearchFragment(locator: Locator) {
@@ -343,11 +345,10 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
         menuScreenReader.title = resources.getString(R.string.epubactivity_read_aloud_stop)
         isScreenReaderVisible = true
         val arguments = ScreenReaderContract.createArguments(navigator.currentLocator.value)
-        childFragmentManager.beginTransaction().apply {
+        childFragmentManager.commit {
             add(R.id.fragment_reader_container, ScreenReaderFragment::class.java, arguments)
             hide(navigatorFragment)
             addToBackStack(null)
-            commit()
         }
     }
 
