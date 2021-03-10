@@ -17,6 +17,11 @@ import org.readium.r2.navigator.Navigator
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
 
+/*
+ * Base reader fragment class
+ *
+ * Provides common menu items and saves last location on stop.
+ */
 abstract class BaseReaderFragment : Fragment(R.layout.fragment_reader) {
 
     protected abstract var model: ReaderViewModel

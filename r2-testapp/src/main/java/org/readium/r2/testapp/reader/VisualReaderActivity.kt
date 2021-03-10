@@ -14,6 +14,9 @@ import org.readium.r2.testapp.utils.clearPadding
 import org.readium.r2.testapp.utils.padSystemUi
 import org.readium.r2.testapp.utils.showSystemUi
 
+/*
+ * Adds fullscreen support to the ReaderActivity
+ */
 open class VisualReaderActivity : ReaderActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
