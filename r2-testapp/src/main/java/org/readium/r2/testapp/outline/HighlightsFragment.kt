@@ -62,17 +62,9 @@ class HighlightsFragment : Fragment(R.layout.fragment_listview) {
     }
 
     private fun onHighlightSelected(highlight: Highlight) {
-        val highlightProgression = highlight.location.progression
-
-        val locator = Locator(
-            href = highlight.resourceHref,
-            type = highlight.resourceType,
-            locations = Locator.Locations(progression = highlightProgression)
-        )
-
         setFragmentResult(
             OutlineContract.REQUEST_KEY,
-            OutlineContract.createResult(locator)
+            OutlineContract.createResult(highlight.locator)
         )
     }
 }

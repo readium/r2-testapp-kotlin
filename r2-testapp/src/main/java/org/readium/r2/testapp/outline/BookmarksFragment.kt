@@ -63,17 +63,9 @@ class BookmarksFragment : Fragment(R.layout.fragment_listview) {
     }
 
     private fun onBookmarkSelected(bookmark: Bookmark) {
-        val bookmarkProgression = bookmark.location.progression
-
-        val locator = Locator(
-            href =  bookmark.resourceHref,
-            type = bookmark.resourceType,
-            locations = Locator.Locations(progression = bookmarkProgression)
-        )
-
         setFragmentResult(
             OutlineContract.REQUEST_KEY,
-            OutlineContract.createResult(locator)
+            OutlineContract.createResult(bookmark.locator)
         )
     }
 }
