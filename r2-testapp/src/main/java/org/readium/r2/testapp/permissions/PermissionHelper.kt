@@ -16,8 +16,35 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import android.view.View
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.fragment.app.Fragment
+import com.google.android.material.snackbar.Snackbar
 import io.reactivex.subjects.PublishSubject
 import org.readium.r2.testapp.R
+
+
+fun Fragment.storagePermission(gotPermission: () -> Unit = {}) =
+        this.registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            when {
+                granted -> gotPermission()
+                shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE) -> {
+                    Snackbar.make(this.requireView(), R.string.permission_external_new_explanation, Snackbar.LENGTH_LONG)
+                            .setAction(R.string.permission_retry) {
+                                // TODO figure out how to ask permission again
+                            }
+                            .show()
+                }
+                else -> Snackbar.make(this.requireView(), R.string.permission_external_new_explanation, Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.action_settings) {
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                addCategory(Intent.CATEGORY_DEFAULT)
+                                data = Uri.parse("package:${view?.context?.packageName}")
+                            }.run(::startActivity)
+                        }
+                        .setActionTextColor(resources.getColor(R.color.snackbar_text_color))
+                        .show()
+            }
+        }
 
 /**
  * Simple helper for obtaining android permissions

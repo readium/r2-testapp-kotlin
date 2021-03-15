@@ -16,16 +16,11 @@ import android.app.ProgressDialog
 import android.content.Context
 import android.os.Bundle
 import android.view.*
-import android.widget.LinearLayout
-import android.widget.ListPopupWindow
-import android.widget.ListView
-import android.widget.PopupWindow
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.commonsware.cwac.merge.MergeAdapter
 import com.mcxiaoke.koi.ext.onClick
-import kotlinx.android.synthetic.main.filter_row.view.*
-import kotlinx.android.synthetic.main.section_header.view.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -231,15 +226,15 @@ class OPDSCatalogActivity : AppCompatActivity(), CoroutineScope {
     private fun headerLabel(value: String): View {
         val inflater = this.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val layout = inflater.inflate(R.layout.section_header, null) as LinearLayout
-        layout.header.text = value
+        layout.findViewById<TextView>(R.id.header).text = value
         return layout
     }
 
     private fun linkCell(link: Link?): View {
         val inflater = this.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
         val layout = inflater.inflate(R.layout.filter_row, null) as LinearLayout
-        layout.text.text = link!!.title
-        layout.count.text = link.properties.numberOfItems?.toString()
+        layout.findViewById<TextView>(R.id.text).text = link!!.title
+        layout.findViewById<TextView>(R.id.count).text = link.properties.numberOfItems?.toString()
         layout.setOnClickListener {
             val model = OPDSModel(link.title!!, link.href.toString(), opdsModel?.type!!)
             facetPopup?.dismiss()

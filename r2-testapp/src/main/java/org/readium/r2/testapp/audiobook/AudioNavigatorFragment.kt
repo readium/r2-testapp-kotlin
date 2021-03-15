@@ -8,10 +8,10 @@ package org.readium.r2.testapp.audiobook
 
 import android.os.Bundle
 import android.view.View
+import android.widget.ImageView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentFactory
 import androidx.lifecycle.lifecycleScope
-import kotlinx.android.synthetic.main.fragment_audiobook.*
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.jetbrains.anko.support.v4.indeterminateProgressDialog
@@ -49,7 +49,7 @@ class AudioNavigatorFragment(
         // Setting cover
         viewLifecycleOwner.lifecycleScope.launch {
             publication.cover()?.let {
-                imageView.setImageBitmap(it)
+                view.findViewById<ImageView>(R.id.imageView).setImageBitmap(it)
             }
         }
 

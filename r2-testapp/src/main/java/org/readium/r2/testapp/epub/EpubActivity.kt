@@ -26,7 +26,9 @@ import androidx.fragment.app.FragmentResultListener
 import androidx.fragment.app.commit
 import androidx.fragment.app.commitNow
 import androidx.lifecycle.ViewModelProvider
-import kotlinx.android.synthetic.main.activity_reader.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.jetbrains.anko.toast
 import org.json.JSONException
 import org.json.JSONObject
@@ -38,6 +40,7 @@ import org.readium.r2.shared.ReadiumCSSName
 import org.readium.r2.shared.SCROLL_REF
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
+import org.readium.r2.testapp.bookshelf.BookService
 import org.readium.r2.testapp.drm.DrmManagementContract
 import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.library.LibraryActivity
@@ -72,7 +75,7 @@ class EpubActivity : R2EpubActivity() {
         readerFragment.childFragmentManager.findFragmentByTag(getString(R.string.epub_navigator_tag)) as EpubNavigatorFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        check(LibraryActivity.isServerStarted)
+        check(BookService.isServerStarted)
 
         val inputData = ReaderContract.parseIntent(this)
         modelFactory = ReaderViewModel.Factory(applicationContext, inputData)
@@ -125,10 +128,10 @@ class EpubActivity : R2EpubActivity() {
         // although we need a call every time the reader is hidden
         window.decorView.setOnApplyWindowInsetsListener { view, insets ->
             val newInsets = view.onApplyWindowInsets(insets)
-            activity_container.dispatchApplyWindowInsets(newInsets)
+            findViewById<FrameLayout>(R.id.activity_container).dispatchApplyWindowInsets(newInsets)
         }
 
-        activity_container.setOnApplyWindowInsetsListener { container, insets ->
+        findViewById<FrameLayout>(R.id.activity_container).setOnApplyWindowInsetsListener { container, insets ->
             updateSystemUiPadding(container, insets)
             insets
         }
@@ -151,7 +154,7 @@ class EpubActivity : R2EpubActivity() {
             readerFragment.updateSystemUiVisibility()
 
         // Seems to be required to adjust padding when transitioning from the outlines to the screen reader
-        activity_container.requestApplyInsets()
+        findViewById<FrameLayout>(R.id.activity_container).requestApplyInsets()
     }
 
     private fun updateSystemUiPadding(container: View, insets: WindowInsets) {

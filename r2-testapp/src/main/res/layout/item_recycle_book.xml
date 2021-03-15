@@ -12,6 +12,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <data>
+
+        <variable
+            name="book"
+            type="org.readium.r2.testapp.domain.model.Book" />
+    </data>
+
     <androidx.cardview.widget.CardView
         android:id="@+id/card_view"
         android:layout_width="120dp"
@@ -34,7 +41,8 @@
                     android:id="@+id/coverImageView"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:contentDescription="@string/cover_image" />
+                    android:contentDescription="@string/cover_image"
+                    app:coverImage="@{book.id}" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -49,6 +57,7 @@
                         android:layout_height="wrap_content"
                         android:padding="16dp"
                         android:textColor="#FFFFFF"
+                        android:text="@{book.title}"
                         android:textSize="12sp" />
                 </LinearLayout>
 

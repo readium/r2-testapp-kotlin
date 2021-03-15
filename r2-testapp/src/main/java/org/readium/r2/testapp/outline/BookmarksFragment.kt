@@ -12,15 +12,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
-import android.widget.ImageView
-import android.widget.PopupMenu
-import android.widget.TextView
+import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.ViewModelProvider
-import kotlinx.android.synthetic.main.fragment_listview.*
-import kotlinx.android.synthetic.main.item_recycle_bookmark.view.*
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.readium.r2.shared.publication.Locator
@@ -52,14 +47,14 @@ class BookmarksFragment : Fragment(R.layout.fragment_listview) {
         val comparator: Comparator<Bookmark> = compareBy( {it.resourceIndex },{ it.location.progression })
         val bookmarks = persistence.getBookmarks(comparator).toMutableList()
 
-        list_view.adapter = BookMarksAdapter(
+        view.findViewById<ListView>(R.id.list_view).adapter = BookMarksAdapter(
             requireActivity(),
             bookmarks,
             publication,
             onBookmarkDeleteRequested = { persistence.removeBookmark(it.id!!) }
         )
 
-        list_view.setOnItemClickListener { _, _, position, _ -> onBookmarkSelected(bookmarks[position]) }
+        view.findViewById<ListView>(R.id.list_view).setOnItemClickListener { _, _, position, _ -> onBookmarkSelected(bookmarks[position]) }
     }
 
     private fun onBookmarkSelected(bookmark: Bookmark) {
@@ -78,10 +73,10 @@ private class BookMarksAdapter(
 ) : BaseAdapter() {
 
     private class ViewHolder(row: View) {
-        val bookmarkChapter: TextView = row.bookmark_chapter
-        val bookmarkProgression: TextView = row.bookmark_progression
-        val bookmarkTimestamp: TextView = row.bookmark_timestamp
-        val bookmarkOverflow: ImageView = row.overflow
+        val bookmarkChapter: TextView = row.findViewById(R.id.bookmark_chapter)
+        val bookmarkProgression: TextView = row.findViewById(R.id.bookmark_progression)
+        val bookmarkTimestamp: TextView = row.findViewById(R.id.bookmark_timestamp)
+        val bookmarkOverflow: ImageView = row.findViewById(R.id.overflow)
     }
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {

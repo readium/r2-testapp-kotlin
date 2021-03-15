@@ -12,15 +12,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.ViewModelProvider
-import kotlinx.android.synthetic.main.fragment_listview.*
-import kotlinx.android.synthetic.main.item_recycle_navigation.view.*
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.toLocator
@@ -62,8 +57,8 @@ class NavigationFragment : Fragment(R.layout.fragment_listview) {
             flatLinks.addAll(children)
         }
 
-        list_view.adapter = NavigationAdapter(requireActivity(), flatLinks.toMutableList())
-        list_view.setOnItemClickListener { _, _, position, _ -> onLinkSelected(flatLinks[position].second) }
+        view.findViewById<ListView>(R.id.list_view).adapter = NavigationAdapter(requireActivity(), flatLinks.toMutableList())
+        view.findViewById<ListView>(R.id.list_view).setOnItemClickListener { _, _, position, _ -> onLinkSelected(flatLinks[position].second) }
     }
 
     private fun onLinkSelected(link: Link) {
@@ -100,8 +95,8 @@ private class NavigationAdapter(
 ) : BaseAdapter() {
 
     private class ViewHolder(row: View) {
-        val navigationTextView: TextView = row.navigation_textView
-        val indentationView: ImageView = row.indentation
+        val navigationTextView: TextView = row.findViewById(R.id.navigation_textView)
+        val indentationView: ImageView = row.findViewById(R.id.indentation)
     }
 
     /**

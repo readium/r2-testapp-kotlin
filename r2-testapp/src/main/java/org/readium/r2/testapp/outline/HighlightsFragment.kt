@@ -12,15 +12,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
-import android.widget.ImageView
-import android.widget.PopupMenu
-import android.widget.TextView
+import android.widget.*
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.ViewModelProvider
-import kotlinx.android.synthetic.main.fragment_listview.*
-import kotlinx.android.synthetic.main.item_recycle_highlight.view.*
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.readium.r2.shared.publication.Locator
@@ -51,14 +46,14 @@ class HighlightsFragment : Fragment(R.layout.fragment_listview) {
         val comparator: Comparator<Highlight> = compareBy( {it.resourceIndex },{ it.location.progression })
         val highlights = persistence.getHighlights(comparator = comparator).toMutableList()
 
-        list_view.adapter = HighlightsAdapter(
+        view.findViewById<ListView>(R.id.list_view).adapter = HighlightsAdapter(
             requireActivity(),
             highlights,
             publication,
             onDeleteHighlightRequested = { persistence.removeHighlight(it.highlightID) }
         )
 
-        list_view.setOnItemClickListener { _, _, position, _ -> onHighlightSelected(highlights[position]) }
+        view.findViewById<ListView>(R.id.list_view).setOnItemClickListener { _, _, position, _ -> onHighlightSelected(highlights[position]) }
     }
 
     private fun onHighlightSelected(highlight: Highlight) {
@@ -77,11 +72,11 @@ private class HighlightsAdapter(
 ) : BaseAdapter() {
 
     private class ViewHolder(row: View) {
-        val highlightedText: TextView = row.highlight_text
-        val highlightTimestamp: TextView = row.highlight_time_stamp
-        val highlightChapter: TextView = row.highlight_chapter
-        val highlightOverflow: ImageView = row.highlight_overflow
-        val annotation: TextView = row.annotation
+        val highlightedText: TextView = row.findViewById(R.id.highlight_text)
+        val highlightTimestamp: TextView = row.findViewById(R.id.highlight_time_stamp)
+        val highlightChapter: TextView = row.findViewById(R.id.highlight_chapter)
+        val highlightOverflow: ImageView = row.findViewById(R.id.highlight_overflow)
+        val annotation: TextView = row.findViewById(R.id.annotation)
     }
 
     override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
