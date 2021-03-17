@@ -26,9 +26,7 @@ import androidx.fragment.app.FragmentResultListener
 import androidx.fragment.app.commit
 import androidx.fragment.app.commitNow
 import androidx.lifecycle.ViewModelProvider
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.jetbrains.anko.toast
 import org.json.JSONException
 import org.json.JSONObject
@@ -43,25 +41,24 @@ import org.readium.r2.testapp.R
 import org.readium.r2.testapp.bookshelf.BookService
 import org.readium.r2.testapp.drm.DrmManagementContract
 import org.readium.r2.testapp.drm.DrmManagementFragment
-import org.readium.r2.testapp.library.LibraryActivity
 import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
-import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.EpubReaderFragment
-import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.reader.ReaderContract
+import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.clearPadding
 import org.readium.r2.testapp.utils.padSystemUi
 import org.readium.r2.testapp.utils.showSystemUi
-import java.lang.IllegalStateException
+import org.readium.r2.navigator.epub.Highlight as NavigatorHighlight
 
 class EpubActivity : R2EpubActivity() {
 
     private lateinit var modelFactory: ReaderViewModel.Factory
     private lateinit var readerFragment: EpubReaderFragment
+    private lateinit var viewModel: ReaderViewModel
+    var initialLocation: Locator? = null
 
     lateinit var userSettings: UserSettings
-    private lateinit var persistence: BookData
 
     //Accessibility
     private var isExploreByTouchEnabled = false
@@ -78,12 +75,13 @@ class EpubActivity : R2EpubActivity() {
         check(BookService.isServerStarted)
 
         val inputData = ReaderContract.parseIntent(this)
+        initialLocation = inputData.initialLocator
         modelFactory = ReaderViewModel.Factory(applicationContext, inputData)
         super.onCreate(savedInstanceState)
 
         ViewModelProvider(this).get(ReaderViewModel::class.java).let { model ->
-            persistence = model.persistence
             model.channel.receive(this) {handleReaderFragmentEvent(it) }
+            viewModel = model
         }
 
         /* FIXME: When the OutlineFragment is left by pressing the back button,
@@ -217,67 +215,70 @@ class EpubActivity : R2EpubActivity() {
             }
         }
 
-        val highlight: org.readium.r2.navigator.epub.Highlight? = try {
-            highlightID
-                ?.let { persistence.getHighlight(it).toNavigatorHighlight() }
-        } catch (e: IllegalStateException) {
-            return // FIXME: This is required as long as the navigator highlight is not deleted
-            // when the corresponding highlight in DB is.
-        }
+        launch {
+            val highlight: NavigatorHighlight? = highlightID?.let { viewModel.getHighlightByHighlightId(it).toNavigatorHighlight() }
+//        val highlight: org.readium.r2.navigator.epub.Highlight? = try {
+//            highlightID
+//                ?.let { persistence.getHighlight(it).toNavigatorHighlight() }
+//        } catch (e: IllegalStateException) {
+//            return // FIXME: This is required as long as the navigator highlight is not deleted
+//            // when the corresponding highlight in DB is.
+//        }
 
-        val display = windowManager.defaultDisplay
-        val rect = size ?: Rect()
+            val display = windowManager.defaultDisplay
+            val rect = size ?: Rect()
 
-        val mDisplaySize = Point()
-        display.getSize(mDisplaySize)
+            val mDisplaySize = Point()
+            display.getSize(mDisplaySize)
 
-        val popupView = layoutInflater.inflate(
-                if (rect.top > rect.height()) R.layout.view_action_mode_reverse else R.layout.view_action_mode,
-                null,
-                false
-        )
-        popupView.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+            val popupView = layoutInflater.inflate(
+                    if (rect.top > rect.height()) R.layout.view_action_mode_reverse else R.layout.view_action_mode,
+                    null,
+                    false
+            )
+            popupView.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
 
-        popupWindow = PopupWindow(popupView, LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-        popupWindow?.isFocusable = true
+            popupWindow = PopupWindow(popupView, LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+            popupWindow?.isFocusable = true
 
-        val x = rect.left
-        val y = if (rect.top > rect.height()) rect.top - rect.height() - 80 else rect.bottom
+            val x = rect.left
+            val y = if (rect.top > rect.height()) rect.top - rect.height() - 80 else rect.bottom
 
-        popupWindow?.showAtLocation(popupView, Gravity.NO_GRAVITY, x, y)
+            popupWindow?.showAtLocation(popupView, Gravity.NO_GRAVITY, x, y)
 
-        popupView.run {
-            findViewById<View>(R.id.notch).run {
-                setX((rect.left * 2).toFloat())
-            }
-            findViewById<View>(R.id.red).setOnClickListener {
-                changeHighlightColor(highlight, Color.rgb(247, 124, 124))
-            }
-            findViewById<View>(R.id.green).setOnClickListener {
-                changeHighlightColor(highlight, Color.rgb(173, 247, 123))
-            }
-            findViewById<View>(R.id.blue).setOnClickListener {
-                changeHighlightColor(highlight, Color.rgb(124, 198, 247))
-            }
-            findViewById<View>(R.id.yellow).setOnClickListener {
-                changeHighlightColor(highlight, Color.rgb(249, 239, 125))
-            }
-            findViewById<View>(R.id.purple).setOnClickListener {
-                changeHighlightColor(highlight, Color.rgb(182, 153, 255))
-            }
-            findViewById<View>(R.id.annotation).setOnClickListener {
-                popupWindow?.dismiss()
-                showAnnotationPopup(highlight)
-            }
-            findViewById<View>(R.id.del).run {
-                visibility = if (highlight != null) View.VISIBLE else View.GONE
-                setOnClickListener {
-                    highlight?.let {
-                        persistence.removeHighlight(highlight.id)
-                        hideHighlightWithID(highlight.id)
-                    }
+            popupView.run {
+                findViewById<View>(R.id.notch).run {
+                    setX((rect.left * 2).toFloat())
+                }
+                findViewById<View>(R.id.red).setOnClickListener {
+                    changeHighlightColor(highlight, Color.rgb(247, 124, 124))
+                }
+                findViewById<View>(R.id.green).setOnClickListener {
+                    changeHighlightColor(highlight, Color.rgb(173, 247, 123))
+                }
+                findViewById<View>(R.id.blue).setOnClickListener {
+                    changeHighlightColor(highlight, Color.rgb(124, 198, 247))
+                }
+                findViewById<View>(R.id.yellow).setOnClickListener {
+                    changeHighlightColor(highlight, Color.rgb(249, 239, 125))
+                }
+                findViewById<View>(R.id.purple).setOnClickListener {
+                    changeHighlightColor(highlight, Color.rgb(182, 153, 255))
+                }
+                findViewById<View>(R.id.annotation).setOnClickListener {
                     popupWindow?.dismiss()
-                    mode?.finish()
+                    showAnnotationPopup(highlight)
+                }
+                findViewById<View>(R.id.del).run {
+                    visibility = if (highlight != null) View.VISIBLE else View.GONE
+                    setOnClickListener {
+                        highlight?.let {
+                            viewModel.deleteHighlightByHighlightId(highlight.id)
+                            hideHighlightWithID(highlight.id)
+                        }
+                        popupWindow?.dismiss()
+                        mode?.finish()
+                    }
                 }
             }
         }
@@ -286,10 +287,10 @@ class EpubActivity : R2EpubActivity() {
     private fun changeHighlightColor(highlight: org.readium.r2.navigator.epub.Highlight? = null, color: Int) {
         if (highlight != null) {
             showHighlight(highlight.copy(color = color))
-            persistence.updateHighlight(highlight.id, color = color)
+            viewModel.updateHighlight(highlight.id, color = color)
         } else {
             createHighlight(color) {
-                persistence.addHighlight(it, currentLocator.value.locations.progression!!)
+                viewModel.insertHighlight(it, currentLocator.value.locations.progression!!)
             }
         }
         popupWindow?.dismiss()
@@ -297,61 +298,65 @@ class EpubActivity : R2EpubActivity() {
     }
 
     private fun showAnnotationPopup(highlight: org.readium.r2.navigator.epub.Highlight? = null) {
-        val view = layoutInflater.inflate(R.layout.popup_note, null, false)
-        val alert = AlertDialog.Builder(this)
-                .setView(view)
-                .create()
+        launch {
+            val view = layoutInflater.inflate(R.layout.popup_note, null, false)
+            val alert = AlertDialog.Builder(this@EpubActivity)
+                    .setView(view)
+                    .create()
 
-        val annotation = highlight
-            ?.let { persistence.getHighlight(highlight.id).annotation }
-            .orEmpty()
+            val annotation = highlight
+                    ?.let { viewModel.getHighlightByHighlightId(highlight.id).annotation }
+                    .orEmpty()
 
-        val note = view.findViewById<EditText>(R.id.note)
+            val note = view.findViewById<EditText>(R.id.note)
 
-        fun dismiss() {
-            alert.dismiss()
-            mode?.finish()
-            (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-                .hideSoftInputFromWindow(note.applicationWindowToken, InputMethodManager.HIDE_NOT_ALWAYS)
-        }
-
-        with(view) {
-            if (highlight != null) {
-                findViewById<TextView>(R.id.select_text).text = highlight.locator.text.highlight
-                note.setText(annotation)
-            } else {
-                currentSelection {
-                    findViewById<TextView>(R.id.select_text).text = it?.text?.highlight
-                }
+            fun dismiss() {
+                alert.dismiss()
+                mode?.finish()
+                (getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+                        .hideSoftInputFromWindow(note.applicationWindowToken, InputMethodManager.HIDE_NOT_ALWAYS)
             }
 
-            findViewById<TextView>(R.id.positive).setOnClickListener {
-                val text = note.text.toString()
-                val markStyle = if (text.isNotBlank()) "annotation" else ""
-
+            with(view) {
                 if (highlight != null) {
-                    persistence.updateHighlight(highlight.id, annotation = text, markStyle = markStyle)
-                    val updatedHighlight = persistence.getHighlight(highlight.id)
-                    val navHighlight = updatedHighlight.toNavigatorHighlight()
-                    //FIXME: the annotation mark is not destroyed before reloading when the text becomes blank,
-                    // probably because of an ID mismatch
-                    showHighlight(navHighlight)
-                 } else {
-                    val progression = currentLocator.value.locations.progression!!
-                    createAnnotation(highlight) {
-                        val navHighlight = it.copy(annotationMarkStyle = markStyle)
-                        persistence.addHighlight(navHighlight, progression, text)
-                        showHighlight(navHighlight)
+                    findViewById<TextView>(R.id.select_text).text = highlight.locator.text.highlight
+                    note.setText(annotation)
+                } else {
+                    currentSelection {
+                        findViewById<TextView>(R.id.select_text).text = it?.text?.highlight
                     }
                 }
-                dismiss()
-            }
-            findViewById<TextView>(R.id.negative).setOnClickListener {
-                dismiss()
-            }
-        }
 
-        alert.show()
+                findViewById<TextView>(R.id.positive).setOnClickListener {
+                    val text = note.text.toString()
+                    val markStyle = if (text.isNotBlank()) "annotation" else ""
+
+                    if (highlight != null) {
+                        viewModel.updateHighlight(highlight.id, annotation = text, markStyle = markStyle)
+                        launch {
+                            val updatedHighlight = viewModel.getHighlightByHighlightId(highlight.id)
+                            val navHighlight = updatedHighlight.toNavigatorHighlight()
+                            //FIXME: the annotation mark is not destroyed before reloading when the text becomes blank,
+                            // probably because of an ID mismatch
+                            showHighlight(navHighlight)
+                        }
+                    } else {
+                        val progression = currentLocator.value.locations.progression!!
+                        createAnnotation(highlight) {
+                            val navHighlight = it.copy(annotationMarkStyle = markStyle)
+                            viewModel.insertHighlight(navHighlight, progression, text)
+                            showHighlight(navHighlight)
+                        }
+                    }
+                    dismiss()
+                }
+                findViewById<TextView>(R.id.negative).setOnClickListener {
+                    dismiss()
+                }
+            }
+
+            alert.show()
+        }
     }
 
     override fun onPageLoaded() {
@@ -361,9 +366,11 @@ class EpubActivity : R2EpubActivity() {
 
     private fun drawHighlight() {
         val href = currentLocator.value.href
-        persistence.getHighlights(href = href).forEach {
-            showHighlight(it.toNavigatorHighlight())
-        }
+        viewModel.getHighlights(href).observe(this, {
+            it.forEach { highlight ->
+                showHighlight(highlight.toNavigatorHighlight())
+            }
+        })
     }
 
     override fun highlightActivated(id: String) {
@@ -373,14 +380,16 @@ class EpubActivity : R2EpubActivity() {
     }
 
     override fun highlightAnnotationMarkActivated(id: String) {
-        val realId = id.replace("ANNOTATION", "HIGHLIGHT")
-        val highlight = try {
-            persistence.getHighlight(realId)
-        } catch (e: IllegalStateException) {
-            return // FIXME: This is required as long as the navigator highlight is not deleted
-            // when the corresponding highlight in DB is.
+        launch {
+            val realId = id.replace("ANNOTATION", "HIGHLIGHT")
+            val highlight = try {
+                viewModel.getHighlightByHighlightId(realId)
+            } catch (e: IllegalStateException) {
+                return@launch // FIXME: This is required as long as the navigator highlight is not deleted
+                // when the corresponding highlight in DB is.
+            }
+            showAnnotationPopup(highlight.toNavigatorHighlight())
         }
-        showAnnotationPopup(highlight.toNavigatorHighlight())
     }
 
     /**

@@ -11,7 +11,6 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import androidx.fragment.app.Fragment
-import org.jetbrains.anko.support.v4.toast
 import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.shared.publication.Locator
@@ -33,7 +32,7 @@ abstract class BaseReaderFragment : Fragment(R.layout.fragment_reader) {
     }
 
     override fun onStop() {
-        model.persistence.savedLocation = navigator.currentLocator.value
+        model.saveProgression(navigator.currentLocator.value.toJSON().toString())
         super.onStop()
     }
 
@@ -55,8 +54,9 @@ abstract class BaseReaderFragment : Fragment(R.layout.fragment_reader) {
                 true
             }
             R.id.bookmark -> {
-                val added = model.persistence.addBookmark(navigator.currentLocator.value)
-                toast(if (added) "Bookmark added" else "Bookmark already exists")
+                val added = model.insertBookmark(navigator.currentLocator.value)
+                // TODO
+//                toast(if (added) "Bookmark added" else "Bookmark already exists")
                 true
             }
             R.id.drm -> {

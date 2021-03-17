@@ -14,16 +14,18 @@ import org.readium.r2.testapp.outline.OutlineContract
 import org.readium.r2.testapp.outline.OutlineFragment
 import org.readium.r2.testapp.reader.AudioReaderFragment
 import org.readium.r2.testapp.reader.ReaderActivity
-import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.reader.ReaderContract
+import org.readium.r2.testapp.reader.ReaderViewModel
 
 class AudiobookActivity : R2AudiobookActivity() {
 
     private lateinit var modelFactory: ReaderViewModel.Factory
     private lateinit var readerFragment: AudioReaderFragment
+    var initialLocation: Locator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val inputData = ReaderContract.parseIntent(this)
+        initialLocation = inputData.initialLocator
         modelFactory = ReaderViewModel.Factory(applicationContext, inputData)
         super.onCreate(savedInstanceState)
 

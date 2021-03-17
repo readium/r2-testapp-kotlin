@@ -20,7 +20,6 @@ import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.toLocator
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.extensions.outlineTitle
 
@@ -30,7 +29,6 @@ import org.readium.r2.testapp.utils.extensions.outlineTitle
 class NavigationFragment : Fragment(R.layout.fragment_listview) {
 
     private lateinit var publication: Publication
-    private lateinit var persistence: BookData
     private lateinit var links: List<Link>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +36,6 @@ class NavigationFragment : Fragment(R.layout.fragment_listview) {
 
         ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
             publication = it.publication
-            persistence = it.persistence
         }
 
         links = requireNotNull(requireArguments().getParcelableArrayList(LINKS_ARG))

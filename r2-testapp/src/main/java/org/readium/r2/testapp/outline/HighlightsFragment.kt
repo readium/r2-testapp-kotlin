@@ -18,42 +18,43 @@ import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.ViewModelProvider
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.db.Highlight
-import org.readium.r2.testapp.reader.BookData
+import org.readium.r2.testapp.domain.model.Highlight
 import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.extensions.outlineTitle
 
 class HighlightsFragment : Fragment(R.layout.fragment_listview) {
 
     lateinit var publication: Publication
-    lateinit var persistence: BookData
+    lateinit var viewModel: ReaderViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
             publication = it.publication
-            persistence = it.persistence
+            viewModel = it
         }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val comparator: Comparator<Highlight> = compareBy( {it.resourceIndex },{ it.location.progression })
-        val highlights = persistence.getHighlights(comparator = comparator).toMutableList()
+        val comparator: Comparator<Highlight> = compareBy( {it.resourceIndex },{ it.locator.locations.progression })
+        viewModel.getHighlights().observe(viewLifecycleOwner, {
 
-        view.findViewById<ListView>(R.id.list_view).adapter = HighlightsAdapter(
-            requireActivity(),
-            highlights,
-            publication,
-            onDeleteHighlightRequested = { persistence.removeHighlight(it.highlightID) }
-        )
+            val highlights = it.sortedWith(comparator).toMutableList()
 
-        view.findViewById<ListView>(R.id.list_view).setOnItemClickListener { _, _, position, _ -> onHighlightSelected(highlights[position]) }
+            view.findViewById<ListView>(R.id.list_view).adapter = HighlightsAdapter(
+                    requireActivity(),
+                    highlights,
+                    publication,
+                    onDeleteHighlightRequested = {highlight -> viewModel.deleteHighlightByHighlightId(highlight.highlightId) }
+            )
+
+            view.findViewById<ListView>(R.id.list_view).setOnItemClickListener { _, _, position, _ -> onHighlightSelected(highlights[position]) }
+        })
     }
 
     private fun onHighlightSelected(highlight: Highlight) {
@@ -95,10 +96,10 @@ private class HighlightsAdapter(
         val highlight = getItem(position) as Highlight
 
         viewHolder.highlightChapter.text = getHighlightSpineItem(highlight.resourceHref)
-        viewHolder.highlightedText.text = highlight.locatorText.highlight
+        viewHolder.highlightedText.text = highlight.locator.text.highlight
         viewHolder.annotation.text = highlight.annotation
 
-        val formattedDate = DateTime(highlight.creationDate).toString(DateTimeFormat.shortDateTime())
+        val formattedDate = DateTime(highlight.creation).toString(DateTimeFormat.shortDateTime())
         viewHolder.highlightTimestamp.text = formattedDate
 
         viewHolder.highlightOverflow.setOnClickListener {

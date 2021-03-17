@@ -36,16 +36,16 @@ open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
     protected lateinit var readerFragment: VisualReaderFragment
     private lateinit var modelFactory: ReaderViewModel.Factory
     private lateinit var publication: Publication
-    private lateinit var persistence: BookData
+    var initialLocation: Locator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val inputData = ReaderContract.parseIntent(this)
+        initialLocation = inputData.initialLocator
         modelFactory = ReaderViewModel.Factory(applicationContext, inputData)
         super.onCreate(savedInstanceState)
 
         ViewModelProvider(this).get(ReaderViewModel::class.java).let { model ->
             publication = model.publication
-            persistence = model.persistence
             model.channel.receive(this) { handleReaderFragmentEvent(it) }
         }
 

@@ -20,20 +20,17 @@ import org.readium.r2.shared.publication.epub.landmarks
 import org.readium.r2.shared.publication.epub.pageList
 import org.readium.r2.shared.publication.opds.images
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.reader.BookData
 import org.readium.r2.testapp.reader.ReaderViewModel
 
 class OutlineFragment : Fragment(R.layout.fragment_outline) {
 
     lateinit var publication: Publication
-    lateinit var persistence: BookData
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
             publication = it.publication
-            persistence = it.persistence
         }
 
         childFragmentManager.setFragmentResultListener(

@@ -1,7 +1,6 @@
 package org.readium.r2.testapp.bookshelf
 
 import androidx.lifecycle.LiveData
-import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.db.BooksDao
 import org.readium.r2.testapp.domain.model.Book
 import org.readium.r2.testapp.domain.model.Bookmark
@@ -31,7 +30,7 @@ class BookRepository(private val booksDao: BooksDao) {
 
     fun getHighlights(bookId: Long, href: String): LiveData<List<Highlight>> = booksDao.getHighlightsForBook(bookId, href)
 
-    fun getHighlights(bookId: Long): LiveData<MutableList<Highlight>> = booksDao.getHighlightsForBook(bookId)
+    fun getHighlights(bookId: Long): LiveData<List<Highlight>> = booksDao.getHighlightsForBook(bookId)
 
     suspend fun deleteBookmark(bookmarkId: Long) = booksDao.deleteBookmark(bookmarkId)
 

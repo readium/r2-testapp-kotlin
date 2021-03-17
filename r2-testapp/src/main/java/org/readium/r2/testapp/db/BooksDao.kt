@@ -58,7 +58,7 @@ interface BooksDao {
      * @return List of highlights for the book as LiveData
      */
     @Query("SELECT * FROM " + Highlight.TABLE_NAME + " WHERE " + Highlight.BOOK_ID + " = :bookId")
-    fun getHighlightsForBook(bookId: Long): LiveData<MutableList<Highlight>>
+    fun getHighlightsForBook(bookId: Long): LiveData<List<Highlight>>
 
     /**
      * Retrieve all highlights for a specific book

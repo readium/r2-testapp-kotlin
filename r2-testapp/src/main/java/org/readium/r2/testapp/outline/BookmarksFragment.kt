@@ -18,11 +18,9 @@ import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.ViewModelProvider
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.db.Bookmark
-import org.readium.r2.testapp.reader.BookData
+import org.readium.r2.testapp.domain.model.Bookmark
 import org.readium.r2.testapp.reader.ReaderViewModel
 import org.readium.r2.testapp.utils.extensions.outlineTitle
 import kotlin.math.roundToInt
@@ -30,31 +28,33 @@ import kotlin.math.roundToInt
 class BookmarksFragment : Fragment(R.layout.fragment_listview) {
 
     lateinit var publication: Publication
-    lateinit var persistence: BookData
+    lateinit var viewModel: ReaderViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
             publication = it.publication
-            persistence = it.persistence
+            viewModel = it
         }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val comparator: Comparator<Bookmark> = compareBy( {it.resourceIndex },{ it.location.progression })
-        val bookmarks = persistence.getBookmarks(comparator).toMutableList()
+        val comparator: Comparator<Bookmark> = compareBy( {it.resourceIndex },{ it.locator.locations.progression })
+//        val bookmarks = persistence.getBookmarks(comparator).toMutableList()
+        viewModel.getBookmarks().observe(viewLifecycleOwner, {
+            val bookmarks = it.sortedWith(comparator).toMutableList()
+            view.findViewById<ListView>(R.id.list_view).adapter = BookMarksAdapter(
+                requireActivity(),
+                bookmarks,
+                publication,
+                onBookmarkDeleteRequested = {bookmark -> viewModel.deleteBookmark(bookmark.id!!) }
+            )
 
-        view.findViewById<ListView>(R.id.list_view).adapter = BookMarksAdapter(
-            requireActivity(),
-            bookmarks,
-            publication,
-            onBookmarkDeleteRequested = { persistence.removeBookmark(it.id!!) }
-        )
-
-        view.findViewById<ListView>(R.id.list_view).setOnItemClickListener { _, _, position, _ -> onBookmarkSelected(bookmarks[position]) }
+            view.findViewById<ListView>(R.id.list_view).setOnItemClickListener { _, _, position, _ -> onBookmarkSelected(bookmarks[position]) }
+        })
     }
 
     private fun onBookmarkSelected(bookmark: Bookmark) {
@@ -98,13 +98,12 @@ private class BookMarksAdapter(
             ?:  "*Title Missing*"
 
         viewHolder.bookmarkChapter.text = title
-
-        bookmark.location.progression?.let { progression ->
+        bookmark.locator.locations.progression?.let { progression ->
             val formattedProgression = "${(progression * 100).roundToInt()}% through resource"
             viewHolder.bookmarkProgression.text = formattedProgression
         }
 
-        val formattedDate = DateTime(bookmark.creationDate).toString(DateTimeFormat.shortDateTime())
+        val formattedDate = DateTime(bookmark.creation).toString(DateTimeFormat.shortDateTime())
         viewHolder.bookmarkTimestamp.text = formattedDate
 
         viewHolder.bookmarkOverflow.setOnClickListener {

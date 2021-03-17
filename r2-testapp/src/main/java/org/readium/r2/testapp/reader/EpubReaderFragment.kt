@@ -43,12 +43,11 @@ import org.readium.r2.shared.publication.presentation.presentation
 import org.readium.r2.testapp.BuildConfig
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.epub.EpubActivity
-import org.readium.r2.testapp.tts.ScreenReaderFragment
-import org.readium.r2.testapp.search.SearchViewModel
 import org.readium.r2.testapp.search.MarkJsSearchEngine
 import org.readium.r2.testapp.search.SearchFragment
+import org.readium.r2.testapp.search.SearchViewModel
 import org.readium.r2.testapp.tts.ScreenReaderContract
-import org.readium.r2.testapp.utils.hideSystemUi
+import org.readium.r2.testapp.tts.ScreenReaderFragment
 import org.readium.r2.testapp.utils.toggleSystemUi
 import timber.log.Timber
 import java.net.URL
@@ -58,7 +57,6 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
     override lateinit var model: ReaderViewModel
     override lateinit var navigator: Navigator
     private lateinit var publication: Publication
-    private  lateinit var persistence: BookData
     lateinit var navigatorFragment: EpubNavigatorFragment
 
     private lateinit var menuScreenReader: MenuItem
@@ -81,13 +79,12 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
         ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).let {
             model = it
             publication = it.publication
-            persistence = it.persistence
         }
 
         val baseUrl = checkNotNull(requireArguments().getString(BASE_URL_ARG))
 
         childFragmentManager.fragmentFactory =
-            EpubNavigatorFragment.createFactory(publication, baseUrl, persistence.savedLocation, this)
+            EpubNavigatorFragment.createFactory(publication, baseUrl, activity.initialLocation, this)
 
         childFragmentManager.setFragmentResultListener(
             SearchFragment::class.java.name,
