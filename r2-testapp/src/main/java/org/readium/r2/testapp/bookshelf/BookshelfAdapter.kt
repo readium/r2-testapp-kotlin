@@ -11,20 +11,18 @@
 package org.readium.r2.testapp.bookshelf
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.databinding.ItemRecycleBookBinding
 import org.readium.r2.testapp.domain.model.Book
 import org.readium.r2.testapp.utils.singleClick
 
 
-class BookshelfAdapter(val parent: BookshelfFragment) : ListAdapter<Book, BookshelfAdapter.ViewHolder>(BookListDiff()) {
+class BookshelfAdapter(val itemListener: RecyclerViewClickListener) : ListAdapter<Book, BookshelfAdapter.ViewHolder>(BookListDiff()) {
 
     override fun onCreateViewHolder(
             parent: ViewGroup,
@@ -51,20 +49,10 @@ class BookshelfAdapter(val parent: BookshelfFragment) : ListAdapter<Book, Booksh
             binding.book = book
             // TODO decide whether or not to use this or the RecyclerViewClickListener
             binding.root.singleClick { _ ->
-                parent.openBook(book)
+                itemListener.recyclerViewListClicked(book)
             }
             binding.root.setOnLongClickListener {
-                MaterialAlertDialogBuilder(parent.requireContext())
-                        .setTitle(parent.getString(R.string.confirm_delete_book_title))
-                        .setMessage(parent.getString(R.string.confirm_delete_book_text))
-                        .setNegativeButton(parent.getString(R.string.cancel)) { dialog, _ ->
-                            dialog.dismiss()
-                        }
-                        .setPositiveButton(parent.getString(R.string.delete)) { dialog, _ ->
-                            parent.deleteBook(book)
-                            dialog.dismiss()
-                        }
-                        .show()
+                itemListener.recyclerViewListLongClicked(book)
                 true
             }
         }
@@ -73,9 +61,9 @@ class BookshelfAdapter(val parent: BookshelfFragment) : ListAdapter<Book, Booksh
     interface RecyclerViewClickListener {
 
         //this is method to handle the event when clicked on the image in Recyclerview
-        fun recyclerViewListClicked(v: View, position: Int)
+        fun recyclerViewListClicked(book: Book)
 
-        fun recyclerViewListLongClicked(v: View, position: Int)
+        fun recyclerViewListLongClicked(book: Book)
     }
 
     private class BookListDiff : DiffUtil.ItemCallback<Book>() {

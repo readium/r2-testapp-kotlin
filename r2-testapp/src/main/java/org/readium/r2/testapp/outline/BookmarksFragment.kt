@@ -46,11 +46,11 @@ class BookmarksFragment : Fragment(R.layout.fragment_listview) {
 //        val bookmarks = persistence.getBookmarks(comparator).toMutableList()
         viewModel.getBookmarks().observe(viewLifecycleOwner, {
             val bookmarks = it.sortedWith(comparator).toMutableList()
-            view.findViewById<ListView>(R.id.list_view).adapter = BookMarksAdapter(
-                requireActivity(),
-                bookmarks,
-                publication,
-                onBookmarkDeleteRequested = {bookmark -> viewModel.deleteBookmark(bookmark.id!!) }
+            view.findViewById<ListView>(R.id.list_view).adapter = BookmarksAdapter(
+                    requireActivity(),
+                    bookmarks,
+                    publication,
+                    onBookmarkDeleteRequested = { bookmark -> viewModel.deleteBookmark(bookmark.id!!) }
             )
 
             view.findViewById<ListView>(R.id.list_view).setOnItemClickListener { _, _, position, _ -> onBookmarkSelected(bookmarks[position]) }
@@ -65,11 +65,12 @@ class BookmarksFragment : Fragment(R.layout.fragment_listview) {
     }
 }
 
-private class BookMarksAdapter(
-    private val activity: Activity,
-    private val bookmarks: MutableList<Bookmark>,
-    private val publication: Publication,
-    private val onBookmarkDeleteRequested: (Bookmark) -> Unit
+// TODO redo this to use ListAdapter
+private class BookmarksAdapter(
+        private val activity: Activity,
+        private val bookmarks: MutableList<Bookmark>,
+        private val publication: Publication,
+        private val onBookmarkDeleteRequested: (Bookmark) -> Unit
 ) : BaseAdapter() {
 
     private class ViewHolder(row: View) {

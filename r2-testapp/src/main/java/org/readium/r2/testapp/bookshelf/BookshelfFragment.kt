@@ -31,7 +31,7 @@ import timber.log.Timber
 import java.io.File
 
 
-class BookshelfFragment : Fragment() {
+class BookshelfFragment : Fragment(), BookshelfAdapter.RecyclerViewClickListener {
 
     private lateinit var mBookshelfViewModel: BookshelfViewModel
     private lateinit var mBookshelfAdapter: BookshelfAdapter
@@ -166,6 +166,24 @@ class BookshelfFragment : Fragment() {
     override fun onDestroy() {
         super.onDestroy()
         mBookService.stopServer()
+    }
+
+    override fun recyclerViewListClicked(book: Book) {
+        openBook(book)
+    }
+
+    override fun recyclerViewListLongClicked(book: Book) {
+        MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.confirm_delete_book_title))
+                .setMessage(getString(R.string.confirm_delete_book_text))
+                .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .setPositiveButton(getString(R.string.delete)) { dialog, _ ->
+                    deleteBook(book)
+                    dialog.dismiss()
+                }
+                .show()
     }
 }
 

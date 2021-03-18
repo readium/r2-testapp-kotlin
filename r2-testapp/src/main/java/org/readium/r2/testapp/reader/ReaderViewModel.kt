@@ -13,15 +13,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import org.joda.time.DateTime
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
-import org.readium.r2.shared.publication.indexOfFirstWithHref
 import org.readium.r2.testapp.bookshelf.BookRepository
 import org.readium.r2.testapp.db.BookDatabase
-import org.readium.r2.testapp.domain.model.Bookmark
 import org.readium.r2.testapp.domain.model.Highlight
 import org.readium.r2.testapp.utils.EventChannel
+import org.readium.r2.navigator.epub.Highlight as NavigatorHighlight
 
 class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewModel() {
 
@@ -41,21 +39,8 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
 
     fun getBookmarks() = repository.getBookmarks(bookId)
 
-    // TODO this allows multiple inserts of the same bookmark, fix here or in database
-    fun insertBookmark(locator: Locator) = viewModelScope.launch {
-        val resource = publication.readingOrder.indexOfFirstWithHref(locator.href)!!
-        val bookmark = Bookmark(
-                bookId = bookId,
-                publicationId = publication.metadata.identifier ?: publication.metadata.title,
-                resourceIndex = resource.toLong(),
-                resourceHref = locator.href,
-                resourceType = locator.type,
-                resourceTitle = locator.title.orEmpty(),
-                location = Locator.Locations(progression = locator.locations.progression, position = locator.locations.position).toJSON().toString(),
-                locatorText = Locator.Text().toJSON().toString()
-        )
-        bookmark.creation = DateTime().toDate().time
-        repository.insertBookmark(bookmark)
+    suspend fun insertBookmark(locator: Locator): Long {
+        return repository.insertBookmark(bookId, publication, locator)
     }
 
     fun deleteBookmark(id: Long) = viewModelScope.launch {
@@ -70,49 +55,15 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
     }
 
     suspend fun getHighlightByHighlightId(highlightId: String): Highlight {
-        return checkNotNull(repository.getHighlightByHighlightId(highlightId).firstOrNull())
+        return repository.getHighlightByHighlightId(highlightId)
     }
 
-    fun insertHighlight(navigatorHighlight: org.readium.r2.navigator.epub.Highlight, progression: Double, annotation: String? = null) = viewModelScope.launch {
-        val resource = publication.readingOrder.indexOfFirstWithHref(navigatorHighlight.locator.href)!!
-
-        // This is required to be able to go right to a highlight from the Outline fragment,
-        // as Navigator.go doesn't support DOM ranges yet.
-        val locations = navigatorHighlight.locator.locations.copy(progression = progression)
-
-        val highlight = Highlight(
-                bookId = bookId,
-                highlightId = navigatorHighlight.id,
-                publicationId = publication.metadata.identifier ?: publication.metadata.title,
-                style = "style",
-                color = navigatorHighlight.color,
-                annotation = annotation ?: "",
-                annotationMarkStyle = navigatorHighlight.annotationMarkStyle ?: "",
-                resourceIndex = resource.toLong(),
-                resourceHref = navigatorHighlight.locator.href,
-                resourceType = navigatorHighlight.locator.type,
-                resourceTitle = navigatorHighlight.locator.title.orEmpty(),
-                location = locations.toJSON().toString(),
-                locatorText = navigatorHighlight.locator.text.toJSON().toString()
-        )
-
-        highlight.creation = DateTime().toDate().time
-        repository.insertHighlight(highlight)
+    fun insertHighlight(navigatorHighlight: NavigatorHighlight, progression: Double, annotation: String? = null) = viewModelScope.launch {
+        repository.insertHighlight(bookId, publication, navigatorHighlight, progression, annotation)
     }
 
-    // TODO do a proper update
-    fun updateHighlight(id: String, color: Int? = null, annotation: String? = null, markStyle: String? = null) =  viewModelScope.launch {
-        val highlight = getHighlightByHighlightId(id)
-        val progression = highlight.locator.locations.progression
-        val color = color ?: highlight.color
-        val annotation = annotation ?: highlight.annotation
-        val markStyle = markStyle ?: highlight.annotationMarkStyle
-
-        insertHighlight(
-                highlight.toNavigatorHighlight().copy(color = color, annotationMarkStyle = markStyle),
-                progression = progression!!,
-                annotation = annotation
-        )
+    fun updateHighlight(id: String, color: Int? = null, annotation: String? = null, markStyle: String? = null) = viewModelScope.launch {
+        repository.updateHighlight(id, color, annotation, markStyle)
     }
 
     fun deleteHighlightByHighlightId(highlightId: String) = viewModelScope.launch {

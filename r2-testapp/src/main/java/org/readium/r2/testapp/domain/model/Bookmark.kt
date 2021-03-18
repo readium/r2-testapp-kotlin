@@ -2,11 +2,13 @@ package org.readium.r2.testapp.domain.model
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Locator
 
-@Entity(tableName = Bookmark.TABLE_NAME)
+@Entity(tableName = Bookmark.TABLE_NAME, indices = [Index(value = ["BOOK_ID", "LOCATION"],
+        unique = true)])
 data class Bookmark(
         @PrimaryKey
         @ColumnInfo(name = ID)

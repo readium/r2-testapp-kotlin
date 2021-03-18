@@ -10,7 +10,9 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.shared.publication.Locator
@@ -54,9 +56,10 @@ abstract class BaseReaderFragment : Fragment(R.layout.fragment_reader) {
                 true
             }
             R.id.bookmark -> {
-                val added = model.insertBookmark(navigator.currentLocator.value)
-                // TODO
-//                toast(if (added) "Bookmark added" else "Bookmark already exists")
+                viewLifecycleOwner.lifecycleScope.launchWhenCreated {
+                    val added = model.insertBookmark(navigator.currentLocator.value)
+                    Toast.makeText(requireContext(), if (added != -1L) "Bookmark added" else "Bookmark already exists", Toast.LENGTH_SHORT).show()
+                }
                 true
             }
             R.id.drm -> {

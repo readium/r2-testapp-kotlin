@@ -73,7 +73,7 @@ interface BooksDao {
      * @param bookmark The bookmark to insert
      * @return The ID of the bookmark that was added (primary key)
      */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertBookmark(bookmark: Bookmark): Long
 
     /**
@@ -83,6 +83,17 @@ interface BooksDao {
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHighlight(highlight: Highlight): Long
+
+    /**
+     * Updates a highlight
+     * @param highlightId The navigator highlight ID
+     * @param color Updated color
+     * @param annotation Updated annotation
+     * @param annotationMarkStyle Updated mark style
+     * @return The ID of the highlight that was added (primary key)
+     */
+    @Query("UPDATE " + Highlight.TABLE_NAME + " SET " + Highlight.COLOR + " = :color, " + Highlight.ANNOTATION + " = :annotation, " + Highlight.ANNOTATION_MARK_STYLE + " =:annotationMarkStyle WHERE " + Highlight.HIGHLIGHT_ID + "= :highlightId")
+    suspend fun updateHighlight(highlightId: String, color: Int, annotation: String, annotationMarkStyle: String)
 
     /**
      * Deletes a bookmark
