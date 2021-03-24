@@ -18,7 +18,7 @@ import org.readium.r2.testapp.R
 import org.readium.r2.testapp.databinding.ItemRecycleOpdsBinding
 import org.readium.r2.testapp.utils.singleClick
 
-class CatalogListAdapter(val parent: CatalogFragment) : ListAdapter<Publication, CatalogListAdapter.ViewHolder>(PublicationListDiff()) {
+class CatalogListAdapter() : ListAdapter<Publication, CatalogListAdapter.ViewHolder>(PublicationListDiff()) {
 
     override fun onCreateViewHolder(
             parent: ViewGroup,
@@ -46,10 +46,10 @@ class CatalogListAdapter(val parent: CatalogFragment) : ListAdapter<Publication,
             binding.titleTextView.text = publication.metadata.title
 
             publication.linkWithRel("http://opds-spec.org/image/thumbnail")?.let { link ->
-                Picasso.with(parent.context).load(link.href).into(binding.coverImageView)
+                Picasso.with(binding.coverImageView.context).load(link.href).into(binding.coverImageView)
             } ?: run {
                 if (publication.images.isNotEmpty()) {
-                    Picasso.with(parent.context).load(publication.images.first().href).into(binding.coverImageView)
+                    Picasso.with(binding.coverImageView.context).load(publication.images.first().href).into(binding.coverImageView)
                 }
             }
 
@@ -77,14 +77,14 @@ class CatalogListAdapter(val parent: CatalogFragment) : ListAdapter<Publication,
                 oldItem: Publication,
                 newItem: Publication
         ): Boolean {
-            return oldItem.jsonManifest == newItem.jsonManifest
+            return oldItem.metadata.identifier == newItem.metadata.identifier
         }
 
         override fun areContentsTheSame(
                 oldItem: Publication,
                 newItem: Publication
         ): Boolean {
-            return oldItem.type == newItem.type
+            return oldItem.jsonManifest == newItem.jsonManifest
         }
     }
 

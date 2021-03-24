@@ -1,15 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".catalogs.OpdsDetailFragment">
+<layout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <androidx.core.widget.NestedScrollView
-        android:id="@+id/item_detail_container"
+<data>
+
+    <variable
+        name="publication"
+        type="org.readium.r2.shared.publication.Publication" />
+
+</data>
+
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+        android:orientation="vertical"
+        android:padding="10dp"
+        tools:context=".catalogs.OpdsDetailFragment">
 
-</FrameLayout>
+        <ImageView
+            android:id="@+id/coverImageView"
+            android:layout_width="match_parent"
+            android:layout_height="400dp"
+            android:contentDescription="@{@string/publication_image_description(publication.metadata.title)}" />
+
+        <TextView
+            android:id="@+id/opdsTitleView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@{publication.metadata.title}"
+            android:textSize="24sp" />
+
+        <TextView
+            android:id="@+id/opdsDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@{publication.metadata.description}" />
+
+        <Button
+            android:id="@+id/downloadButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/opds_detail_download_button" />
+    </LinearLayout>
+
+</layout>

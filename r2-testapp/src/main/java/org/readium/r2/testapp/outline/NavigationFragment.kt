@@ -6,7 +6,6 @@
 
 package org.readium.r2.testapp.outline
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -66,7 +65,7 @@ class NavigationFragment : Fragment(R.layout.fragment_listview) {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = navAdapter
         }
-        navAdapter.submitList(flatLinks as List<Any>?)
+        navAdapter.submitList(flatLinks)
     }
 
     private fun onLinkSelected(link: Link) {
@@ -98,7 +97,7 @@ class NavigationFragment : Fragment(R.layout.fragment_listview) {
 }
 
 class NavigationAdapter(private val onLinkSelected: (Link) -> Unit) :
-        ListAdapter<Any, NavigationAdapter.ViewHolder>(NavigationDiff()) {
+        ListAdapter<Pair<Int, Link>, NavigationAdapter.ViewHolder>(NavigationDiff()) {
 
     init {
         setHasStableIds(true)
@@ -125,40 +124,32 @@ class NavigationAdapter(private val onLinkSelected: (Link) -> Unit) :
         private val navigationTextView: TextView = row.findViewById(R.id.navigation_textView)
         private val indentationView: ImageView = row.findViewById(R.id.indentation)
 
-        fun bind(item: Any) {
-            if (item is Pair<*, *>) {
-                item as Pair<Int, Link>
-                navigationTextView.text = item.second.outlineTitle
-                indentationView.layoutParams = LinearLayout.LayoutParams(item.first * 50, ViewGroup.LayoutParams.MATCH_PARENT)
-                row.setOnClickListener {
-                    onLinkSelected(item.second)
-                }
-            } else {
-                item as Link
-                navigationTextView.text = item.outlineTitle
-                row.setOnClickListener {
-                    onLinkSelected(item)
-                }
+        fun bind(item: Pair<Int, Link>) {
+            navigationTextView.text = item.second.outlineTitle
+            indentationView.layoutParams = LinearLayout.LayoutParams(item.first * 50, ViewGroup.LayoutParams.MATCH_PARENT)
+            row.setOnClickListener {
+                onLinkSelected(item.second)
             }
         }
     }
 }
 
-private class NavigationDiff : DiffUtil.ItemCallback<Any>() {
+private class NavigationDiff : DiffUtil.ItemCallback<Pair<Int, Link>>() {
 
     override fun areItemsTheSame(
-            oldItem: Any,
-            newItem: Any
+            oldItem: Pair<Int, Link>,
+            newItem: Pair<Int, Link>
     ): Boolean {
-        return oldItem == newItem
+        return oldItem.first == newItem.first
+                && oldItem.second == newItem.second
     }
 
-    @SuppressLint("DiffUtilEquals")
     override fun areContentsTheSame(
-            oldItem: Any,
-            newItem: Any
+            oldItem: Pair<Int, Link>,
+            newItem: Pair<Int, Link>
     ): Boolean {
-        return oldItem == newItem
+        return oldItem.first == newItem.first
+                && oldItem.second == newItem.second
     }
 }
 

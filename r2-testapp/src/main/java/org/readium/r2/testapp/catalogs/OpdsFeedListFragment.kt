@@ -32,7 +32,7 @@ import java.net.URL
 
 class OpdsFeedListFragment : Fragment() {
 
-    private lateinit var mCatalogsViewModel: CatalogsViewModel
+    private lateinit var mCatalogViewModel: CatalogViewModel
     private lateinit var mCatalogsAdapter: OpdsFeedListAdapter
 
     override fun onCreateView(
@@ -40,8 +40,8 @@ class OpdsFeedListFragment : Fragment() {
             container: ViewGroup?,
             savedInstanceState: Bundle?
     ): View? {
-        mCatalogsViewModel =
-                ViewModelProvider(this).get(CatalogsViewModel::class.java)
+        mCatalogViewModel =
+                ViewModelProvider(this).get(CatalogViewModel::class.java)
         return inflater.inflate(R.layout.fragment_opds_feed_list, container, false)
     }
 
@@ -50,7 +50,7 @@ class OpdsFeedListFragment : Fragment() {
 
         val preferences = requireContext().getSharedPreferences("org.readium.r2.testapp", Context.MODE_PRIVATE)
 
-        mCatalogsAdapter = OpdsFeedListAdapter(this)
+        mCatalogsAdapter = OpdsFeedListAdapter(onLongClick = { opds -> onLongClick(opds) })
 
         view.findViewById<RecyclerView>(R.id.opds_list).apply {
             setHasFixedSize(true)
@@ -63,7 +63,7 @@ class OpdsFeedListFragment : Fragment() {
             )
         }
 
-        mCatalogsViewModel.opds.observe(viewLifecycleOwner, {
+        mCatalogViewModel.opds.observe(viewLifecycleOwner, {
             mCatalogsAdapter.submitList(it)
         })
 
@@ -74,15 +74,13 @@ class OpdsFeedListFragment : Fragment() {
 
             preferences.edit().putInt(VERSION_KEY, version).apply()
 
-            val r2TestCatalog = OPDS(title = "R2 Reader Test Catalog", href = "https://d2g.dita.digital/opds/collections/10040", type = 1)
             val oPDS2Catalog = OPDS(title = "OPDS 2.0 Test Catalog", href = "https://test.opds.io/2.0/home.json", type = 2)
             val oTBCatalog = OPDS(title = "Open Textbooks Catalog", href = "http://open.minitex.org/textbooks/", type = 1)
             val sEBCatalog = OPDS(title = "Standard eBooks Catalog", href = "https://standardebooks.org/opds/all", type = 1)
 
-            mCatalogsViewModel.insertOpds(r2TestCatalog)
-            mCatalogsViewModel.insertOpds(oPDS2Catalog)
-            mCatalogsViewModel.insertOpds(oTBCatalog)
-            mCatalogsViewModel.insertOpds(sEBCatalog)
+            mCatalogViewModel.insertOpds(oPDS2Catalog)
+            mCatalogViewModel.insertOpds(oTBCatalog)
+            mCatalogViewModel.insertOpds(sEBCatalog)
         }
 
         view.findViewById<FloatingActionButton>(R.id.addOpds).setOnClickListener {
@@ -110,7 +108,7 @@ class OpdsFeedListFragment : Fragment() {
                                     title = titleEditText.text.toString(),
                                     href = urlEditText.text.toString(),
                                     type = it.type)
-                            mCatalogsViewModel.insertOpds(opds)
+                            mCatalogViewModel.insertOpds(opds)
                         }
                     }
                     .show()
@@ -137,16 +135,30 @@ class OpdsFeedListFragment : Fragment() {
         }
     }
 
-    fun deleteOpdsModel(opdsModelId: Long) {
+    private fun deleteOpdsModel(opdsModelId: Long) {
         viewLifecycleOwner.lifecycleScope.launch {
-            mCatalogsViewModel.deleteOpds(opdsModelId)
+            mCatalogViewModel.deleteOpds(opdsModelId)
         }
     }
 
-    class VerticalSpaceItemDecoration(private val verticalSpaceHeight: Int) : androidx.recyclerview.widget.RecyclerView.ItemDecoration() {
+    private fun onLongClick(opds: OPDS) {
+        MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.confirm_delete_opds_title))
+                .setMessage(getString(R.string.confirm_delete_opds_text))
+                .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .setPositiveButton(getString(R.string.delete)) { dialog, _ ->
+                    opds.id?.let { deleteOpdsModel(it) }
+                    dialog.dismiss()
+                }
+                .show()
+    }
 
-        override fun getItemOffsets(outRect: Rect, view: View, parent: androidx.recyclerview.widget.RecyclerView,
-                                    state: androidx.recyclerview.widget.RecyclerView.State) {
+    class VerticalSpaceItemDecoration(private val verticalSpaceHeight: Int) : RecyclerView.ItemDecoration() {
+
+        override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView,
+                                    state: RecyclerView.State) {
             outRect.bottom = verticalSpaceHeight
         }
     }

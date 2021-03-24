@@ -7,7 +7,7 @@ import kotlinx.coroutines.launch
 import org.readium.r2.testapp.db.BookDatabase
 import org.readium.r2.testapp.domain.model.OPDS
 
-class CatalogsViewModel(application: Application) : AndroidViewModel(application) {
+class CatalogViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: OpdsRepository
 

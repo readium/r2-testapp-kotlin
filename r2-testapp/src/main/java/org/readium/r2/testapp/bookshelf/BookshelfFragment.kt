@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.shared.extensions.tryOrNull
 import org.readium.r2.shared.publication.Locator
+import org.readium.r2.testapp.MainActivity
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.domain.model.Book
 import org.readium.r2.testapp.opds.GridAutoFitLayoutManager
@@ -53,7 +54,7 @@ class BookshelfFragment : Fragment(), BookshelfAdapter.RecyclerViewClickListener
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mBookshelfAdapter = BookshelfAdapter(this)
-        mBookService = BookService(requireActivity().applicationContext)
+        mBookService = (activity as MainActivity).bookService
 
         mDocumentPickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             viewLifecycleOwner.lifecycleScope.launch {
@@ -131,10 +132,10 @@ class BookshelfFragment : Fragment(), BookshelfAdapter.RecyclerViewClickListener
         }
     }
 
-    class VerticalSpaceItemDecoration(private val verticalSpaceHeight: Int) : androidx.recyclerview.widget.RecyclerView.ItemDecoration() {
+    class VerticalSpaceItemDecoration(private val verticalSpaceHeight: Int) : RecyclerView.ItemDecoration() {
 
-        override fun getItemOffsets(outRect: Rect, view: View, parent: androidx.recyclerview.widget.RecyclerView,
-                                    state: androidx.recyclerview.widget.RecyclerView.State) {
+        override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView,
+                                    state: RecyclerView.State) {
             outRect.bottom = verticalSpaceHeight
         }
     }
@@ -161,11 +162,6 @@ class BookshelfFragment : Fragment(), BookshelfAdapter.RecyclerViewClickListener
                 )
             }
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        mBookService.stopServer()
     }
 
     override fun recyclerViewListClicked(book: Book) {

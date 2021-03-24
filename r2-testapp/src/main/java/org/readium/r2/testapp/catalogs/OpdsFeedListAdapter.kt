@@ -12,10 +12,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.databinding.ItemRecycleOpdsListBinding
+import org.readium.r2.testapp.domain.model.Highlight
 import org.readium.r2.testapp.domain.model.OPDS
 import org.readium.r2.testapp.utils.singleClick
 
-class OpdsFeedListAdapter(val parent: OpdsFeedListFragment) : ListAdapter<OPDS, OpdsFeedListAdapter.ViewHolder>(OPDSListDiff()) {
+class OpdsFeedListAdapter(private val onLongClick: (OPDS) -> Unit) : ListAdapter<OPDS, OpdsFeedListAdapter.ViewHolder>(OPDSListDiff()) {
 
     override fun onCreateViewHolder(
             parent: ViewGroup,
@@ -46,17 +47,7 @@ class OpdsFeedListAdapter(val parent: OpdsFeedListFragment) : ListAdapter<OPDS, 
                 Navigation.findNavController(it).navigate(R.id.action_navigation_catalog_list_to_navigation_catalog, bundle)
             }
             binding.button.setOnLongClickListener {
-                MaterialAlertDialogBuilder(parent.requireContext())
-                        .setTitle(parent.getString(R.string.confirm_delete_opds_title))
-                        .setMessage(parent.getString(R.string.confirm_delete_opds_text))
-                        .setNegativeButton(parent.getString(R.string.cancel)) { dialog, _ ->
-                            dialog.dismiss()
-                        }
-                        .setPositiveButton(parent.getString(R.string.delete)) { dialog, _ ->
-
-                            dialog.dismiss()
-                        }
-                        .show()
+                onLongClick(opds)
                 true
             }
         }

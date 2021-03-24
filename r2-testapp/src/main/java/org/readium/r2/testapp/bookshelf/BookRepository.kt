@@ -9,13 +9,24 @@ import org.readium.r2.testapp.db.BooksDao
 import org.readium.r2.testapp.domain.model.Book
 import org.readium.r2.testapp.domain.model.Bookmark
 import org.readium.r2.testapp.domain.model.Highlight
+import org.readium.r2.testapp.utils.extensions.authorName
 import org.readium.r2.navigator.epub.Highlight as NavigatorHighlight
 
 class BookRepository(private val booksDao: BooksDao) {
 
     fun getBooksFromDatabase(): LiveData<List<Book>> = booksDao.getAllBooks()
 
-    suspend fun insertBook(book: Book): Long = booksDao.insertBook(book)
+    suspend fun insertBook(href: String, extension: String, publication: Publication): Long {
+        val book = Book(
+                title = publication.metadata.title,
+                author = publication.metadata.authorName,
+                href = href,
+                identifier = publication.metadata.identifier ?: "",
+                ext = ".$extension",
+                progression = "{}"
+        )
+        return booksDao.insertBook(book)
+    }
 
     suspend fun deleteBook(id: Long) = booksDao.deleteBook(id)
 

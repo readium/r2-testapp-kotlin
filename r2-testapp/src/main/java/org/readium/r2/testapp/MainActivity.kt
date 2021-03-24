@@ -8,10 +8,13 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import org.readium.r2.testapp.bookshelf.BookService
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var mNavController: NavController
+    private var _bookService: BookService? = null
+    val bookService get() = _bookService!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,6 +22,8 @@ class MainActivity : AppCompatActivity() {
 
         //TODO
 //        intent.data?.let { importPublicationFromUri(it) }
+
+        _bookService = BookService(this)
 
         val navView: BottomNavigationView = findViewById(R.id.nav_view)
         val navHostFragment =

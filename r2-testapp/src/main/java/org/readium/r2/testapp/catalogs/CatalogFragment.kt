@@ -28,25 +28,25 @@ import java.net.URL
 
 class CatalogFragment : Fragment() {
 
-    private lateinit var mCatalogsViewModel: CatalogsViewModel
+    private lateinit var mCatalogViewModel: CatalogViewModel
     private lateinit var mCatalogListAdapter: CatalogListAdapter
     private var mParsePromise: Promise<ParseData, Exception>? = null
     private lateinit var mOpds: OPDS
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        mCatalogsViewModel =
-                ViewModelProvider(this).get(CatalogsViewModel::class.java)
+        mCatalogViewModel =
+                ViewModelProvider(this).get(CatalogViewModel::class.java)
         mOpds = arguments?.get(OPDSFEED) as OPDS
         return inflater.inflate(R.layout.fragment_catalog, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mCatalogListAdapter = CatalogListAdapter(this)
+        mCatalogListAdapter = CatalogListAdapter()
 
         view.findViewById<RecyclerView>(R.id.opdsDetailList).apply {
-            setHasFixedSize(false)
+            setHasFixedSize(true)
             layoutManager = GridAutoFitLayoutManager(requireContext(), 120)
             adapter = mCatalogListAdapter
             addItemDecoration(
@@ -56,6 +56,7 @@ class CatalogFragment : Fragment() {
             )
         }
 
+        // TODO move this somewhere else so it doesn't run each time and optimize
         mOpds.href.let {
             try {
                 mParsePromise = if (mOpds.type == 1) {

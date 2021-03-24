@@ -26,7 +26,6 @@ import org.readium.r2.testapp.BuildConfig
 import org.readium.r2.testapp.db.BookDatabase
 import org.readium.r2.testapp.domain.model.Book
 import org.readium.r2.testapp.utils.ContentResolverUtil
-import org.readium.r2.testapp.utils.extensions.authorName
 import org.readium.r2.testapp.utils.extensions.download
 import org.readium.r2.testapp.utils.extensions.moveTo
 import org.readium.r2.testapp.utils.extensions.toFile
@@ -90,18 +89,10 @@ class BookService(val context: Context) {
             }
         }
 
-    private suspend fun addPublicationToDatabase(href: String, extension: String, publication: Publication): Long {
-
-        val book = Book(
-                title = publication.metadata.title,
-                author = publication.metadata.authorName,
-                href = href,
-                identifier = publication.metadata.identifier ?: "",
-                ext = ".$extension",
-                progression = "{}"
-        )
-
-        return mBookRepository.insertBook(book)
+    suspend fun addPublicationToDatabase(href: String, extension: String, publication: Publication): Long {
+        val id = mBookRepository.insertBook(href, extension, publication)
+        storeCoverImage(publication, id.toString())
+        return id
     }
 
     suspend fun deleteBook(book: Book)  {
@@ -219,19 +210,6 @@ class BookService(val context: Context) {
                 .onSuccess {
                     addPublicationToDatabase(bddHref, extension, it).let { id ->
 
-                        // Save the cover image of book using the same name of its ID in the database
-                        // TODO Figure out where to store these cover images
-                        val coverImageDir = File("${R2DIRECTORY}covers/")
-                        if (!coverImageDir.exists()) {
-                            coverImageDir.mkdirs()
-                        }
-                        val coverImageFile = File("${R2DIRECTORY}covers/${id}.png")
-                        val fos = FileOutputStream(coverImageFile)
-                        val resized = it.cover()?.let { it1 -> Bitmap.createScaledBitmap(it1, 120, 200, true) }
-                        resized?.compress(Bitmap.CompressFormat.PNG, 80, fos)
-                        fos.flush()
-                        fos.close()
-
                         progress?.dismiss()
                         val msg =
                                 if (id != -1L)
@@ -317,6 +295,20 @@ class BookService(val context: Context) {
             mServer.stop()
             isServerStarted = false
         }
+    }
+
+    suspend fun storeCoverImage(publication: Publication, imageName: String) {
+        // TODO Figure out where to store these cover images
+        val coverImageDir = File("${R2DIRECTORY}covers/")
+        if (!coverImageDir.exists()) {
+            coverImageDir.mkdirs()
+        }
+        val coverImageFile = File("${R2DIRECTORY}covers/${imageName}.png")
+        val fos = FileOutputStream(coverImageFile)
+        val resized = publication.cover()?.let { it1 -> Bitmap.createScaledBitmap(it1, 120, 200, true) }
+        resized?.compress(Bitmap.CompressFormat.PNG, 80, fos)
+        fos.flush()
+        fos.close()
     }
 
     companion object {
