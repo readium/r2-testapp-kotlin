@@ -3,9 +3,11 @@ package org.readium.r2.testapp.catalogs
 import android.content.Context
 import android.graphics.Rect
 import android.os.Bundle
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.URLUtil
 import android.widget.EditText
 import android.widget.LinearLayout
 import androidx.fragment.app.Fragment
@@ -19,6 +21,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.then
+import nl.komponents.kovenant.ui.failUi
 import nl.komponents.kovenant.ui.successUi
 import org.json.JSONObject
 import org.readium.r2.opds.OPDS1Parser
@@ -101,14 +104,25 @@ class OpdsFeedListFragment : Fragment() {
                         dialog.cancel()
                     }
                     .setPositiveButton(getString(R.string.save)) { _, _ ->
-                        val parseData: Promise<ParseData, Exception>?
-                        parseData = parseURL(URL(urlEditText.text.toString()))
-                        parseData.successUi {
-                            val opds = OPDS(
-                                    title = titleEditText.text.toString(),
-                                    href = urlEditText.text.toString(),
-                                    type = it.type)
-                            mCatalogViewModel.insertOpds(opds)
+                        if (TextUtils.isEmpty(titleEditText.text)) {
+
+                        } else if (TextUtils.isEmpty(urlEditText.text)) {
+
+                        } else if (!URLUtil.isValidUrl(urlEditText.text.toString())) {
+
+                        } else {
+                            val parseData: Promise<ParseData, Exception>?
+                            parseData = parseURL(URL(urlEditText.text.toString()))
+                            parseData.successUi {
+                                val opds = OPDS(
+                                        title = titleEditText.text.toString(),
+                                        href = urlEditText.text.toString(),
+                                        type = it.type)
+                                mCatalogViewModel.insertOpds(opds)
+                            }
+                            parseData.failUi {
+
+                            }
                         }
                     }
                     .show()

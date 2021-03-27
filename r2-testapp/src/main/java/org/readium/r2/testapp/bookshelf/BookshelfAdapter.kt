@@ -22,7 +22,7 @@ import org.readium.r2.testapp.domain.model.Book
 import org.readium.r2.testapp.utils.singleClick
 
 
-class BookshelfAdapter(val itemListener: RecyclerViewClickListener) : ListAdapter<Book, BookshelfAdapter.ViewHolder>(BookListDiff()) {
+class BookshelfAdapter(private val onBookClick: (Book) -> Unit, private val onBookLongClick: (Book) -> Unit) : ListAdapter<Book, BookshelfAdapter.ViewHolder>(BookListDiff()) {
 
     override fun onCreateViewHolder(
             parent: ViewGroup,
@@ -47,23 +47,14 @@ class BookshelfAdapter(val itemListener: RecyclerViewClickListener) : ListAdapte
 
         fun bind(book: Book) {
             binding.book = book
-            // TODO decide whether or not to use this or the RecyclerViewClickListener
             binding.root.singleClick { _ ->
-                itemListener.recyclerViewListClicked(book)
+                onBookClick(book)
             }
             binding.root.setOnLongClickListener {
-                itemListener.recyclerViewListLongClicked(book)
+                onBookLongClick(book)
                 true
             }
         }
-    }
-
-    interface RecyclerViewClickListener {
-
-        //this is method to handle the event when clicked on the image in Recyclerview
-        fun recyclerViewListClicked(book: Book)
-
-        fun recyclerViewListLongClicked(book: Book)
     }
 
     private class BookListDiff : DiffUtil.ItemCallback<Book>() {

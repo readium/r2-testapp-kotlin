@@ -12,7 +12,6 @@ import nl.komponents.kovenant.ui.successUi
 import org.readium.r2.shared.extensions.getPublicationOrNull
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.opds.images
-import org.readium.r2.shared.publication.services.cover
 import org.readium.r2.testapp.MainActivity
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.bookshelf.BookService
@@ -24,7 +23,7 @@ import java.net.URL
 class OpdsDetailFragment : Fragment() {
 
     private var mPublication: Publication? = null
-    private lateinit var mOpdsDownloader: OPDSDownloader
+
     private lateinit var mBookService: BookService
 
     private var _binding: FragmentOpdsDetailBinding? = null
@@ -46,7 +45,7 @@ class OpdsDetailFragment : Fragment() {
         (activity as MainActivity).supportActionBar?.title = mPublication?.metadata?.title
 
         mBookService = (activity as MainActivity).bookService
-        mOpdsDownloader = OPDSDownloader(requireContext())
+
 
         mPublication?.coverLink?.let { link ->
             Picasso.with(requireContext()).load(link.href).into(binding.coverImageView)
@@ -60,32 +59,7 @@ class OpdsDetailFragment : Fragment() {
 //        }
 
         binding.downloadButton.setOnClickListener {
-            downloadPublication()
+            mPublication?.let { it1 -> mBookService.downloadPublication(it1) }
         }
-    }
-
-    private fun downloadPublication() {
-        val downloadUrl = mPublication?.let { getDownloadURL(it) }
-        mOpdsDownloader.publicationUrl(downloadUrl.toString()).successUi { pair ->
-            // FIXME this will error if you leave fragment before it completes downloading
-            viewLifecycleOwner.lifecycleScope.launchWhenCreated {
-                mPublication?.let {
-                    mBookService.addPublicationToDatabase(pair.first, "epub", it)
-                }
-            }
-        }
-    }
-
-    private fun getDownloadURL(publication: Publication): URL? {
-        var url: URL? = null
-        val links = publication.links
-        for (link in links) {
-            val href = link.href
-            if (href.contains(Publication.EXTENSION.EPUB.value) || href.contains(Publication.EXTENSION.LCPL.value)) {
-                url = URL(href)
-                break
-            }
-        }
-        return url
     }
 }

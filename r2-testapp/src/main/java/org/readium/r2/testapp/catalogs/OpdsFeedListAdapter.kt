@@ -41,7 +41,6 @@ class OpdsFeedListAdapter(private val onLongClick: (OPDS) -> Unit) : ListAdapter
 
         fun bind(opds: OPDS) {
             binding.opds = opds
-            // TODO decide whether or not to use this or the RecyclerViewClickListener
             binding.button.setOnClickListener {
                 val bundle = bundleOf(OPDSFEED to opds)
                 Navigation.findNavController(it).navigate(R.id.action_navigation_catalog_list_to_navigation_catalog, bundle)

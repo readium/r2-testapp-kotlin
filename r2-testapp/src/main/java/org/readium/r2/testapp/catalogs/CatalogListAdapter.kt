@@ -53,7 +53,6 @@ class CatalogListAdapter() : ListAdapter<Publication, CatalogListAdapter.ViewHol
                 }
             }
 
-            // TODO decide whether or not to use this or the RecyclerViewClickListener
             binding.root.setOnClickListener {
                 val bundle = Bundle().apply {
                     putPublication(publication)

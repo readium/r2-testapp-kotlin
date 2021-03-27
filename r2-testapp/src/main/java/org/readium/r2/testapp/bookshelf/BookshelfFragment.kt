@@ -1,8 +1,12 @@
 package org.readium.r2.testapp.bookshelf
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +14,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.databinding.BindingAdapter
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -17,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import com.squareup.picasso.Picasso
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -26,19 +32,29 @@ import org.readium.r2.testapp.MainActivity
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.domain.model.Book
 import org.readium.r2.testapp.opds.GridAutoFitLayoutManager
-import org.readium.r2.testapp.permissions.storagePermission
+import org.readium.r2.testapp.permissions.*
 import org.readium.r2.testapp.reader.ReaderContract
 import timber.log.Timber
 import java.io.File
 
 
-class BookshelfFragment : Fragment(), BookshelfAdapter.RecyclerViewClickListener {
+class BookshelfFragment : Fragment() {
 
     private lateinit var mBookshelfViewModel: BookshelfViewModel
     private lateinit var mBookshelfAdapter: BookshelfAdapter
     private lateinit var mDocumentPickerLauncher: ActivityResultLauncher<String>
     private lateinit var mReaderLauncher: ActivityResultLauncher<ReaderContract.Input>
     private lateinit var mBookService: BookService
+    private var permissionAsked: Boolean = false
+
+    private val requestPermissionLauncher =
+            registerForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+            ) { isGranted: Boolean ->
+                if (isGranted) {
+                    importBooks()
+                }
+            }
 
     override fun onCreateView(
             inflater: LayoutInflater,
@@ -53,7 +69,7 @@ class BookshelfFragment : Fragment(), BookshelfAdapter.RecyclerViewClickListener
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mBookshelfAdapter = BookshelfAdapter(this)
+        mBookshelfAdapter = BookshelfAdapter(onBookClick = { book -> openBook(book) }, onBookLongClick = { book -> confirmDeleteBook(book) })
         mBookService = (activity as MainActivity).bookService
 
         mDocumentPickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
@@ -87,13 +103,7 @@ class BookshelfFragment : Fragment(), BookshelfAdapter.RecyclerViewClickListener
             mBookshelfAdapter.submitList(it)
         })
 
-        storagePermission {
-            if (mBookshelfAdapter.itemCount == 0) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    mBookService.copySamplesFromAssetsToStorage()
-                }
-            }
-        }.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        importBooks()
 
         // FIXME embedded dialogs like this are ugly
         view.findViewById<FloatingActionButton>(R.id.addBook).setOnClickListener {
@@ -140,13 +150,49 @@ class BookshelfFragment : Fragment(), BookshelfAdapter.RecyclerViewClickListener
         }
     }
 
-    fun deleteBook(book: Book) {
+    private fun requestStoragePermission() {
+        if (shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            Snackbar.make(this.requireView(), R.string.permission_external_new_explanation, Snackbar.LENGTH_LONG)
+                    .setAction(R.string.permission_retry) {
+                        requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    }
+                    .show()
+        } else {
+            // FIXME this is an ugly hack for when user has said don't ask again
+            if (permissionAsked) {
+                Snackbar.make(this.requireView(), R.string.permission_external_new_explanation, Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.action_settings) {
+                            Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                addCategory(Intent.CATEGORY_DEFAULT)
+                                data = Uri.parse("package:${view?.context?.packageName}")
+                            }.run(::startActivity)
+                        }
+                        .setActionTextColor(resources.getColor(R.color.snackbar_text_color))
+                        .show()
+            } else {
+                permissionAsked = true
+                requestPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }
+    }
+
+    private fun importBooks() {
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                mBookService.copySamplesFromAssetsToStorage()
+            }
+        } else requestStoragePermission()
+
+    }
+
+    private fun deleteBook(book: Book) {
         viewLifecycleOwner.lifecycleScope.launch {
             mBookService.deleteBook(book)
         }
     }
 
-    fun openBook(book: Book) {
+    private fun openBook(book: Book) {
         viewLifecycleOwner.lifecycleScope.launch {
             mBookService.openBook(book) { asset, mediaType, publication, remoteAsset, url ->
                 mReaderLauncher.launch(
@@ -164,11 +210,7 @@ class BookshelfFragment : Fragment(), BookshelfAdapter.RecyclerViewClickListener
         }
     }
 
-    override fun recyclerViewListClicked(book: Book) {
-        openBook(book)
-    }
-
-    override fun recyclerViewListLongClicked(book: Book) {
+    private fun confirmDeleteBook(book: Book) {
         MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.confirm_delete_book_title))
                 .setMessage(getString(R.string.confirm_delete_book_text))

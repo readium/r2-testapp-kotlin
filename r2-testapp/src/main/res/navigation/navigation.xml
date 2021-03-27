@@ -9,7 +9,7 @@
         android:id="@+id/navigation_catalog_list"
         android:name="org.readium.r2.testapp.catalogs.OpdsFeedListFragment"
         android:label="@string/title_catalogs"
-        tools:layout="@layout/fragment_opds_feed" >
+        tools:layout="@layout/fragment_opds_feed_list" >
         <action
             android:id="@+id/action_navigation_catalog_list_to_navigation_catalog"
             app:destination="@id/navigation_catalog" />
@@ -34,6 +34,9 @@
         <action
             android:id="@+id/action_navigation_catalog_to_navigation_opds_detail"
             app:destination="@id/navigation_opds_detail" />
+        <action
+            android:id="@+id/action_navigation_catalog_self"
+            app:destination="@id/navigation_catalog" />
     </fragment>
 
     <fragment

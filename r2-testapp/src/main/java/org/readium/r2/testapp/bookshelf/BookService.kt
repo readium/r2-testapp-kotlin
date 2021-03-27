@@ -3,9 +3,13 @@ package org.readium.r2.testapp.bookshelf
 import android.app.ProgressDialog
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.komponents.kovenant.ui.successUi
 import org.readium.r2.lcp.LcpService
 import org.readium.r2.shared.Injectable
 import org.readium.r2.shared.extensions.extension
@@ -14,6 +18,7 @@ import org.readium.r2.shared.extensions.tryOrNull
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.asset.FileAsset
 import org.readium.r2.shared.publication.asset.PublicationAsset
+import org.readium.r2.shared.publication.opds.images
 import org.readium.r2.shared.publication.services.cover
 import org.readium.r2.shared.publication.services.isRestricted
 import org.readium.r2.shared.publication.services.protectionError
@@ -25,6 +30,7 @@ import org.readium.r2.streamer.server.Server
 import org.readium.r2.testapp.BuildConfig
 import org.readium.r2.testapp.db.BookDatabase
 import org.readium.r2.testapp.domain.model.Book
+import org.readium.r2.testapp.opds.OPDSDownloader
 import org.readium.r2.testapp.utils.ContentResolverUtil
 import org.readium.r2.testapp.utils.extensions.download
 import org.readium.r2.testapp.utils.extensions.moveTo
@@ -34,14 +40,15 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
+import java.net.HttpURLConnection
 import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.URL
 import java.util.*
-import java.util.concurrent.atomic.AtomicInteger
 
-var activitiesLaunched: AtomicInteger = AtomicInteger(0)
 
+// TODO Break this file up, maybe after the server is replaced
+// TODO Consider using a WorkManager for a lot of this stuff
 class BookService(val context: Context) {
 
     private val mPreferences = context.getSharedPreferences("org.readium.r2.settings", Context.MODE_PRIVATE)
@@ -50,10 +57,13 @@ class BookService(val context: Context) {
     private var mServer: Server
     private var mLcpService: Try<LcpService, Exception>
     private var mLocalPort: Int = 0
+    private var mOpdsDownloader: OPDSDownloader
 
     init {
         val booksDao = BookDatabase.getDatabase(context).booksDao()
         mBookRepository = BookRepository(booksDao)
+
+        mOpdsDownloader = OPDSDownloader(context)
 
         mLcpService = LcpService(context)
                 ?.let { Try.success(it) }
@@ -297,18 +307,72 @@ class BookService(val context: Context) {
         }
     }
 
-    suspend fun storeCoverImage(publication: Publication, imageName: String) {
+    private suspend fun storeCoverImage(publication: Publication, imageName: String) {
         // TODO Figure out where to store these cover images
         val coverImageDir = File("${R2DIRECTORY}covers/")
         if (!coverImageDir.exists()) {
             coverImageDir.mkdirs()
         }
         val coverImageFile = File("${R2DIRECTORY}covers/${imageName}.png")
-        val fos = FileOutputStream(coverImageFile)
-        val resized = publication.cover()?.let { it1 -> Bitmap.createScaledBitmap(it1, 120, 200, true) }
-        resized?.compress(Bitmap.CompressFormat.PNG, 80, fos)
-        fos.flush()
-        fos.close()
+
+        var bitmap: Bitmap? = null
+        if (publication.cover() == null) {
+            publication.coverLink?.let { link ->
+                bitmap = getBitmapFromURL(link.href)
+            } ?: run {
+                if (publication.images.isNotEmpty()) {
+                    bitmap = getBitmapFromURL(publication.images.first().href)
+                }
+            }
+        } else {
+            bitmap = publication.cover()
+        }
+
+        val resized = bitmap?.let { Bitmap.createScaledBitmap(it, 120, 200, true) }
+        GlobalScope.launch(Dispatchers.IO) {
+            val fos = FileOutputStream(coverImageFile)
+            resized?.compress(Bitmap.CompressFormat.PNG, 80, fos)
+            fos.flush()
+            fos.close()
+        }
+    }
+
+    fun downloadPublication(publication: Publication) {
+        val downloadUrl = getDownloadURL(publication)
+        mOpdsDownloader.publicationUrl(downloadUrl.toString()).successUi { pair ->
+            GlobalScope.launch {
+                withContext(Dispatchers.IO) {
+                    addPublicationToDatabase(pair.first, "epub", publication)
+                }
+            }
+        }
+    }
+
+    private fun getDownloadURL(publication: Publication): URL? {
+        var url: URL? = null
+        val links = publication.links
+        for (link in links) {
+            val href = link.href
+            if (href.contains(Publication.EXTENSION.EPUB.value) || href.contains(Publication.EXTENSION.LCPL.value)) {
+                url = URL(href)
+                break
+            }
+        }
+        return url
+    }
+
+    private fun getBitmapFromURL(src: String): Bitmap? {
+        return try {
+            val url = URL(src)
+            val connection = url.openConnection() as HttpURLConnection
+            connection.doInput = true
+            connection.connect()
+            val input = connection.inputStream
+            BitmapFactory.decodeStream(input)
+        } catch (e: IOException) {
+            e.printStackTrace()
+            null
+        }
     }
 
     companion object {
