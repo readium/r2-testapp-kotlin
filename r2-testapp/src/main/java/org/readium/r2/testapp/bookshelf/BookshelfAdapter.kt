@@ -47,7 +47,7 @@ class BookshelfAdapter(private val onBookClick: (Book) -> Unit, private val onBo
 
         fun bind(book: Book) {
             binding.book = book
-            binding.root.singleClick { _ ->
+            binding.root.singleClick {
                 onBookClick(book)
             }
             binding.root.setOnLongClickListener {

@@ -2,10 +2,8 @@ package org.readium.r2.testapp.catalogs
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 import nl.komponents.kovenant.Promise
 import org.readium.r2.opds.OPDS1Parser

@@ -84,7 +84,8 @@ class BookRepository(private val booksDao: BooksDao) {
         return booksDao.insertHighlight(highlight)
     }
 
-    suspend fun deleteHighlight(id: Long) = booksDao.deleteHighlight(id)
+    // This will be used when highlights are redone
+//    suspend fun deleteHighlight(id: Long) = booksDao.deleteHighlight(id)
 
     suspend fun updateHighlight(id: String, color: Int? = null, annotation: String? = null, markStyle: String? = null) {
         val highlight = getHighlightByHighlightId(id)

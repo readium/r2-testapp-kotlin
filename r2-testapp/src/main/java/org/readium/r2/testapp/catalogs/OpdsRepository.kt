@@ -13,7 +13,5 @@ class OpdsRepository(private val opdsDao: OpdsDao) {
 
     fun getOpdsFromDatabase(): LiveData<List<OPDS>> = opdsDao.getOpdsModels()
 
-    fun getOpdsFromDatabase(title: String, href: String, type: Int): LiveData<List<OPDS>> = opdsDao.getOpdsModels(title, href, type)
-
     suspend fun deleteOpds(id: Long) = opdsDao.deleteOpds(id)
 }

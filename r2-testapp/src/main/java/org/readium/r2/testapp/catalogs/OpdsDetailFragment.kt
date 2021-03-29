@@ -6,9 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import com.squareup.picasso.Picasso
-import nl.komponents.kovenant.ui.successUi
 import org.readium.r2.shared.extensions.getPublicationOrNull
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.opds.images
@@ -16,8 +14,6 @@ import org.readium.r2.testapp.MainActivity
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.bookshelf.BookService
 import org.readium.r2.testapp.databinding.FragmentOpdsDetailBinding
-import org.readium.r2.testapp.opds.OPDSDownloader
-import java.net.URL
 
 
 class OpdsDetailFragment : Fragment() {

@@ -2,9 +2,7 @@ package org.readium.r2.testapp.catalogs
 
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import androidx.core.os.bundleOf
 import androidx.databinding.DataBindingUtil
 import androidx.navigation.Navigation
 import androidx.recyclerview.widget.DiffUtil
@@ -16,9 +14,8 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.opds.images
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.databinding.ItemRecycleOpdsBinding
-import org.readium.r2.testapp.utils.singleClick
 
-class CatalogListAdapter() : ListAdapter<Publication, CatalogListAdapter.ViewHolder>(PublicationListDiff()) {
+class CatalogListAdapter : ListAdapter<Publication, CatalogListAdapter.ViewHolder>(PublicationListDiff()) {
 
     override fun onCreateViewHolder(
             parent: ViewGroup,
@@ -42,7 +39,6 @@ class CatalogListAdapter() : ListAdapter<Publication, CatalogListAdapter.ViewHol
     inner class ViewHolder(private val binding: ItemRecycleOpdsBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(publication: Publication) {
-//            binding.publication = publication
             binding.titleTextView.text = publication.metadata.title
 
             publication.linkWithRel("http://opds-spec.org/image/thumbnail")?.let { link ->
@@ -60,14 +56,6 @@ class CatalogListAdapter() : ListAdapter<Publication, CatalogListAdapter.ViewHol
                 Navigation.findNavController(it).navigate(R.id.action_navigation_catalog_to_navigation_opds_detail, bundle)
             }
         }
-    }
-
-    interface RecyclerViewClickListener {
-
-        //this is method to handle the event when clicked on the image in Recyclerview
-        fun recyclerViewListClicked(v: View, position: Int)
-
-        fun recyclerViewListLongClicked(v: View, position: Int)
     }
 
     private class PublicationListDiff : DiffUtil.ItemCallback<Publication>() {

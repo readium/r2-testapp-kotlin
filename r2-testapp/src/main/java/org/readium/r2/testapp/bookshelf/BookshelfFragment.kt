@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.ProgressBar
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -46,6 +47,7 @@ class BookshelfFragment : Fragment() {
     private lateinit var mReaderLauncher: ActivityResultLauncher<ReaderContract.Input>
     private lateinit var mBookService: BookService
     private var permissionAsked: Boolean = false
+    lateinit var progressBar: ProgressBar
 
     private val requestPermissionLauncher =
             registerForActivityResult(
@@ -71,10 +73,11 @@ class BookshelfFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         mBookshelfAdapter = BookshelfAdapter(onBookClick = { book -> openBook(book) }, onBookLongClick = { book -> confirmDeleteBook(book) })
         mBookService = (activity as MainActivity).bookService
+        progressBar = view.findViewById(R.id.progressBar)
 
         mDocumentPickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             viewLifecycleOwner.lifecycleScope.launch {
-                uri?.let { mBookService.importPublicationFromUri(it) }
+                uri?.let { mBookService.importPublicationFromUri(it, progressBar) }
             }
         }
 
@@ -128,7 +131,7 @@ class BookshelfFragment : Fragment() {
                                     .setPositiveButton(R.string.ok) { _, _ ->
                                         viewLifecycleOwner.lifecycleScope.launch {
                                             val uri = Uri.parse(urlEditText.text.toString())
-                                            mBookService.importPublicationFromUri(uri)
+                                            mBookService.importPublicationFromUri(uri, progressBar)
                                         }
                                     }
                                     .show()
@@ -167,7 +170,7 @@ class BookshelfFragment : Fragment() {
                                 data = Uri.parse("package:${view?.context?.packageName}")
                             }.run(::startActivity)
                         }
-                        .setActionTextColor(resources.getColor(R.color.snackbar_text_color))
+                        .setActionTextColor(resources.getColor(R.color.snackbar_text_color, null))
                         .show()
             } else {
                 permissionAsked = true
@@ -188,7 +191,7 @@ class BookshelfFragment : Fragment() {
 
     private fun deleteBook(book: Book) {
         viewLifecycleOwner.lifecycleScope.launch {
-            mBookService.deleteBook(book)
+            mBookshelfViewModel.deleteBook(book)
         }
     }
 
@@ -201,7 +204,8 @@ class BookshelfFragment : Fragment() {
                                 mediaType = mediaType,
                                 publication = publication,
                                 bookId = book.id!!,
-                                initialLocator = Locator.fromJSON(JSONObject(book.progression)),
+                                initialLocator = Locator.fromJSON(JSONObject(book.progression
+                                        ?: "{}")),
                                 deleteOnResult = remoteAsset != null,
                                 baseUrl = url
                         )

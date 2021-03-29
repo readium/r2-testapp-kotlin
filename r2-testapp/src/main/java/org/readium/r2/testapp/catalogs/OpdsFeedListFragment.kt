@@ -9,7 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.webkit.URLUtil
 import android.widget.EditText
-import android.widget.LinearLayout
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -87,45 +87,39 @@ class OpdsFeedListFragment : Fragment() {
         }
 
         view.findViewById<FloatingActionButton>(R.id.addOpds).setOnClickListener {
-            val layout = LinearLayout(requireContext())
-            layout.orientation = LinearLayout.VERTICAL
-            val titleEditText = EditText(requireContext())
-            val urlEditText = EditText(requireContext())
-            titleEditText.hint = getString(R.string.enter_title)
-            urlEditText.hint = getString(R.string.enter_url)
-            layout.addView(titleEditText)
-            layout.addView(urlEditText)
-
-
-            MaterialAlertDialogBuilder(requireContext())
+            val alertDialog = MaterialAlertDialogBuilder(requireContext())
                     .setTitle(getString(R.string.add_opds))
-                    .setView(layout)
+                    .setView(R.layout.add_opds_dialog)
                     .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                         dialog.cancel()
                     }
-                    .setPositiveButton(getString(R.string.save)) { _, _ ->
-                        if (TextUtils.isEmpty(titleEditText.text)) {
-
-                        } else if (TextUtils.isEmpty(urlEditText.text)) {
-
-                        } else if (!URLUtil.isValidUrl(urlEditText.text.toString())) {
-
-                        } else {
-                            val parseData: Promise<ParseData, Exception>?
-                            parseData = parseURL(URL(urlEditText.text.toString()))
-                            parseData.successUi {
-                                val opds = OPDS(
-                                        title = titleEditText.text.toString(),
-                                        href = urlEditText.text.toString(),
-                                        type = it.type)
-                                mCatalogViewModel.insertOpds(opds)
-                            }
-                            parseData.failUi {
-
-                            }
-                        }
-                    }
+                    .setPositiveButton(getString(R.string.save), null)
                     .show()
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val title = alertDialog.findViewById<EditText>(R.id.opdsTitle)
+                val url = alertDialog.findViewById<EditText>(R.id.opdsUrl)
+                if (TextUtils.isEmpty(title?.text)) {
+                    title?.error = getString(R.string.invalid_title)
+                } else if (TextUtils.isEmpty(url?.text)) {
+                    url?.error = getString(R.string.invalid_url)
+                } else if (!URLUtil.isValidUrl(url?.text.toString())) {
+                    url?.error = getString(R.string.invalid_url)
+                } else {
+                    val parseData: Promise<ParseData, Exception>?
+                    parseData = parseURL(URL(url?.text.toString()))
+                    parseData.successUi { data ->
+                        val opds = OPDS(
+                                title = title?.text.toString(),
+                                href = url?.text.toString(),
+                                type = data.type)
+                        mCatalogViewModel.insertOpds(opds)
+                    }
+                    parseData.failUi {
+
+                    }
+                    alertDialog.dismiss()
+                }
+            }
         }
     }
 

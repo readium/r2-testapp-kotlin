@@ -1,10 +1,11 @@
 package org.readium.r2.testapp.bookshelf
 
-import android.app.ProgressDialog
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.view.View
+import android.widget.ProgressBar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -105,15 +106,6 @@ class BookService(val context: Context) {
         return id
     }
 
-    suspend fun deleteBook(book: Book)  {
-        // TODO delete bookmarks and highlights from db
-        book.id?.let {
-            mBookRepository.deleteBook(it)
-            tryOrNull { File(book.href).delete() }
-            tryOrNull { File("${R2DIRECTORY}covers/${book.id}.png").delete() }
-        }
-    }
-
     suspend fun copySamplesFromAssetsToStorage() {
         withContext(Dispatchers.IO) {
             if (!mPreferences.contains("samples")) {
@@ -154,14 +146,15 @@ class BookService(val context: Context) {
         download(path)
     }
 
-    suspend fun importPublicationFromUri(uri: Uri) {
+    suspend fun importPublicationFromUri(uri: Uri, progressBar: ProgressBar) {
+        progressBar.visibility = View.VISIBLE
         uri.copyToTempFile()
                 ?.let {
-                    importPublication(it)
+                    importPublication(it, progress = progressBar)
                 }
     }
 
-    private suspend fun importPublication(sourceFile: File, sourceUrl: String? = null, progress: ProgressDialog? = null) {
+    private suspend fun importPublication(sourceFile: File, sourceUrl: String? = null, progress: ProgressBar? = null) {
         val foreground = progress != null
         val sourceMediaType = sourceFile.mediaType()
 
@@ -179,8 +172,8 @@ class BookService(val context: Context) {
                                     {
                                         tryOrNull { sourceFile.delete() }
                                         Timber.d(it)
-                                        progress?.dismiss()
-//                                        if (foreground) catalogView.longSnackbar("fulfillment error: ${it.message}")
+                                        progress?.visibility = View.GONE
+//                                        TODO if (foreground) catalogView.longSnackbar("fulfillment error: ${it.message}")
                                         return
                                     }
                             )
@@ -195,8 +188,8 @@ class BookService(val context: Context) {
         } catch (e: Exception) {
             Timber.d(e)
             tryOrNull { publicationAsset.file.delete() }
-            progress?.dismiss()
-//            if (foreground) catalogView.longSnackbar("unable to move publication into the library")
+            progress?.visibility = View.GONE
+//            TODO if (foreground) catalogView.longSnackbar("unable to move publication into the library")
             return
         }
 
@@ -212,7 +205,7 @@ class BookService(val context: Context) {
                 else
                     sourceUrl ?: run {
                         Timber.e("Trying to add a RWPM to the database from a file without sourceUrl.")
-                        progress?.dismiss()
+                        progress?.visibility = View.GONE
                         return
                     }
 
@@ -220,14 +213,14 @@ class BookService(val context: Context) {
                 .onSuccess {
                     addPublicationToDatabase(bddHref, extension, it).let { id ->
 
-                        progress?.dismiss()
+                        progress?.visibility = View.GONE
                         val msg =
                                 if (id != -1L)
                                     "publication added to your library"
                                 else
                                     "unable to add publication to the database"
                         if (foreground)
-//                            catalogView.longSnackbar(msg)
+//                            TODO catalogView.longSnackbar(msg)
                         else
                             Timber.d(msg)
                         if (id != -1L && isRwpm)
@@ -237,8 +230,8 @@ class BookService(val context: Context) {
                 .onFailure {
                     tryOrNull { libraryAsset.file.delete() }
                     Timber.d(it)
-                    progress?.dismiss()
-//                    if (foreground) presentOpeningException(it)
+                    progress?.visibility = View.GONE
+//                   TODO if (foreground) presentOpeningException(it)
                 }
     }
 
@@ -252,19 +245,16 @@ class BookService(val context: Context) {
         mStreamer.open(asset, allowUserInteraction = true, sender = context)
                 .onFailure {
                     Timber.d(it)
-//                    progress.dismiss()
 //                    presentOpeningException(it)
                 }
-                .onSuccess { it ->
+                .onSuccess {
                     if (it.isRestricted) {
-//                        progress.dismiss()
                         it.protectionError?.let { error ->
                             Timber.d(error)
-//                            catalogView.longSnackbar(error.getUserMessage(this@LibraryActivity))
+//                            TODO catalogView.longSnackbar(error.getUserMessage(this@LibraryActivity))
                         }
                     } else {
                         val url = prepareToServe(it, asset)
-//                        progress.dismiss()
                         callback.invoke(asset, mediaType, it, remoteAsset, url)
                     }
                 }

@@ -17,6 +17,7 @@ import nl.komponents.kovenant.android.startKovenant
 import nl.komponents.kovenant.android.stopKovenant
 import org.readium.r2.testapp.BuildConfig.DEBUG
 import timber.log.Timber
+import java.util.*
 
 class R2App : Application() {
 
@@ -36,6 +37,19 @@ class R2App : Application() {
         // scheduled tasks
         stopKovenant()
     }
+
+    val R2DIRECTORY: String
+        get() {
+            val properties = Properties()
+            val inputStream = applicationContext.assets.open("configs/config.properties")
+            properties.load(inputStream)
+            val useExternalFileDir = properties.getProperty("useExternalFileDir", "false")!!.toBoolean()
+            return if (useExternalFileDir) {
+                applicationContext.getExternalFilesDir(null)?.path + "/"
+            } else {
+                applicationContext.filesDir?.path + "/"
+            }
+        }
 }
 
 val Context.resolver: ContentResolver
