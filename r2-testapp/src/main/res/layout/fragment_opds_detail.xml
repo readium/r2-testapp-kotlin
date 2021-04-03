@@ -2,46 +2,58 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-<data>
+    <data>
 
-    <variable
-        name="publication"
-        type="org.readium.r2.shared.publication.Publication" />
+        <variable
+            name="publication"
+            type="org.readium.r2.shared.publication.Publication" />
 
-</data>
+    </data>
 
-
-    <LinearLayout
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:padding="10dp"
-        tools:context=".catalogs.OpdsDetailFragment">
+        android:layout_height="match_parent">
 
-        <ImageView
-            android:id="@+id/coverImageView"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="400dp"
-            android:contentDescription="@{@string/publication_image_description(publication.metadata.title)}" />
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="10dp"
+            tools:context=".catalogs.OpdsDetailFragment">
 
-        <TextView
-            android:id="@+id/opdsTitleView"
+            <ImageView
+                android:id="@+id/coverImageView"
+                android:layout_width="match_parent"
+                android:layout_height="400dp"
+                android:contentDescription="@{@string/publication_image_description(publication.metadata.title)}" />
+
+            <TextView
+                android:id="@+id/opdsTitleView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@{publication.metadata.title}"
+                android:textSize="24sp" />
+
+            <TextView
+                android:id="@+id/opdsDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@{publication.metadata.description}" />
+
+            <Button
+                android:id="@+id/downloadButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/opds_detail_download_button" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/detailProgressBar"
+            style="?android:attr/progressBarStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@{publication.metadata.title}"
-            android:textSize="24sp" />
-
-        <TextView
-            android:id="@+id/opdsDescription"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@{publication.metadata.description}" />
-
-        <Button
-            android:id="@+id/downloadButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/opds_detail_download_button" />
-    </LinearLayout>
+            android:layout_gravity="center"
+            android:visibility="gone" />
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 </layout>

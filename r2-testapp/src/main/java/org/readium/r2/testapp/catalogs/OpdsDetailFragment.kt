@@ -55,7 +55,7 @@ class OpdsDetailFragment : Fragment() {
 //        }
 
         binding.downloadButton.setOnClickListener {
-            mPublication?.let { it1 -> mBookService.downloadPublication(it1) }
+            mPublication?.let { it1 -> mBookService.downloadPublication(it1, binding.detailProgressBar) }
         }
     }
 }

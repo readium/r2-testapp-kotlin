@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -37,6 +38,7 @@ class CatalogFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mCatalogListAdapter = CatalogListAdapter()
+        val progressBar = view.findViewById<ProgressBar>(R.id.catalogProgressBar)
 
         view.findViewById<RecyclerView>(R.id.opdsDetailList).apply {
             setHasFixedSize(true)
@@ -53,6 +55,7 @@ class CatalogFragment : Fragment() {
 
         // TODO this feels hacky, I don't want to parse the file if it has not changed
         if (mCatalogViewModel.parseData.value == null) {
+            progressBar.visibility = View.VISIBLE
             mCatalogViewModel.parseOpds(mOpds) {
                 Snackbar.make(requireActivity().findViewById(android.R.id.content), "Failed parsing OPDS", Snackbar.LENGTH_LONG).show()
             }
@@ -98,6 +101,7 @@ class CatalogFragment : Fragment() {
                     }
                 }
             }
+            progressBar.visibility = View.GONE
         })
     }
 }

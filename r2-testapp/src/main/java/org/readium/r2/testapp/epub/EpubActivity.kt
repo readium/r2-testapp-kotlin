@@ -27,7 +27,6 @@ import androidx.fragment.app.commit
 import androidx.fragment.app.commitNow
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.launch
-import org.jetbrains.anko.toast
 import org.json.JSONException
 import org.json.JSONObject
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
@@ -434,7 +433,7 @@ class EpubActivity : R2EpubActivity() {
     override fun onPageEnded(end: Boolean) {
         if (isExploreByTouchEnabled) {
             if (!pageEnded == end && end) {
-                toast("End of chapter")
+                Toast.makeText(this, getString(R.string.end_of_chapter), Toast.LENGTH_SHORT).show()
             }
             pageEnded = end
         }

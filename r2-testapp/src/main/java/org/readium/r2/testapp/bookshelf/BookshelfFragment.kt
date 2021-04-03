@@ -77,7 +77,13 @@ class BookshelfFragment : Fragment() {
 
         mDocumentPickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
             viewLifecycleOwner.lifecycleScope.launch {
-                uri?.let { mBookService.importPublicationFromUri(it, progressBar) }
+                uri?.let {
+                    mBookService.importPublicationFromUri(it, progressBar) { error ->
+                        if (error != null) {
+                            Snackbar.make(this@BookshelfFragment.requireView(), error, Snackbar.LENGTH_LONG).show()
+                        }
+                    }
+                }
             }
         }
 
@@ -131,7 +137,11 @@ class BookshelfFragment : Fragment() {
                                     .setPositiveButton(R.string.ok) { _, _ ->
                                         viewLifecycleOwner.lifecycleScope.launch {
                                             val uri = Uri.parse(urlEditText.text.toString())
-                                            mBookService.importPublicationFromUri(uri, progressBar)
+                                            mBookService.importPublicationFromUri(uri, progressBar) {
+                                                if (it != null) {
+                                                    Snackbar.make(this@BookshelfFragment.requireView(), it, Snackbar.LENGTH_LONG).show()
+                                                }
+                                            }
                                         }
                                     }
                                     .show()
@@ -183,7 +193,11 @@ class BookshelfFragment : Fragment() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 == PackageManager.PERMISSION_GRANTED) {
             viewLifecycleOwner.lifecycleScope.launch {
-                mBookService.copySamplesFromAssetsToStorage()
+                mBookService.copySamplesFromAssetsToStorage {
+                    if (it != null) {
+                        Snackbar.make(this@BookshelfFragment.requireView(), it, Snackbar.LENGTH_LONG).show()
+                    }
+                }
             }
         } else requestStoragePermission()
 
@@ -197,7 +211,7 @@ class BookshelfFragment : Fragment() {
 
     private fun openBook(book: Book) {
         viewLifecycleOwner.lifecycleScope.launch {
-            mBookService.openBook(book) { asset, mediaType, publication, remoteAsset, url ->
+            mBookService.openBook(book, callback = { asset, mediaType, publication, remoteAsset, url ->
                 mReaderLauncher.launch(
                         ReaderContract.Input(
                                 file = asset.file,
@@ -210,7 +224,9 @@ class BookshelfFragment : Fragment() {
                                 baseUrl = url
                         )
                 )
-            }
+            }, onError = {
+                Snackbar.make(requireView(), it, Snackbar.LENGTH_LONG).show()
+            })
         }
     }
 

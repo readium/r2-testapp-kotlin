@@ -100,13 +100,13 @@ class BookService(val context: Context) {
             }
         }
 
-    suspend fun addPublicationToDatabase(href: String, extension: String, publication: Publication): Long {
+    private suspend fun addPublicationToDatabase(href: String, extension: String, publication: Publication): Long {
         val id = mBookRepository.insertBook(href, extension, publication)
         storeCoverImage(publication, id.toString())
         return id
     }
 
-    suspend fun copySamplesFromAssetsToStorage() {
+    suspend fun copySamplesFromAssetsToStorage(onError: ((msg: String?) -> Unit?)) {
         withContext(Dispatchers.IO) {
             if (!mPreferences.contains("samples")) {
                 val dir = File(R2DIRECTORY)
@@ -117,7 +117,7 @@ class BookService(val context: Context) {
                 for (element in samples) {
                     val file = context.assets.open("Samples/$element").copyToTempFile()
                     if (file != null)
-                        importPublication(file)
+                        importPublication(file, onError = onError)
                     else if (BuildConfig.DEBUG)
                         error("Unable to load sample into the library")
                 }
@@ -146,18 +146,17 @@ class BookService(val context: Context) {
         download(path)
     }
 
-    suspend fun importPublicationFromUri(uri: Uri, progressBar: ProgressBar) {
-        progressBar.visibility = View.VISIBLE
+    suspend fun importPublicationFromUri(uri: Uri, progressBar: ProgressBar? = null, onError: ((msg: String?) -> Unit?)? = null) {
+        progressBar?.visibility = View.VISIBLE
         uri.copyToTempFile()
                 ?.let {
-                    importPublication(it, progress = progressBar)
+                    importPublication(it, progress = progressBar, onError = onError)
                 }
     }
 
-    private suspend fun importPublication(sourceFile: File, sourceUrl: String? = null, progress: ProgressBar? = null) {
+    private suspend fun importPublication(sourceFile: File, sourceUrl: String? = null, progress: ProgressBar? = null, onError: ((msg: String?) -> Unit?)? = null) {
         val foreground = progress != null
         val sourceMediaType = sourceFile.mediaType()
-
         val publicationAsset: FileAsset =
                 if (sourceMediaType != MediaType.LCP_LICENSE_DOCUMENT)
                     FileAsset(sourceFile, sourceMediaType)
@@ -173,7 +172,9 @@ class BookService(val context: Context) {
                                         tryOrNull { sourceFile.delete() }
                                         Timber.d(it)
                                         progress?.visibility = View.GONE
-//                                        TODO if (foreground) catalogView.longSnackbar("fulfillment error: ${it.message}")
+                                        if (foreground && onError != null) {
+                                            onError("fulfillment error: ${it.message}")
+                                        }
                                         return
                                     }
                             )
@@ -189,7 +190,7 @@ class BookService(val context: Context) {
             Timber.d(e)
             tryOrNull { publicationAsset.file.delete() }
             progress?.visibility = View.GONE
-//            TODO if (foreground) catalogView.longSnackbar("unable to move publication into the library")
+            if (foreground && onError != null) onError("unable to move publication into the library")
             return
         }
 
@@ -219,8 +220,8 @@ class BookService(val context: Context) {
                                     "publication added to your library"
                                 else
                                     "unable to add publication to the database"
-                        if (foreground)
-//                            TODO catalogView.longSnackbar(msg)
+                        if (foreground && onError != null)
+                            onError(msg)
                         else
                             Timber.d(msg)
                         if (id != -1L && isRwpm)
@@ -231,11 +232,11 @@ class BookService(val context: Context) {
                     tryOrNull { libraryAsset.file.delete() }
                     Timber.d(it)
                     progress?.visibility = View.GONE
-//                   TODO if (foreground) presentOpeningException(it)
+                    if (foreground && onError != null) onError(it.getUserMessage(context))
                 }
     }
 
-    suspend fun openBook(book: Book, callback: (file: FileAsset, mediaType: MediaType?, publication: Publication, remoteAsset: FileAsset?, url: URL?) -> Unit) {
+    suspend fun openBook(book: Book, callback: (file: FileAsset, mediaType: MediaType?, publication: Publication, remoteAsset: FileAsset?, url: URL?) -> Unit, onError: (msg: String) -> Unit?) {
 
         val remoteAsset: FileAsset? = tryOrNull { URL(book.href).copyToTempFile()?.let { FileAsset(it) } }
         val mediaType = MediaType.of(fileExtension = book.ext.removePrefix("."))
@@ -245,13 +246,13 @@ class BookService(val context: Context) {
         mStreamer.open(asset, allowUserInteraction = true, sender = context)
                 .onFailure {
                     Timber.d(it)
-//                    presentOpeningException(it)
+                    onError(it.getUserMessage(context))
                 }
                 .onSuccess {
                     if (it.isRestricted) {
                         it.protectionError?.let { error ->
                             Timber.d(error)
-//                            TODO catalogView.longSnackbar(error.getUserMessage(this@LibraryActivity))
+                            onError(error.getUserMessage(context))
                         }
                     } else {
                         val url = prepareToServe(it, asset)
@@ -327,12 +328,14 @@ class BookService(val context: Context) {
         }
     }
 
-    fun downloadPublication(publication: Publication) {
+    fun downloadPublication(publication: Publication, progressBar: ProgressBar) {
+        progressBar.visibility = View.VISIBLE
         val downloadUrl = getDownloadURL(publication)
         mOpdsDownloader.publicationUrl(downloadUrl.toString()).successUi { pair ->
             GlobalScope.launch {
                 withContext(Dispatchers.IO) {
                     addPublicationToDatabase(pair.first, "epub", publication)
+                    progressBar.visibility = View.GONE
                 }
             }
         }
