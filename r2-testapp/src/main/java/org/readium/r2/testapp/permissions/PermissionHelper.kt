@@ -16,13 +16,8 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import android.view.View
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.fragment.app.Fragment
-import com.google.android.material.snackbar.Snackbar
 import io.reactivex.subjects.PublishSubject
 import org.readium.r2.testapp.R
-
-
 
 /**
  * Simple helper for obtaining android permissions
