@@ -14,7 +14,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import org.readium.r2.testapp.library.LibraryActivity
+import org.readium.r2.testapp.MainActivity
 import timber.log.Timber
 
 class R2DispatcherActivity : Activity() {
@@ -27,14 +27,15 @@ class R2DispatcherActivity : Activity() {
 
     private fun dispatchIntent(intent: Intent) {
         val uri = uriFromIntent(intent)
-            ?: run {
-                Timber.d("Got an empty intent.")
-                return
-            }
-        val newIntent = Intent(this, LibraryActivity::class.java).apply {
+                ?: run {
+                    Timber.d("Got an empty intent.")
+                    return
+                }
+        val newIntent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             data = uri
         }
+        //FIXME this will error with address in use if app is already running
         startActivity(newIntent)
     }
 
