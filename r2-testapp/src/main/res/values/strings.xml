@@ -178,4 +178,9 @@
     <string name="invalid_url">Please enter a valid URL</string>
 
     <string name="publication_image_description">Cover image for %1$s</string>
+
+    <string name="return_publication">This will return the publication</string>
+    <string name="return_button">Return</string>
+
+    <string name="end_of_chapter">End of chapter</string>
 </resources>

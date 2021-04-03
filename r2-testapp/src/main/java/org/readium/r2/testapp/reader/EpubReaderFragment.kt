@@ -6,19 +6,14 @@
 
 package org.readium.r2.testapp.reader
 
+import android.app.ProgressDialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.PointF
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.Gravity
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuInflater
-import android.view.MenuItem
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import androidx.appcompat.widget.SearchView
@@ -30,7 +25,6 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.Gson
-import org.jetbrains.anko.support.v4.indeterminateProgressDialog
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.pager.R2EpubPageFragment
@@ -208,7 +202,9 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
         menuSearchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
 
             override fun onQueryTextSubmit(query: String): Boolean {
-                val progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_searching_book)).apply {
+                val progress = ProgressDialog(requireContext()).apply {
+                    setMessage(getString(R.string.progress_wait_while_searching_book))
+                    isIndeterminate = true
                     show()
                 }
 

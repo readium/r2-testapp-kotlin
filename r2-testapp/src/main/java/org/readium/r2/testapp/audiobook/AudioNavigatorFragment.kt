@@ -6,6 +6,7 @@
 
 package org.readium.r2.testapp.audiobook
 
+import android.app.ProgressDialog
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
@@ -14,14 +15,13 @@ import androidx.fragment.app.FragmentFactory
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import org.jetbrains.anko.support.v4.indeterminateProgressDialog
 import org.readium.r2.navigator.Navigator
-import org.readium.r2.testapp.utils.createFragmentFactory
 import org.readium.r2.shared.publication.Link
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.cover
 import org.readium.r2.testapp.R
+import org.readium.r2.testapp.utils.createFragmentFactory
 
 class AudioNavigatorFragment(
     val publication: Publication,
@@ -53,7 +53,7 @@ class AudioNavigatorFragment(
             }
         }
 
-        activity.mediaPlayer.progress = indeterminateProgressDialog(getString(R.string.progress_wait_while_preparing_audiobook))
+        activity.mediaPlayer.progress = ProgressDialog.show(requireContext(), null, getString(R.string.progress_wait_while_preparing_audiobook), true)
         initialLocator?.let { go(it) }
     }
 
