@@ -93,7 +93,12 @@ interface BooksDao {
      * @return The ID of the highlight that was added (primary key)
      */
     @Query("UPDATE " + Highlight.TABLE_NAME + " SET " + Highlight.COLOR + " = :color, " + Highlight.ANNOTATION + " = :annotation, " + Highlight.ANNOTATION_MARK_STYLE + " =:annotationMarkStyle WHERE " + Highlight.HIGHLIGHT_ID + "= :highlightId")
-    suspend fun updateHighlight(highlightId: String, color: Int, annotation: String, annotationMarkStyle: String)
+    suspend fun updateHighlight(
+        highlightId: String,
+        color: Int,
+        annotation: String,
+        annotationMarkStyle: String
+    )
 
     /**
      * Deletes a bookmark

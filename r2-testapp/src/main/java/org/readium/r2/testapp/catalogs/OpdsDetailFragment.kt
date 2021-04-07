@@ -25,11 +25,13 @@ class OpdsDetailFragment : Fragment() {
     private var _binding: FragmentOpdsDetailBinding? = null
     private val binding get() = _binding!!
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
-                              savedInstanceState: Bundle?): View {
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         _binding = DataBindingUtil.inflate(
-                LayoutInflater.from(context),
-                R.layout.fragment_opds_detail, container, false
+            LayoutInflater.from(context),
+            R.layout.fragment_opds_detail, container, false
         )
         mPublication = arguments?.getPublicationOrNull()
         binding.publication = mPublication
@@ -47,7 +49,8 @@ class OpdsDetailFragment : Fragment() {
             Picasso.with(requireContext()).load(link.href).into(binding.coverImageView)
         } ?: run {
             if (mPublication?.images?.isNotEmpty() == true) {
-                Picasso.with(requireContext()).load(mPublication!!.images.first().href).into(binding.coverImageView)
+                Picasso.with(requireContext()).load(mPublication!!.images.first().href)
+                    .into(binding.coverImageView)
             }
         }
 //        viewLifecycleOwner.lifecycleScope.launchWhenCreated {
@@ -55,7 +58,12 @@ class OpdsDetailFragment : Fragment() {
 //        }
 
         binding.downloadButton.setOnClickListener {
-            mPublication?.let { it1 -> mBookService.downloadPublication(it1, binding.detailProgressBar) }
+            mPublication?.let { it1 ->
+                mBookService.downloadPublication(
+                    it1,
+                    binding.detailProgressBar
+                )
+            }
         }
     }
 }

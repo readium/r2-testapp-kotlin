@@ -18,66 +18,80 @@ class BookRepository(private val booksDao: BooksDao) {
 
     suspend fun insertBook(href: String, extension: String, publication: Publication): Long {
         val book = Book(
-                title = publication.metadata.title,
-                author = publication.metadata.authorName,
-                href = href,
-                identifier = publication.metadata.identifier ?: "",
-                ext = ".$extension",
-                progression = "{}"
+            title = publication.metadata.title,
+            author = publication.metadata.authorName,
+            href = href,
+            identifier = publication.metadata.identifier ?: "",
+            ext = ".$extension",
+            progression = "{}"
         )
         return booksDao.insertBook(book)
     }
 
     suspend fun deleteBook(id: Long) = booksDao.deleteBook(id)
 
-    suspend fun saveProgression(locator: String, bookId: Long) = booksDao.saveProgression(locator, bookId)
+    suspend fun saveProgression(locator: String, bookId: Long) =
+        booksDao.saveProgression(locator, bookId)
 
     suspend fun insertBookmark(bookId: Long, publication: Publication, locator: Locator): Long {
         val resource = publication.readingOrder.indexOfFirstWithHref(locator.href)!!
         val bookmark = Bookmark(
-                bookId = bookId,
-                publicationId = publication.metadata.identifier ?: publication.metadata.title,
-                resourceIndex = resource.toLong(),
-                resourceHref = locator.href,
-                resourceType = locator.type,
-                resourceTitle = locator.title.orEmpty(),
-                location = Locator.Locations(progression = locator.locations.progression, position = locator.locations.position).toJSON().toString(),
-                locatorText = Locator.Text().toJSON().toString()
+            bookId = bookId,
+            publicationId = publication.metadata.identifier ?: publication.metadata.title,
+            resourceIndex = resource.toLong(),
+            resourceHref = locator.href,
+            resourceType = locator.type,
+            resourceTitle = locator.title.orEmpty(),
+            location = Locator.Locations(
+                progression = locator.locations.progression,
+                position = locator.locations.position
+            ).toJSON().toString(),
+            locatorText = Locator.Text().toJSON().toString()
         )
         bookmark.creation = DateTime().toDate().time
 
         return booksDao.insertBookmark(bookmark)
     }
 
-    fun getBookmarks(bookId: Long): LiveData<MutableList<Bookmark>> = booksDao.getBookmarksForBook(bookId)
+    fun getBookmarks(bookId: Long): LiveData<MutableList<Bookmark>> =
+        booksDao.getBookmarksForBook(bookId)
 
     suspend fun deleteBookmark(bookmarkId: Long) = booksDao.deleteBookmark(bookmarkId)
 
-    fun getHighlights(bookId: Long, href: String): LiveData<List<Highlight>> = booksDao.getHighlightsForBook(bookId, href)
+    fun getHighlights(bookId: Long, href: String): LiveData<List<Highlight>> =
+        booksDao.getHighlightsForBook(bookId, href)
 
-    fun getHighlights(bookId: Long): LiveData<List<Highlight>> = booksDao.getHighlightsForBook(bookId)
+    fun getHighlights(bookId: Long): LiveData<List<Highlight>> =
+        booksDao.getHighlightsForBook(bookId)
 
-    suspend fun insertHighlight(bookId: Long, publication: Publication, navigatorHighlight: NavigatorHighlight, progression: Double, annotation: String? = null): Long {
-        val resource = publication.readingOrder.indexOfFirstWithHref(navigatorHighlight.locator.href)!!
+    suspend fun insertHighlight(
+        bookId: Long,
+        publication: Publication,
+        navigatorHighlight: NavigatorHighlight,
+        progression: Double,
+        annotation: String? = null
+    ): Long {
+        val resource =
+            publication.readingOrder.indexOfFirstWithHref(navigatorHighlight.locator.href)!!
 
         // This is required to be able to go right to a highlight from the Outline fragment,
         // as Navigator.go doesn't support DOM ranges yet.
         val locations = navigatorHighlight.locator.locations.copy(progression = progression)
 
         val highlight = Highlight(
-                bookId = bookId,
-                highlightId = navigatorHighlight.id,
-                publicationId = publication.metadata.identifier ?: publication.metadata.title,
-                style = "style",
-                color = navigatorHighlight.color,
-                annotation = annotation ?: "",
-                annotationMarkStyle = navigatorHighlight.annotationMarkStyle ?: "",
-                resourceIndex = resource.toLong(),
-                resourceHref = navigatorHighlight.locator.href,
-                resourceType = navigatorHighlight.locator.type,
-                resourceTitle = navigatorHighlight.locator.title.orEmpty(),
-                location = locations.toJSON().toString(),
-                locatorText = navigatorHighlight.locator.text.toJSON().toString()
+            bookId = bookId,
+            highlightId = navigatorHighlight.id,
+            publicationId = publication.metadata.identifier ?: publication.metadata.title,
+            style = "style",
+            color = navigatorHighlight.color,
+            annotation = annotation ?: "",
+            annotationMarkStyle = navigatorHighlight.annotationMarkStyle ?: "",
+            resourceIndex = resource.toLong(),
+            resourceHref = navigatorHighlight.locator.href,
+            resourceType = navigatorHighlight.locator.type,
+            resourceTitle = navigatorHighlight.locator.title.orEmpty(),
+            location = locations.toJSON().toString(),
+            locatorText = navigatorHighlight.locator.text.toJSON().toString()
         )
         highlight.creation = DateTime().toDate().time
 
@@ -87,7 +101,12 @@ class BookRepository(private val booksDao: BooksDao) {
     // This will be used when highlights are redone
 //    suspend fun deleteHighlight(id: Long) = booksDao.deleteHighlight(id)
 
-    suspend fun updateHighlight(id: String, color: Int? = null, annotation: String? = null, markStyle: String? = null) {
+    suspend fun updateHighlight(
+        id: String,
+        color: Int? = null,
+        annotation: String? = null,
+        markStyle: String? = null
+    ) {
         val highlight = getHighlightByHighlightId(id)
         val updatedColor = color ?: highlight.color
         val updatedAnnotation = annotation ?: highlight.annotation
@@ -100,5 +119,6 @@ class BookRepository(private val booksDao: BooksDao) {
         return checkNotNull(booksDao.getHighlightByHighlightId(highlightId).firstOrNull())
     }
 
-    suspend fun deleteHighlightByHighlightId(highlightId: String) = booksDao.deleteHighlightByHighlightId(highlightId)
+    suspend fun deleteHighlightByHighlightId(highlightId: String) =
+        booksDao.deleteHighlightByHighlightId(highlightId)
 }

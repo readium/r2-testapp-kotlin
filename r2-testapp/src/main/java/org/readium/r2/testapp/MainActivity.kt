@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        _bookService = BookService(this)
+        _bookService = BookService(applicationContext)
 
         intent.data?.let {
             GlobalScope.launch {

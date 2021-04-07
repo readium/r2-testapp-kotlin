@@ -48,7 +48,6 @@ class OutlineFragment : Fragment(R.layout.fragment_outline) {
             else -> listOf(Outline.Contents, Outline.Bookmarks)
         }
 
-        view.findViewById<ViewPager2>(R.id.outline_pager)
         view.findViewById<ViewPager2>(R.id.outline_pager).adapter = OutlineFragmentStateAdapter(this, publication, outlines)
         TabLayoutMediator(view.findViewById(R.id.outline_tab_layout), view.findViewById(R.id.outline_pager)) { tab, idx -> tab.setText(outlines[idx].label) }.attach()
     }

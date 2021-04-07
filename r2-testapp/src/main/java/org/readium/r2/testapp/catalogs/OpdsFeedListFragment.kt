@@ -39,19 +39,20 @@ class OpdsFeedListFragment : Fragment() {
     private lateinit var mCatalogsAdapter: OpdsFeedListAdapter
 
     override fun onCreateView(
-            inflater: LayoutInflater,
-            container: ViewGroup?,
-            savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View? {
         mCatalogViewModel =
-                ViewModelProvider(this).get(CatalogViewModel::class.java)
+            ViewModelProvider(this).get(CatalogViewModel::class.java)
         return inflater.inflate(R.layout.fragment_opds_feed_list, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        val preferences = requireContext().getSharedPreferences("org.readium.r2.testapp", Context.MODE_PRIVATE)
+        val preferences =
+            requireContext().getSharedPreferences("org.readium.r2.testapp", Context.MODE_PRIVATE)
 
         mCatalogsAdapter = OpdsFeedListAdapter(onLongClick = { opds -> onLongClick(opds) })
 
@@ -60,9 +61,9 @@ class OpdsFeedListFragment : Fragment() {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = mCatalogsAdapter
             addItemDecoration(
-                    VerticalSpaceItemDecoration(
-                            10
-                    )
+                VerticalSpaceItemDecoration(
+                    10
+                )
             )
         }
 
@@ -77,9 +78,21 @@ class OpdsFeedListFragment : Fragment() {
 
             preferences.edit().putInt(VERSION_KEY, version).apply()
 
-            val oPDS2Catalog = OPDS(title = "OPDS 2.0 Test Catalog", href = "https://test.opds.io/2.0/home.json", type = 2)
-            val oTBCatalog = OPDS(title = "Open Textbooks Catalog", href = "http://open.minitex.org/textbooks/", type = 1)
-            val sEBCatalog = OPDS(title = "Standard eBooks Catalog", href = "https://standardebooks.org/opds/all", type = 1)
+            val oPDS2Catalog = OPDS(
+                title = "OPDS 2.0 Test Catalog",
+                href = "https://test.opds.io/2.0/home.json",
+                type = 2
+            )
+            val oTBCatalog = OPDS(
+                title = "Open Textbooks Catalog",
+                href = "http://open.minitex.org/textbooks/",
+                type = 1
+            )
+            val sEBCatalog = OPDS(
+                title = "Standard eBooks Catalog",
+                href = "https://standardebooks.org/opds/all",
+                type = 1
+            )
 
             mCatalogViewModel.insertOpds(oPDS2Catalog)
             mCatalogViewModel.insertOpds(oTBCatalog)
@@ -88,13 +101,13 @@ class OpdsFeedListFragment : Fragment() {
 
         view.findViewById<FloatingActionButton>(R.id.addOpds).setOnClickListener {
             val alertDialog = MaterialAlertDialogBuilder(requireContext())
-                    .setTitle(getString(R.string.add_opds))
-                    .setView(R.layout.add_opds_dialog)
-                    .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                        dialog.cancel()
-                    }
-                    .setPositiveButton(getString(R.string.save), null)
-                    .show()
+                .setTitle(getString(R.string.add_opds))
+                .setView(R.layout.add_opds_dialog)
+                .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                    dialog.cancel()
+                }
+                .setPositiveButton(getString(R.string.save), null)
+                .show()
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val title = alertDialog.findViewById<EditText>(R.id.opdsTitle)
                 val url = alertDialog.findViewById<EditText>(R.id.opdsUrl)
@@ -109,9 +122,10 @@ class OpdsFeedListFragment : Fragment() {
                     parseData = parseURL(URL(url?.text.toString()))
                     parseData.successUi { data ->
                         val opds = OPDS(
-                                title = title?.text.toString(),
-                                href = url?.text.toString(),
-                                type = data.type)
+                            title = title?.text.toString(),
+                            href = url?.text.toString(),
+                            type = data.type
+                        )
                         mCatalogViewModel.insertOpds(opds)
                     }
                     parseData.failUi {
@@ -151,22 +165,25 @@ class OpdsFeedListFragment : Fragment() {
 
     private fun onLongClick(opds: OPDS) {
         MaterialAlertDialogBuilder(requireContext())
-                .setTitle(getString(R.string.confirm_delete_opds_title))
-                .setMessage(getString(R.string.confirm_delete_opds_text))
-                .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                    dialog.dismiss()
-                }
-                .setPositiveButton(getString(R.string.delete)) { dialog, _ ->
-                    opds.id?.let { deleteOpdsModel(it) }
-                    dialog.dismiss()
-                }
-                .show()
+            .setTitle(getString(R.string.confirm_delete_opds_title))
+            .setMessage(getString(R.string.confirm_delete_opds_text))
+            .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setPositiveButton(getString(R.string.delete)) { dialog, _ ->
+                opds.id?.let { deleteOpdsModel(it) }
+                dialog.dismiss()
+            }
+            .show()
     }
 
-    class VerticalSpaceItemDecoration(private val verticalSpaceHeight: Int) : RecyclerView.ItemDecoration() {
+    class VerticalSpaceItemDecoration(private val verticalSpaceHeight: Int) :
+        RecyclerView.ItemDecoration() {
 
-        override fun getItemOffsets(outRect: Rect, view: View, parent: RecyclerView,
-                                    state: RecyclerView.State) {
+        override fun getItemOffsets(
+            outRect: Rect, view: View, parent: RecyclerView,
+            state: RecyclerView.State
+        ) {
             outRect.bottom = verticalSpaceHeight
         }
     }

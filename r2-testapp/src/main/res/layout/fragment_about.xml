@@ -106,8 +106,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:padding="10dp"
                 android:contentDescription="@string/bsd_license_label_accessible"
+                android:padding="10dp"
                 android:text="@string/bsd_license_label"
                 android:textSize="18sp" />
 

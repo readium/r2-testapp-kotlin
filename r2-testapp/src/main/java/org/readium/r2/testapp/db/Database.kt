@@ -9,7 +9,11 @@ import org.readium.r2.testapp.domain.model.Bookmark
 import org.readium.r2.testapp.domain.model.Highlight
 import org.readium.r2.testapp.domain.model.OPDS
 
-@Database(entities = [Book::class, Bookmark::class, Highlight::class, OPDS::class], version = 1, exportSchema = false)
+@Database(
+    entities = [Book::class, Bookmark::class, Highlight::class, OPDS::class],
+    version = 1,
+    exportSchema = false
+)
 abstract class BookDatabase : RoomDatabase() {
 
     abstract fun booksDao(): BooksDao
@@ -27,9 +31,9 @@ abstract class BookDatabase : RoomDatabase() {
             }
             synchronized(this) {
                 val instance = Room.databaseBuilder(
-                        context.applicationContext,
-                        BookDatabase::class.java,
-                        "books_database"
+                    context.applicationContext,
+                    BookDatabase::class.java,
+                    "books_database"
                 ).build()
                 INSTANCE = instance
                 return instance

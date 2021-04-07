@@ -9,15 +9,15 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 @Entity(tableName = OPDS.TABLE_NAME)
 data class OPDS(
-        @PrimaryKey
-        @ColumnInfo(name = ID)
-        var id: Long? = null,
-        @ColumnInfo(name = TITLE)
-        var title: String,
-        @ColumnInfo(name = HREF)
-        var href: String,
-        @ColumnInfo(name = TYPE)
-        var type: Int
+    @PrimaryKey
+    @ColumnInfo(name = ID)
+    var id: Long? = null,
+    @ColumnInfo(name = TITLE)
+    var title: String,
+    @ColumnInfo(name = HREF)
+    var href: String,
+    @ColumnInfo(name = TYPE)
+    var type: Int
 ) : Parcelable {
     companion object {
 

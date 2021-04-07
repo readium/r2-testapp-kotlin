@@ -35,7 +35,6 @@ class R2DispatcherActivity : Activity() {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             data = uri
         }
-        //FIXME this will error with address in use if app is already running
         startActivity(newIntent)
     }
 

@@ -22,17 +22,20 @@ import org.readium.r2.testapp.domain.model.Book
 import org.readium.r2.testapp.utils.singleClick
 
 
-class BookshelfAdapter(private val onBookClick: (Book) -> Unit, private val onBookLongClick: (Book) -> Unit) : ListAdapter<Book, BookshelfAdapter.ViewHolder>(BookListDiff()) {
+class BookshelfAdapter(
+    private val onBookClick: (Book) -> Unit,
+    private val onBookLongClick: (Book) -> Unit
+) : ListAdapter<Book, BookshelfAdapter.ViewHolder>(BookListDiff()) {
 
     override fun onCreateViewHolder(
-            parent: ViewGroup,
-            viewType: Int
+        parent: ViewGroup,
+        viewType: Int
     ): ViewHolder {
         return ViewHolder(
-                DataBindingUtil.inflate(
-                        LayoutInflater.from(parent.context),
-                        R.layout.item_recycle_book, parent, false
-                )
+            DataBindingUtil.inflate(
+                LayoutInflater.from(parent.context),
+                R.layout.item_recycle_book, parent, false
+            )
         )
     }
 
@@ -43,7 +46,8 @@ class BookshelfAdapter(private val onBookClick: (Book) -> Unit, private val onBo
         viewHolder.bind(book)
     }
 
-    inner class ViewHolder(private val binding: ItemRecycleBookBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemRecycleBookBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
         fun bind(book: Book) {
             binding.book = book
@@ -60,15 +64,15 @@ class BookshelfAdapter(private val onBookClick: (Book) -> Unit, private val onBo
     private class BookListDiff : DiffUtil.ItemCallback<Book>() {
 
         override fun areItemsTheSame(
-                oldItem: Book,
-                newItem: Book
+            oldItem: Book,
+            newItem: Book
         ): Boolean {
             return oldItem.id == newItem.id
         }
 
         override fun areContentsTheSame(
-                oldItem: Book,
-                newItem: Book
+            oldItem: Book,
+            newItem: Book
         ): Boolean {
             return oldItem.title == newItem.title
                     && oldItem.href == newItem.href

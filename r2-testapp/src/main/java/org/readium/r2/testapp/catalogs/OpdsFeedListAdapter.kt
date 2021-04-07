@@ -12,17 +12,18 @@ import org.readium.r2.testapp.R
 import org.readium.r2.testapp.databinding.ItemRecycleOpdsListBinding
 import org.readium.r2.testapp.domain.model.OPDS
 
-class OpdsFeedListAdapter(private val onLongClick: (OPDS) -> Unit) : ListAdapter<OPDS, OpdsFeedListAdapter.ViewHolder>(OPDSListDiff()) {
+class OpdsFeedListAdapter(private val onLongClick: (OPDS) -> Unit) :
+    ListAdapter<OPDS, OpdsFeedListAdapter.ViewHolder>(OPDSListDiff()) {
 
     override fun onCreateViewHolder(
-            parent: ViewGroup,
-            viewType: Int
+        parent: ViewGroup,
+        viewType: Int
     ): ViewHolder {
         return ViewHolder(
-                DataBindingUtil.inflate(
-                        LayoutInflater.from(parent.context),
-                        R.layout.item_recycle_opds_list, parent, false
-                )
+            DataBindingUtil.inflate(
+                LayoutInflater.from(parent.context),
+                R.layout.item_recycle_opds_list, parent, false
+            )
         )
     }
 
@@ -33,13 +34,15 @@ class OpdsFeedListAdapter(private val onLongClick: (OPDS) -> Unit) : ListAdapter
         viewHolder.bind(opds)
     }
 
-    inner class ViewHolder(private val binding: ItemRecycleOpdsListBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(private val binding: ItemRecycleOpdsListBinding) :
+        RecyclerView.ViewHolder(binding.root) {
 
         fun bind(opds: OPDS) {
             binding.opds = opds
             binding.button.setOnClickListener {
                 val bundle = bundleOf(OPDSFEED to opds)
-                Navigation.findNavController(it).navigate(R.id.action_navigation_catalog_list_to_navigation_catalog, bundle)
+                Navigation.findNavController(it)
+                    .navigate(R.id.action_navigation_catalog_list_to_navigation_catalog, bundle)
             }
             binding.button.setOnLongClickListener {
                 onLongClick(opds)
@@ -55,15 +58,15 @@ class OpdsFeedListAdapter(private val onLongClick: (OPDS) -> Unit) : ListAdapter
     private class OPDSListDiff : DiffUtil.ItemCallback<OPDS>() {
 
         override fun areItemsTheSame(
-                oldItem: OPDS,
-                newItem: OPDS
+            oldItem: OPDS,
+            newItem: OPDS
         ): Boolean {
             return oldItem.id == newItem.id
         }
 
         override fun areContentsTheSame(
-                oldItem: OPDS,
-                newItem: OPDS
+            oldItem: OPDS,
+            newItem: OPDS
         ): Boolean {
             return oldItem.title == newItem.title
                     && oldItem.href == newItem.href

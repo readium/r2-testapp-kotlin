@@ -7,39 +7,44 @@ import androidx.room.PrimaryKey
 import org.json.JSONObject
 import org.readium.r2.shared.publication.Locator
 
-@Entity(tableName = Bookmark.TABLE_NAME, indices = [Index(value = ["BOOK_ID", "LOCATION"],
-        unique = true)])
+@Entity(
+    tableName = Bookmark.TABLE_NAME, indices = [Index(
+        value = ["BOOK_ID", "LOCATION"],
+        unique = true
+    )]
+)
 data class Bookmark(
-        @PrimaryKey
-        @ColumnInfo(name = ID)
-        var id: Long? = null,
-        @ColumnInfo(name = CREATION_DATE, defaultValue = "CURRENT_TIMESTAMP")
-        var creation: Long? = null,
-        @ColumnInfo(name = BOOK_ID)
-        val bookId: Long,
-        @ColumnInfo(name = PUBLICATION_ID)
-        val publicationId: String,
-        @ColumnInfo(name = RESOURCE_INDEX)
-        val resourceIndex: Long,
-        @ColumnInfo(name = RESOURCE_HREF)
-        val resourceHref: String,
-        @ColumnInfo(name = RESOURCE_TYPE)
-        val resourceType: String,
-        @ColumnInfo(name = RESOURCE_TITLE)
-        val resourceTitle: String,
-        @ColumnInfo(name = LOCATION)
-        val location: String,
-        @ColumnInfo(name = LOCATOR_TEXT)
-        val locatorText: String
+    @PrimaryKey
+    @ColumnInfo(name = ID)
+    var id: Long? = null,
+    @ColumnInfo(name = CREATION_DATE, defaultValue = "CURRENT_TIMESTAMP")
+    var creation: Long? = null,
+    @ColumnInfo(name = BOOK_ID)
+    val bookId: Long,
+    @ColumnInfo(name = PUBLICATION_ID)
+    val publicationId: String,
+    @ColumnInfo(name = RESOURCE_INDEX)
+    val resourceIndex: Long,
+    @ColumnInfo(name = RESOURCE_HREF)
+    val resourceHref: String,
+    @ColumnInfo(name = RESOURCE_TYPE)
+    val resourceType: String,
+    @ColumnInfo(name = RESOURCE_TITLE)
+    val resourceTitle: String,
+    @ColumnInfo(name = LOCATION)
+    val location: String,
+    @ColumnInfo(name = LOCATOR_TEXT)
+    val locatorText: String
 ) {
 
-    val locator get() = Locator(
+    val locator
+        get() = Locator(
             href = resourceHref,
             type = resourceType,
             title = resourceTitle,
             locations = Locator.Locations.fromJSON(JSONObject(location)),
             text = Locator.Text.fromJSON(JSONObject(locatorText))
-    )
+        )
 
     companion object {
 

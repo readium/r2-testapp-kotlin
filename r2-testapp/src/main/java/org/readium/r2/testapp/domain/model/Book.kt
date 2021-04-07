@@ -11,23 +11,23 @@ import java.nio.file.Paths
 
 @Entity(tableName = Book.TABLE_NAME)
 data class Book(
-        @PrimaryKey
-        @ColumnInfo(name = ID)
-        var id: Long? = null,
-        @ColumnInfo(name = Bookmark.CREATION_DATE, defaultValue = "CURRENT_TIMESTAMP")
-        val creation: Long? = null,
-        @ColumnInfo(name = HREF)
-        val href: String,
-        @ColumnInfo(name = TITLE)
-        val title: String,
-        @ColumnInfo(name = AUTHOR)
-        val author: String? = null,
-        @ColumnInfo(name = IDENTIFIER)
-        val identifier: String,
-        @ColumnInfo(name = PROGRESSION)
-        val progression: String? = null,
-        @ColumnInfo(name = EXTENSION)
-        val ext: String
+    @PrimaryKey
+    @ColumnInfo(name = ID)
+    var id: Long? = null,
+    @ColumnInfo(name = Bookmark.CREATION_DATE, defaultValue = "CURRENT_TIMESTAMP")
+    val creation: Long? = null,
+    @ColumnInfo(name = HREF)
+    val href: String,
+    @ColumnInfo(name = TITLE)
+    val title: String,
+    @ColumnInfo(name = AUTHOR)
+    val author: String? = null,
+    @ColumnInfo(name = IDENTIFIER)
+    val identifier: String,
+    @ColumnInfo(name = PROGRESSION)
+    val progression: String? = null,
+    @ColumnInfo(name = EXTENSION)
+    val ext: String
 ) {
 
     val fileName: String?
