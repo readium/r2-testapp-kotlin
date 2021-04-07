@@ -10,13 +10,16 @@
 
 package org.readium.r2.testapp
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.ContentResolver
 import android.content.Context
 import nl.komponents.kovenant.android.startKovenant
 import nl.komponents.kovenant.android.stopKovenant
+import org.readium.r2.streamer.server.Server
 import org.readium.r2.testapp.BuildConfig.DEBUG
 import timber.log.Timber
+import java.net.ServerSocket
 import java.util.*
 
 class R2App : Application() {
@@ -27,6 +30,19 @@ class R2App : Application() {
         // suitable for an Android environment.
         startKovenant()
         if (DEBUG) Timber.plant(Timber.DebugTree())
+        val s = ServerSocket(if (DEBUG) 8080 else 0)
+        s.close()
+        server = Server(s.localPort, applicationContext)
+        R2DIRECTORY = r2Directory
+    }
+
+    companion object {
+        @SuppressLint("StaticFieldLeak")
+        lateinit var server: Server
+            private set
+
+        lateinit var R2DIRECTORY: String
+            private set
     }
 
     override fun onTerminate() {
@@ -38,7 +54,7 @@ class R2App : Application() {
         stopKovenant()
     }
 
-    val R2DIRECTORY: String
+    private val r2Directory: String
         get() {
             val properties = Properties()
             val inputStream = applicationContext.assets.open("configs/config.properties")

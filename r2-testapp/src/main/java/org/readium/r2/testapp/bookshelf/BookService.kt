@@ -29,6 +29,7 @@ import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.streamer.Streamer
 import org.readium.r2.streamer.server.Server
 import org.readium.r2.testapp.BuildConfig
+import org.readium.r2.testapp.R2App
 import org.readium.r2.testapp.db.BookDatabase
 import org.readium.r2.testapp.domain.model.Book
 import org.readium.r2.testapp.opds.OPDSDownloader
@@ -42,8 +43,6 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
 import java.net.HttpURLConnection
-import java.net.InetSocketAddress
-import java.net.ServerSocket
 import java.net.URL
 import java.util.*
 
@@ -52,13 +51,14 @@ import java.util.*
 // TODO Consider using a WorkManager for a lot of this stuff
 class BookService(val context: Context) {
 
-    private val mPreferences = context.getSharedPreferences("org.readium.r2.settings", Context.MODE_PRIVATE)
+    private val mPreferences =
+        context.getSharedPreferences("org.readium.r2.settings", Context.MODE_PRIVATE)
     private var mStreamer: Streamer
     private var mBookRepository: BookRepository
     private var mServer: Server
     private var mLcpService: Try<LcpService, Exception>
-    private var mLocalPort: Int = 0
     private var mOpdsDownloader: OPDSDownloader
+    private var mR2Directory: String
 
     init {
         val booksDao = BookDatabase.getDatabase(context).booksDao()
@@ -67,40 +67,27 @@ class BookService(val context: Context) {
         mOpdsDownloader = OPDSDownloader(context)
 
         mLcpService = LcpService(context)
-                ?.let { Try.success(it) }
-                ?: Try.failure(Exception("liblcp is missing on the classpath"))
+            ?.let { Try.success(it) }
+            ?: Try.failure(Exception("liblcp is missing on the classpath"))
 
-        mStreamer = Streamer(context,
-                contentProtections = listOfNotNull(
-                        mLcpService.getOrNull()?.contentProtection()
-                )
+        mStreamer = Streamer(
+            context,
+            contentProtections = listOfNotNull(
+                mLcpService.getOrNull()?.contentProtection()
+            )
         )
 
-//        val s = ServerSocket(if (BuildConfig.DEBUG) 8080 else 0)
-        val s = ServerSocket()
-        s.reuseAddress = true
-        s.bind(InetSocketAddress(if (BuildConfig.DEBUG) 8080 else 0))
-        s.close()
+        mR2Directory = R2App.R2DIRECTORY
 
-        mLocalPort = s.localPort
-        mServer = Server(mLocalPort, context)
+        mServer = R2App.server
         startServer()
     }
 
-    val R2DIRECTORY: String
-        get() {
-            val properties = Properties()
-            val inputStream = context.assets.open("configs/config.properties")
-            properties.load(inputStream)
-            val useExternalFileDir = properties.getProperty("useExternalFileDir", "false")!!.toBoolean()
-            return if (useExternalFileDir) {
-                context.getExternalFilesDir(null)?.path + "/"
-            } else {
-                context.filesDir?.path + "/"
-            }
-        }
-
-    private suspend fun addPublicationToDatabase(href: String, extension: String, publication: Publication): Long {
+    private suspend fun addPublicationToDatabase(
+        href: String,
+        extension: String,
+        publication: Publication
+    ): Long {
         val id = mBookRepository.insertBook(href, extension, publication)
         storeCoverImage(publication, id.toString())
         return id
@@ -109,7 +96,7 @@ class BookService(val context: Context) {
     suspend fun copySamplesFromAssetsToStorage(onError: ((msg: String?) -> Unit?)) {
         withContext(Dispatchers.IO) {
             if (!mPreferences.contains("samples")) {
-                val dir = File(R2DIRECTORY)
+                val dir = File(mR2Directory)
                 if (!dir.exists()) {
                     dir.mkdirs()
                 }
@@ -128,61 +115,71 @@ class BookService(val context: Context) {
 
     private suspend fun InputStream.copyToTempFile(): File? = tryOrNull {
         val filename = UUID.randomUUID().toString()
-        File(R2DIRECTORY + filename)
-                .also { toFile(it.path) }
+        File(mR2Directory + filename)
+            .also { toFile(it.path) }
     }
 
     private suspend fun Uri.copyToTempFile(): File? = tryOrNull {
         val filename = UUID.randomUUID().toString()
         val mediaType = MediaType.ofUri(this, context.contentResolver)
-        val path = "$R2DIRECTORY$filename.${mediaType?.fileExtension ?: "tmp"}"
+        val path = "$mR2Directory$filename.${mediaType?.fileExtension ?: "tmp"}"
         ContentResolverUtil.getContentInputStream(context, this, path)
         return File(path)
     }
 
     private suspend fun URL.copyToTempFile(): File? = tryOrNull {
         val filename = UUID.randomUUID().toString()
-        val path = "$R2DIRECTORY$filename.$extension"
+        val path = "$mR2Directory$filename.$extension"
         download(path)
     }
 
-    suspend fun importPublicationFromUri(uri: Uri, progressBar: ProgressBar? = null, onError: ((msg: String?) -> Unit?)? = null) {
+    suspend fun importPublicationFromUri(
+        uri: Uri,
+        progressBar: ProgressBar? = null,
+        onError: ((msg: String?) -> Unit?)? = null
+    ) {
         progressBar?.visibility = View.VISIBLE
         uri.copyToTempFile()
-                ?.let {
-                    importPublication(it, progress = progressBar, onError = onError)
-                }
+            ?.let {
+                importPublication(it, progress = progressBar, onError = onError)
+            }
     }
 
-    private suspend fun importPublication(sourceFile: File, sourceUrl: String? = null, progress: ProgressBar? = null, onError: ((msg: String?) -> Unit?)? = null) {
+    private suspend fun importPublication(
+        sourceFile: File,
+        sourceUrl: String? = null,
+        progress: ProgressBar? = null,
+        onError: ((msg: String?) -> Unit?)? = null
+    ) {
         val foreground = progress != null
         val sourceMediaType = sourceFile.mediaType()
         val publicationAsset: FileAsset =
-                if (sourceMediaType != MediaType.LCP_LICENSE_DOCUMENT)
-                    FileAsset(sourceFile, sourceMediaType)
-                else {
-                    mLcpService
-                            .flatMap { it.acquirePublication(sourceFile) }
-                            .fold(
-                                    {
-                                        val mediaType = MediaType.of(fileExtension = File(it.suggestedFilename).extension)
-                                        FileAsset(it.localFile, mediaType)
-                                    },
-                                    {
-                                        tryOrNull { sourceFile.delete() }
-                                        Timber.d(it)
-                                        progress?.visibility = View.GONE
-                                        if (foreground && onError != null) {
-                                            onError("fulfillment error: ${it.message}")
-                                        }
-                                        return
-                                    }
-                            )
-                }
+            if (sourceMediaType != MediaType.LCP_LICENSE_DOCUMENT)
+                FileAsset(sourceFile, sourceMediaType)
+            else {
+                mLcpService
+                    .flatMap { it.acquirePublication(sourceFile) }
+                    .fold(
+                        {
+                            val mediaType =
+                                MediaType.of(fileExtension = File(it.suggestedFilename).extension)
+                            FileAsset(it.localFile, mediaType)
+                        },
+                        {
+                            tryOrNull { sourceFile.delete() }
+                            Timber.d(it)
+                            progress?.visibility = View.GONE
+                            if (foreground && onError != null) {
+                                onError("fulfillment error: ${it.message}")
+                            }
+                            return
+                        }
+                    )
+            }
 
         val mediaType = publicationAsset.mediaType()
         val fileName = "${UUID.randomUUID()}.${mediaType.fileExtension}"
-        val libraryAsset = FileAsset(File(R2DIRECTORY + fileName), mediaType)
+        val libraryAsset = FileAsset(File(mR2Directory + fileName), mediaType)
 
         try {
             publicationAsset.file.moveTo(libraryAsset.file)
@@ -201,70 +198,74 @@ class BookService(val context: Context) {
         val isRwpm = libraryAsset.mediaType().isRwpm
 
         val bddHref =
-                if (!isRwpm)
-                    libraryAsset.file.path
-                else
-                    sourceUrl ?: run {
-                        Timber.e("Trying to add a RWPM to the database from a file without sourceUrl.")
-                        progress?.visibility = View.GONE
-                        return
-                    }
+            if (!isRwpm)
+                libraryAsset.file.path
+            else
+                sourceUrl ?: run {
+                    Timber.e("Trying to add a RWPM to the database from a file without sourceUrl.")
+                    progress?.visibility = View.GONE
+                    return
+                }
 
         mStreamer.open(libraryAsset, allowUserInteraction = false, sender = context)
-                .onSuccess {
-                    addPublicationToDatabase(bddHref, extension, it).let { id ->
+            .onSuccess {
+                addPublicationToDatabase(bddHref, extension, it).let { id ->
 
-                        progress?.visibility = View.GONE
-                        val msg =
-                                if (id != -1L)
-                                    "publication added to your library"
-                                else
-                                    "unable to add publication to the database"
-                        if (foreground && onError != null)
-                            onError(msg)
-                        else
-                            Timber.d(msg)
-                        if (id != -1L && isRwpm)
-                            tryOrNull { libraryAsset.file.delete() }
-                    }
-                }
-                .onFailure {
-                    tryOrNull { libraryAsset.file.delete() }
-                    Timber.d(it)
                     progress?.visibility = View.GONE
-                    if (foreground && onError != null) onError(it.getUserMessage(context))
+                    val msg =
+                        if (id != -1L)
+                            "publication added to your library"
+                        else
+                            "unable to add publication to the database"
+                    if (foreground && onError != null)
+                        onError(msg)
+                    else
+                        Timber.d(msg)
+                    if (id != -1L && isRwpm)
+                        tryOrNull { libraryAsset.file.delete() }
                 }
+            }
+            .onFailure {
+                tryOrNull { libraryAsset.file.delete() }
+                Timber.d(it)
+                progress?.visibility = View.GONE
+                if (foreground && onError != null) onError(it.getUserMessage(context))
+            }
     }
 
-    suspend fun openBook(book: Book, callback: (file: FileAsset, mediaType: MediaType?, publication: Publication, remoteAsset: FileAsset?, url: URL?) -> Unit, onError: (msg: String) -> Unit?) {
+    suspend fun openBook(
+        book: Book,
+        callback: (file: FileAsset, mediaType: MediaType?, publication: Publication, remoteAsset: FileAsset?, url: URL?) -> Unit,
+        onError: (msg: String) -> Unit?
+    ) {
 
-        val remoteAsset: FileAsset? = tryOrNull { URL(book.href).copyToTempFile()?.let { FileAsset(it) } }
+        val remoteAsset: FileAsset? =
+            tryOrNull { URL(book.href).copyToTempFile()?.let { FileAsset(it) } }
         val mediaType = MediaType.of(fileExtension = book.ext.removePrefix("."))
         val asset = remoteAsset // remote file
-                ?: FileAsset(File(book.href), mediaType = mediaType) // local file
+            ?: FileAsset(File(book.href), mediaType = mediaType) // local file
 
         mStreamer.open(asset, allowUserInteraction = true, sender = context)
-                .onFailure {
-                    Timber.d(it)
-                    onError(it.getUserMessage(context))
-                }
-                .onSuccess {
-                    if (it.isRestricted) {
-                        it.protectionError?.let { error ->
-                            Timber.d(error)
-                            onError(error.getUserMessage(context))
-                        }
-                    } else {
-                        val url = prepareToServe(it, asset)
-                        callback.invoke(asset, mediaType, it, remoteAsset, url)
+            .onFailure {
+                Timber.d(it)
+                onError(it.getUserMessage(context))
+            }
+            .onSuccess {
+                if (it.isRestricted) {
+                    it.protectionError?.let { error ->
+                        Timber.d(error)
+                        onError(error.getUserMessage(context))
                     }
+                } else {
+                    val url = prepareToServe(it, asset)
+                    callback.invoke(asset, mediaType, it, remoteAsset, url)
                 }
+            }
     }
 
     private fun prepareToServe(publication: Publication, asset: PublicationAsset): URL? {
-        val key = publication.metadata.identifier ?: publication.metadata.title
-        mPreferences.edit().putString("$key-publicationPort", mLocalPort.toString()).apply()
-        val userProperties = context.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json"
+        val userProperties =
+            context.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json"
         return mServer.addPublication(publication, userPropertiesFile = File(userProperties))
     }
 
@@ -282,9 +283,21 @@ class BookService(val context: Context) {
 //                server.loadCustomResource(assets.open("styles/test.css"), "test.css")
 //                server.loadCustomFont(assets.open("fonts/test.otf"), applicationContext, "test.otf")
 
-                mServer.loadCustomResource(context.assets.open("Search/mark.js"), "mark.js", Injectable.Script)
-                mServer.loadCustomResource(context.assets.open("Search/search.js"), "search.js", Injectable.Script)
-                mServer.loadCustomResource(context.assets.open("Search/mark.css"), "mark.css", Injectable.Style)
+                mServer.loadCustomResource(
+                    context.assets.open("Search/mark.js"),
+                    "mark.js",
+                    Injectable.Script
+                )
+                mServer.loadCustomResource(
+                    context.assets.open("Search/search.js"),
+                    "search.js",
+                    Injectable.Script
+                )
+                mServer.loadCustomResource(
+                    context.assets.open("Search/mark.css"),
+                    "mark.css",
+                    Injectable.Style
+                )
 
                 isServerStarted = true
             }
@@ -300,11 +313,11 @@ class BookService(val context: Context) {
 
     private suspend fun storeCoverImage(publication: Publication, imageName: String) {
         // TODO Figure out where to store these cover images
-        val coverImageDir = File("${R2DIRECTORY}covers/")
+        val coverImageDir = File("${mR2Directory}covers/")
         if (!coverImageDir.exists()) {
             coverImageDir.mkdirs()
         }
-        val coverImageFile = File("${R2DIRECTORY}covers/${imageName}.png")
+        val coverImageFile = File("${mR2Directory}covers/${imageName}.png")
 
         var bitmap: Bitmap? = null
         if (publication.cover() == null) {
