@@ -24,6 +24,6 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
     fun deleteBook(book: Book) = viewModelScope.launch {
         book.id?.let { repository.deleteBook(it) }
         tryOrNull { File(book.href).delete() }
-        tryOrNull { File("${(getApplication() as R2App).R2DIRECTORY}covers/${book.id}.png").delete() }
+        tryOrNull { File("${R2App.R2DIRECTORY}covers/${book.id}.png").delete() }
     }
 }

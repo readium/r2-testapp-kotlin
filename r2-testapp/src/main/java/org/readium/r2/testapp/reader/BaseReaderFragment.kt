@@ -12,7 +12,6 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.lifecycleScope
 import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.shared.publication.Locator
@@ -31,6 +30,15 @@ abstract class BaseReaderFragment : Fragment(R.layout.fragment_reader) {
     override fun onCreate(savedInstanceState: Bundle?) {
         setHasOptionsMenu(true)
         super.onCreate(savedInstanceState)
+
+        model.fragmentChannel.receive(this) { event ->
+            val message =
+                when (event) {
+                    is ReaderViewModel.FeedbackEvent.BookmarkFailed -> R.string.bookmark_exists
+                    is ReaderViewModel.FeedbackEvent.BookmarkSuccessfullyAdded -> R.string.bookmark_added
+                }
+            Toast.makeText(requireContext(), getString(message), Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onStop() {
@@ -56,10 +64,7 @@ abstract class BaseReaderFragment : Fragment(R.layout.fragment_reader) {
                 true
             }
             R.id.bookmark -> {
-                viewLifecycleOwner.lifecycleScope.launchWhenCreated {
-                    val added = model.insertBookmark(navigator.currentLocator.value)
-                    Toast.makeText(requireContext(), if (added != -1L) "Bookmark added" else "Bookmark already exists", Toast.LENGTH_SHORT).show()
-                }
+                model.insertBookmark(navigator.currentLocator.value)
                 true
             }
             R.id.drm -> {

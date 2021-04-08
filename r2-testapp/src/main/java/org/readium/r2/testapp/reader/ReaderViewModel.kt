@@ -25,6 +25,7 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
 
     val publication: Publication = arguments.publication
     val channel = EventChannel(Channel<Event>(Channel.BUFFERED), viewModelScope)
+    val fragmentChannel = EventChannel(Channel<FeedbackEvent>(Channel.BUFFERED), viewModelScope)
     val bookId = arguments.bookId
     private val repository: BookRepository
 
@@ -39,8 +40,13 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
 
     fun getBookmarks() = repository.getBookmarks(bookId)
 
-    suspend fun insertBookmark(locator: Locator): Long {
-        return repository.insertBookmark(bookId, publication, locator)
+    fun insertBookmark(locator: Locator) = viewModelScope.launch {
+        val id = repository.insertBookmark(bookId, publication, locator)
+        if (id != -1L) {
+            fragmentChannel.send(FeedbackEvent.BookmarkSuccessfullyAdded)
+        } else {
+            fragmentChannel.send(FeedbackEvent.BookmarkFailed)
+        }
     }
 
     fun deleteBookmark(id: Long) = viewModelScope.launch {
@@ -83,6 +89,13 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
         object OpenOutlineRequested : Event()
 
         object OpenDrmManagementRequested : Event()
+    }
+
+    sealed class FeedbackEvent {
+
+        object BookmarkSuccessfullyAdded : FeedbackEvent()
+
+        object BookmarkFailed : FeedbackEvent()
     }
 }
 
