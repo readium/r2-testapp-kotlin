@@ -185,4 +185,9 @@
     <string name="return_button">Return</string>
 
     <string name="end_of_chapter">End of chapter</string>
+
+    <string name="unable_to_move_pub">Unable to move publication into the library</string>
+    <string name="import_publication_success">Publication added to your library</string>
+    <string name="unable_add_pub_database">Unable to add publication to the database</string>
+    <string name="failed_parsing_opds">Failed parsing OPDS</string>
 </resources>

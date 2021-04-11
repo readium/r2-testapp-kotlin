@@ -12,7 +12,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.ImageView
-import android.widget.ProgressBar
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -22,7 +21,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import com.squareup.picasso.Picasso
 import kotlinx.coroutines.GlobalScope
@@ -30,8 +28,8 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.shared.extensions.tryOrNull
 import org.readium.r2.shared.publication.Locator
-import org.readium.r2.testapp.MainActivity
 import org.readium.r2.testapp.R
+import org.readium.r2.testapp.databinding.FragmentBookshelfBinding
 import org.readium.r2.testapp.domain.model.Book
 import org.readium.r2.testapp.opds.GridAutoFitLayoutManager
 import org.readium.r2.testapp.permissions.*
@@ -46,9 +44,9 @@ class BookshelfFragment : Fragment() {
     private lateinit var mBookshelfAdapter: BookshelfAdapter
     private lateinit var mDocumentPickerLauncher: ActivityResultLauncher<String>
     private lateinit var mReaderLauncher: ActivityResultLauncher<ReaderContract.Input>
-    private lateinit var mBookService: BookService
     private var permissionAsked: Boolean = false
-    private lateinit var progressBar: ProgressBar
+    private var _binding: FragmentBookshelfBinding? = null
+    private val binding get() = _binding!!
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -63,33 +61,29 @@ class BookshelfFragment : Fragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
 
-        mBookshelfViewModel =
-            ViewModelProvider(this).get(BookshelfViewModel::class.java)
-        return inflater.inflate(R.layout.fragment_bookshelf, container, false)
+        ViewModelProvider(this).get(BookshelfViewModel::class.java).let { model ->
+            model.channel.receive(this) { handleEvent(it) }
+            mBookshelfViewModel = model
+        }
+        _binding = FragmentBookshelfBinding.inflate(
+            inflater, container, false
+        )
+        binding.viewModel = mBookshelfViewModel
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         mBookshelfAdapter = BookshelfAdapter(onBookClick = { book -> openBook(book) },
             onBookLongClick = { book -> confirmDeleteBook(book) })
-        mBookService = (activity as MainActivity).bookService
-        progressBar = view.findViewById(R.id.progressBar)
 
         mDocumentPickerLauncher =
             registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
                 viewLifecycleOwner.lifecycleScope.launch {
                     uri?.let {
-                        mBookService.importPublicationFromUri(it, progressBar) { error ->
-                            if (error != null) {
-                                Snackbar.make(
-                                    this@BookshelfFragment.requireView(),
-                                    error,
-                                    Snackbar.LENGTH_LONG
-                                ).show()
-                            }
-                        }
+                        mBookshelfViewModel.importPublicationFromUri(it)
                     }
                 }
             }
@@ -105,7 +99,7 @@ class BookshelfFragment : Fragment() {
                     tryOrNull { pubData.file.delete() }
             }
 
-        view.findViewById<RecyclerView>(R.id.book_list).apply {
+        binding.bookList.apply {
             setHasFixedSize(true)
             layoutManager = GridAutoFitLayoutManager(requireContext(), 120)
             adapter = mBookshelfAdapter
@@ -123,7 +117,7 @@ class BookshelfFragment : Fragment() {
         importBooks()
 
         // FIXME embedded dialogs like this are ugly
-        view.findViewById<FloatingActionButton>(R.id.addBook).setOnClickListener {
+        binding.addBook.setOnClickListener {
             var selected = 0
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.add_book))
@@ -143,17 +137,9 @@ class BookshelfFragment : Fragment() {
 
                             }
                             .setPositiveButton(R.string.ok) { _, _ ->
-                                viewLifecycleOwner.lifecycleScope.launch {
+                                GlobalScope.launch {
                                     val uri = Uri.parse(urlEditText.text.toString())
-                                    mBookService.importPublicationFromUri(uri, progressBar) {
-                                        if (it != null) {
-                                            Snackbar.make(
-                                                this@BookshelfFragment.requireView(),
-                                                it,
-                                                Snackbar.LENGTH_LONG
-                                            ).show()
-                                        }
-                                    }
+                                    mBookshelfViewModel.importPublicationFromUri(uri)
                                 }
                             }
                             .show()
@@ -165,6 +151,26 @@ class BookshelfFragment : Fragment() {
                 }
                 .show()
         }
+    }
+
+    private fun handleEvent(event: BookshelfViewModel.Event) {
+        val message =
+            when (event) {
+                is BookshelfViewModel.Event.ImportPublicationFailed -> {
+                    "Error: " + event.errorMessage
+                }
+                is BookshelfViewModel.Event.UnableToMovePublication -> getString(R.string.unable_to_move_pub)
+                is BookshelfViewModel.Event.ImportPublicationSuccess -> getString(R.string.import_publication_success)
+                is BookshelfViewModel.Event.ImportDatabaseFailed -> getString(R.string.unable_add_pub_database)
+                is BookshelfViewModel.Event.OpenBookError -> {
+                    "Error: " + event.errorMessage
+                }
+            }
+        Snackbar.make(
+            requireView(),
+            message,
+            Snackbar.LENGTH_LONG
+        ).show()
     }
 
     class VerticalSpaceItemDecoration(private val verticalSpaceHeight: Int) :
@@ -225,15 +231,7 @@ class BookshelfFragment : Fragment() {
             == PackageManager.PERMISSION_GRANTED
         ) {
             GlobalScope.launch {
-                mBookService.copySamplesFromAssetsToStorage {
-                    if (it != null) {
-                        Snackbar.make(
-                            this@BookshelfFragment.requireView(),
-                            it,
-                            Snackbar.LENGTH_LONG
-                        ).show()
-                    }
-                }
+                mBookshelfViewModel.copySamplesFromAssetsToStorage()
             }
         } else requestStoragePermission()
 
@@ -245,7 +243,7 @@ class BookshelfFragment : Fragment() {
 
     private fun openBook(book: Book) {
         viewLifecycleOwner.lifecycleScope.launch {
-            mBookService.openBook(
+            mBookshelfViewModel.openBook(
                 book,
                 callback = { asset, mediaType, publication, remoteAsset, url ->
                     mReaderLauncher.launch(
@@ -264,9 +262,6 @@ class BookshelfFragment : Fragment() {
                             baseUrl = url
                         )
                     )
-                },
-                onError = {
-                    Snackbar.make(requireView(), it, Snackbar.LENGTH_LONG).show()
                 })
         }
     }

@@ -4,9 +4,15 @@
 
     <data>
 
+        <import type="android.view.View" />
+
         <variable
             name="publication"
             type="org.readium.r2.shared.publication.Publication" />
+
+        <variable
+            name="viewModel"
+            type="org.readium.r2.testapp.catalogs.CatalogViewModel" />
 
     </data>
 
@@ -53,7 +59,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:visibility="gone" />
+            android:visibility="@{viewModel.showProgressBar ? View.VISIBLE : View.GONE}" />
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 </layout>

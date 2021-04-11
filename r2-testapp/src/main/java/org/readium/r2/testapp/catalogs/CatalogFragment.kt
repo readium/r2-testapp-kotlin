@@ -31,8 +31,11 @@ class CatalogFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        mCatalogViewModel =
-            ViewModelProvider(this).get(CatalogViewModel::class.java)
+
+        ViewModelProvider(this).get(CatalogViewModel::class.java).let { model ->
+            model.eventChannel.receive(this) { handleEvent(it) }
+            mCatalogViewModel = model
+        }
         mOpds = arguments?.get(OPDSFEED) as OPDS
         return inflater.inflate(R.layout.fragment_catalog, container, false)
     }
@@ -58,13 +61,7 @@ class CatalogFragment : Fragment() {
         // TODO this feels hacky, I don't want to parse the file if it has not changed
         if (mCatalogViewModel.parseData.value == null) {
             progressBar.visibility = View.VISIBLE
-            mCatalogViewModel.parseOpds(mOpds) {
-                Snackbar.make(
-                    requireActivity().findViewById(android.R.id.content),
-                    "Failed parsing OPDS",
-                    Snackbar.LENGTH_LONG
-                ).show()
-            }
+            mCatalogViewModel.parseOpds(mOpds)
         }
         mCatalogViewModel.parseData.observe(viewLifecycleOwner, { result ->
 
@@ -123,5 +120,17 @@ class CatalogFragment : Fragment() {
             }
             progressBar.visibility = View.GONE
         })
+    }
+
+    private fun handleEvent(event: CatalogViewModel.Event.FeedEvent) {
+        val message =
+            when (event) {
+                is CatalogViewModel.Event.FeedEvent.OpdsParseFailed -> getString(R.string.failed_parsing_opds)
+            }
+        Snackbar.make(
+            requireView(),
+            message,
+            Snackbar.LENGTH_LONG
+        ).show()
     }
 }
