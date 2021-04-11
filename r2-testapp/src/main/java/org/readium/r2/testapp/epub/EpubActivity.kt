@@ -37,7 +37,7 @@ import org.readium.r2.shared.ReadiumCSSName
 import org.readium.r2.shared.SCROLL_REF
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.bookshelf.BookService
+import org.readium.r2.testapp.R2App
 import org.readium.r2.testapp.drm.DrmManagementContract
 import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
@@ -71,7 +71,7 @@ class EpubActivity : R2EpubActivity() {
         readerFragment.childFragmentManager.findFragmentByTag(getString(R.string.epub_navigator_tag)) as EpubNavigatorFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        check(BookService.isServerStarted)
+        check(R2App.isServerStarted)
 
         val inputData = ReaderContract.parseIntent(this)
         initialLocation = inputData.initialLocator
@@ -215,7 +215,7 @@ class EpubActivity : R2EpubActivity() {
         }
 
         launch {
-            val highlight: NavigatorHighlight? = highlightID?.let { viewModel.getHighlightByHighlightId(it).toNavigatorHighlight() }
+            val highlight: NavigatorHighlight? = highlightID?.let { viewModel.getHighlightByHighlightId(it)?.toNavigatorHighlight() }
 //        val highlight: org.readium.r2.navigator.epub.Highlight? = try {
 //            highlightID
 //                ?.let { persistence.getHighlight(it).toNavigatorHighlight() }
@@ -304,7 +304,7 @@ class EpubActivity : R2EpubActivity() {
                     .create()
 
             val annotation = highlight
-                    ?.let { viewModel.getHighlightByHighlightId(highlight.id).annotation }
+                    ?.let { viewModel.getHighlightByHighlightId(highlight.id)?.annotation }
                     .orEmpty()
 
             val note = view.findViewById<EditText>(R.id.note)
@@ -334,10 +334,12 @@ class EpubActivity : R2EpubActivity() {
                         viewModel.updateHighlight(highlight.id, annotation = text, markStyle = markStyle)
                         launch {
                             val updatedHighlight = viewModel.getHighlightByHighlightId(highlight.id)
-                            val navHighlight = updatedHighlight.toNavigatorHighlight()
+                            val navHighlight = updatedHighlight?.toNavigatorHighlight()
                             //FIXME: the annotation mark is not destroyed before reloading when the text becomes blank,
                             // probably because of an ID mismatch
-                            showHighlight(navHighlight)
+                            if (navHighlight != null) {
+                                showHighlight(navHighlight)
+                            }
                         }
                     } else {
                         val progression = currentLocator.value.locations.progression!!
@@ -387,7 +389,9 @@ class EpubActivity : R2EpubActivity() {
                 return@launch // FIXME: This is required as long as the navigator highlight is not deleted
                 // when the corresponding highlight in DB is.
             }
-            showAnnotationPopup(highlight.toNavigatorHighlight())
+            if (highlight != null) {
+                showAnnotationPopup(highlight.toNavigatorHighlight())
+            }
         }
     }
 

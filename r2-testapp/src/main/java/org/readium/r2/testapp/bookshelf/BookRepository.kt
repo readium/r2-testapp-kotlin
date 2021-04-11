@@ -108,15 +108,18 @@ class BookRepository(private val booksDao: BooksDao) {
         markStyle: String? = null
     ) {
         val highlight = getHighlightByHighlightId(id)
-        val updatedColor = color ?: highlight.color
-        val updatedAnnotation = annotation ?: highlight.annotation
-        val updatedMarkStyle = markStyle ?: highlight.annotationMarkStyle
 
-        booksDao.updateHighlight(id, updatedColor, updatedAnnotation, updatedMarkStyle)
+        if (highlight != null) {
+            val updatedColor = color ?: highlight.color
+            val updatedAnnotation = annotation ?: highlight.annotation
+            val updatedMarkStyle = markStyle ?: highlight.annotationMarkStyle
+
+            booksDao.updateHighlight(id, updatedColor, updatedAnnotation, updatedMarkStyle)
+        }
     }
 
-    suspend fun getHighlightByHighlightId(highlightId: String): Highlight {
-        return checkNotNull(booksDao.getHighlightByHighlightId(highlightId).firstOrNull())
+    suspend fun getHighlightByHighlightId(highlightId: String): Highlight? {
+        return booksDao.getHighlightByHighlightId(highlightId).firstOrNull()
     }
 
     suspend fun deleteHighlightByHighlightId(highlightId: String) =

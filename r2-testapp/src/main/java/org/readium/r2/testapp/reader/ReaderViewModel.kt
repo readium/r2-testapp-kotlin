@@ -60,7 +60,7 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
             repository.getHighlights(bookId, href)
     }
 
-    suspend fun getHighlightByHighlightId(highlightId: String): Highlight {
+    suspend fun getHighlightByHighlightId(highlightId: String): Highlight? {
         return repository.getHighlightByHighlightId(highlightId)
     }
 
