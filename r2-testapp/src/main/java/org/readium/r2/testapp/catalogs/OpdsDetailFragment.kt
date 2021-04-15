@@ -9,6 +9,8 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.google.android.material.snackbar.Snackbar
 import com.squareup.picasso.Picasso
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.readium.r2.shared.extensions.getPublicationOrNull
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.opds.images
@@ -61,9 +63,6 @@ class OpdsDetailFragment : Fragment() {
 
         binding.downloadButton.setOnClickListener {
             mPublication?.let { it1 ->
-                mCatalogViewModel.downloadPublication(
-                    it1
-                )
                 GlobalScope.launch {
                     mCatalogViewModel.downloadPublication(
                         it1
