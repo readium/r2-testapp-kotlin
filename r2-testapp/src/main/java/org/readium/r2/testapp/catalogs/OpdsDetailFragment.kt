@@ -64,6 +64,11 @@ class OpdsDetailFragment : Fragment() {
                 mCatalogViewModel.downloadPublication(
                     it1
                 )
+                GlobalScope.launch {
+                    mCatalogViewModel.downloadPublication(
+                        it1
+                    )
+                }
             }
         }
     }

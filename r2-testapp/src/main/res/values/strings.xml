@@ -190,4 +190,9 @@
     <string name="import_publication_success">Publication added to your library</string>
     <string name="unable_add_pub_database">Unable to add publication to the database</string>
     <string name="failed_parsing_opds">Failed parsing OPDS</string>
+    <string name="next_chapter">Next chapter</string>
+    <string name="next_sentence">Next sentence</string>
+    <string name="play_and_pause">Play and pause</string>
+    <string name="previous_sentence">Previous sentence</string>
+    <string name="previous_chapter">Previous chapter</string>
 </resources>

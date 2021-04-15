@@ -18,6 +18,7 @@ class BookRepository(private val booksDao: BooksDao) {
 
     suspend fun insertBook(href: String, extension: String, publication: Publication): Long {
         val book = Book(
+            creation = DateTime().toDate().time,
             title = publication.metadata.title,
             author = publication.metadata.authorName,
             href = href,
@@ -36,6 +37,7 @@ class BookRepository(private val booksDao: BooksDao) {
     suspend fun insertBookmark(bookId: Long, publication: Publication, locator: Locator): Long {
         val resource = publication.readingOrder.indexOfFirstWithHref(locator.href)!!
         val bookmark = Bookmark(
+            creation = DateTime().toDate().time,
             bookId = bookId,
             publicationId = publication.metadata.identifier ?: publication.metadata.title,
             resourceIndex = resource.toLong(),
@@ -48,7 +50,6 @@ class BookRepository(private val booksDao: BooksDao) {
             ).toJSON().toString(),
             locatorText = Locator.Text().toJSON().toString()
         )
-        bookmark.creation = DateTime().toDate().time
 
         return booksDao.insertBookmark(bookmark)
     }
@@ -79,6 +80,7 @@ class BookRepository(private val booksDao: BooksDao) {
         val locations = navigatorHighlight.locator.locations.copy(progression = progression)
 
         val highlight = Highlight(
+            creation = DateTime().toDate().time,
             bookId = bookId,
             highlightId = navigatorHighlight.id,
             publicationId = publication.metadata.identifier ?: publication.metadata.title,
@@ -93,7 +95,6 @@ class BookRepository(private val booksDao: BooksDao) {
             location = locations.toJSON().toString(),
             locatorText = navigatorHighlight.locator.text.toJSON().toString()
         )
-        highlight.creation = DateTime().toDate().time
 
         return booksDao.insertHighlight(highlight)
     }

@@ -11,9 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.ui.successUi
 import org.readium.r2.opds.OPDS1Parser
 import org.readium.r2.opds.OPDS2Parser
 import org.readium.r2.shared.opds.ParseData
@@ -25,6 +23,7 @@ import org.readium.r2.testapp.bookshelf.BookRepository
 import org.readium.r2.testapp.db.BookDatabase
 import org.readium.r2.testapp.domain.model.OPDS
 import org.readium.r2.testapp.opds.OPDSDownloader
+import org.readium.r2.testapp.opds.OpdsDownloadResult
 import org.readium.r2.testapp.utils.EventChannel
 import java.io.File
 import java.io.FileOutputStream
@@ -84,22 +83,23 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun downloadPublication(publication: Publication) {
+    suspend fun downloadPublication(publication: Publication) {
         showProgressBar.set(true)
         val downloadUrl = getDownloadURL(publication)
-        mOpdsDownloader.publicationUrl(downloadUrl.toString()).successUi { pair ->
-            GlobalScope.launch {
-                withContext(Dispatchers.IO) {
-                    val id = addPublicationToDatabase(pair.first, "epub", publication)
-                    if (id != -1L) {
-                        detailChannel.send(Event.DetailEvent.ImportPublicationSuccess)
-                    } else {
-                        detailChannel.send(Event.DetailEvent.ImportPublicationFailed)
-                    }
-                    showProgressBar.set(false)
+        val publicationUrl = mOpdsDownloader.publicationUrl(downloadUrl.toString())
+        when (publicationUrl) {
+            is OpdsDownloadResult.OnSuccess -> {
+                val id = addPublicationToDatabase(publicationUrl.data.first, "epub", publication)
+                if (id != -1L) {
+                    detailChannel.send(Event.DetailEvent.ImportPublicationSuccess)
+                } else {
+                    detailChannel.send(Event.DetailEvent.ImportPublicationFailed)
                 }
             }
+            is OpdsDownloadResult.OnFailure -> detailChannel.send(Event.DetailEvent.ImportPublicationFailed)
         }
+
+        showProgressBar.set(false)
     }
 
     private fun getDownloadURL(publication: Publication): URL? {
