@@ -26,9 +26,7 @@ class MainActivity : AppCompatActivity() {
             ViewModelProvider(this).get(BookshelfViewModel::class.java)
 
         intent.data?.let {
-            GlobalScope.launch {
-                viewModel.importPublicationFromUri(it)
-            }
+            viewModel.importPublicationFromUri(it)
         }
 
         val navView: BottomNavigationView = findViewById(R.id.nav_view)

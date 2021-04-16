@@ -81,10 +81,8 @@ class BookshelfFragment : Fragment() {
 
         mDocumentPickerLauncher =
             registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-                viewLifecycleOwner.lifecycleScope.launch {
-                    uri?.let {
-                        mBookshelfViewModel.importPublicationFromUri(it)
-                    }
+                uri?.let {
+                    mBookshelfViewModel.importPublicationFromUri(it)
                 }
             }
 
@@ -137,10 +135,9 @@ class BookshelfFragment : Fragment() {
 
                             }
                             .setPositiveButton(R.string.ok) { _, _ ->
-                                GlobalScope.launch {
-                                    val uri = Uri.parse(urlEditText.text.toString())
-                                    mBookshelfViewModel.importPublicationFromUri(uri)
-                                }
+                                val url = urlEditText.text.toString()
+                                val uri = Uri.parse(url)
+                                mBookshelfViewModel.importPublicationFromUri(uri, url)
                             }
                             .show()
 
@@ -230,9 +227,7 @@ class BookshelfFragment : Fragment() {
             )
             == PackageManager.PERMISSION_GRANTED
         ) {
-            GlobalScope.launch {
-                mBookshelfViewModel.copySamplesFromAssetsToStorage()
-            }
+            mBookshelfViewModel.copySamplesFromAssetsToStorage()
         } else requestStoragePermission()
 
     }
@@ -242,7 +237,7 @@ class BookshelfFragment : Fragment() {
     }
 
     private fun openBook(book: Book) {
-        viewLifecycleOwner.lifecycleScope.launch {
+        GlobalScope.launch {
             mBookshelfViewModel.openBook(
                 book,
                 callback = { asset, mediaType, publication, remoteAsset, url ->

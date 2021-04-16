@@ -96,7 +96,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
         return id
     }
 
-    suspend fun copySamplesFromAssetsToStorage() {
+    fun copySamplesFromAssetsToStorage() = viewModelScope.launch {
         withContext(Dispatchers.IO) {
             if (!mPreferences.contains("samples")) {
                 val dir = File(mR2Directory)
@@ -116,13 +116,14 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    suspend fun importPublicationFromUri(
-        uri: Uri
-    ) {
+    fun importPublicationFromUri(
+        uri: Uri,
+        sourceUrl: String? = null
+    ) = viewModelScope.launch {
         showProgressBar.set(true)
         uri.copyToTempFile(context, mR2Directory)
             ?.let {
-                importPublication(it)
+                importPublication(it, sourceUrl)
             }
     }
 
@@ -239,7 +240,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
         return mServer.addPublication(publication, userPropertiesFile = File(userProperties))
     }
 
-    private suspend fun storeCoverImage(publication: Publication, imageName: String) {
+    private fun storeCoverImage(publication: Publication, imageName: String) = GlobalScope.launch {
         // TODO Figure out where to store these cover images
         val coverImageDir = File("${mR2Directory}covers/")
         if (!coverImageDir.exists()) {
@@ -261,12 +262,10 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
         }
 
         val resized = bitmap?.let { Bitmap.createScaledBitmap(it, 120, 200, true) }
-        GlobalScope.launch(Dispatchers.IO) {
-            val fos = FileOutputStream(coverImageFile)
-            resized?.compress(Bitmap.CompressFormat.PNG, 80, fos)
-            fos.flush()
-            fos.close()
-        }
+        val fos = FileOutputStream(coverImageFile)
+        resized?.compress(Bitmap.CompressFormat.PNG, 80, fos)
+        fos.flush()
+        fos.close()
     }
 
     private fun getBitmapFromURL(src: String): Bitmap? {

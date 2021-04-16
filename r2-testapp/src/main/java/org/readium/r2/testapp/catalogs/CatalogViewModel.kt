@@ -83,7 +83,7 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    suspend fun downloadPublication(publication: Publication) {
+    fun downloadPublication(publication: Publication) = viewModelScope.launch {
         showProgressBar.set(true)
         val downloadUrl = getDownloadURL(publication)
         val publicationUrl = mOpdsDownloader.publicationUrl(downloadUrl.toString())
