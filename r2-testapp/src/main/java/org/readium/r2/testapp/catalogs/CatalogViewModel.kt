@@ -36,8 +36,8 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
 
     private val repository: OpdsRepository
     private val bookRepository: BookRepository
-    private var mOpdsDownloader: OPDSDownloader
-    private var mR2Directory: String
+    private var opdsDownloader: OPDSDownloader
+    private var r2Directory: String
     val detailChannel = EventChannel(Channel<Event.DetailEvent>(Channel.BUFFERED), viewModelScope)
     val eventChannel = EventChannel(Channel<Event.FeedEvent>(Channel.BUFFERED), viewModelScope)
     val parseData = MutableLiveData<ParseData>()
@@ -50,9 +50,9 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
         repository = OpdsRepository(opdsDao)
         bookRepository = BookRepository(bookDao)
 
-        mOpdsDownloader = OPDSDownloader(application.applicationContext)
+        opdsDownloader = OPDSDownloader(application.applicationContext)
 
-        mR2Directory = R2App.R2DIRECTORY
+        r2Directory = R2App.R2DIRECTORY
     }
 
     val opds = repository.getOpdsFromDatabase()
@@ -86,7 +86,7 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
     fun downloadPublication(publication: Publication) = viewModelScope.launch {
         showProgressBar.set(true)
         val downloadUrl = getDownloadURL(publication)
-        val publicationUrl = mOpdsDownloader.publicationUrl(downloadUrl.toString())
+        val publicationUrl = opdsDownloader.publicationUrl(downloadUrl.toString())
         when (publicationUrl) {
             is OpdsDownloadResult.OnSuccess -> {
                 val id = addPublicationToDatabase(publicationUrl.data.first, "epub", publication)
@@ -127,11 +127,11 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
 
     private suspend fun storeCoverImage(publication: Publication, imageName: String) {
         // TODO Figure out where to store these cover images
-        val coverImageDir = File("${mR2Directory}covers/")
+        val coverImageDir = File("${r2Directory}covers/")
         if (!coverImageDir.exists()) {
             coverImageDir.mkdirs()
         }
-        val coverImageFile = File("${mR2Directory}covers/${imageName}.png")
+        val coverImageFile = File("${r2Directory}covers/${imageName}.png")
 
         var bitmap: Bitmap? = null
         if (publication.cover() == null) {

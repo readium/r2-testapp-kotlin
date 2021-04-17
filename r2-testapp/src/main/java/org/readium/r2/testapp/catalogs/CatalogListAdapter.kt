@@ -41,15 +41,15 @@ class CatalogListAdapter :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(publication: Publication) {
-            binding.titleTextView.text = publication.metadata.title
+            binding.catalogListTitleText.text = publication.metadata.title
 
             publication.linkWithRel("http://opds-spec.org/image/thumbnail")?.let { link ->
-                Picasso.with(binding.coverImageView.context).load(link.href)
-                    .into(binding.coverImageView)
+                Picasso.with(binding.catalogListCoverImage.context).load(link.href)
+                    .into(binding.catalogListCoverImage)
             } ?: run {
                 if (publication.images.isNotEmpty()) {
-                    Picasso.with(binding.coverImageView.context)
-                        .load(publication.images.first().href).into(binding.coverImageView)
+                    Picasso.with(binding.catalogListCoverImage.context)
+                        .load(publication.images.first().href).into(binding.catalogListCoverImage)
                 }
             }
 

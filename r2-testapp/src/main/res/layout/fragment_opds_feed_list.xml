@@ -7,7 +7,7 @@
     tools:context=".catalogs.OpdsFeedListFragment">
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/opds_list"
+        android:id="@+id/opdsFeed_list"
         android:name="org.readium.r2.testapp.opds"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -15,10 +15,10 @@
         android:layout_marginRight="16dp"
         app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
         tools:context="org.readium.r2.testapp.opds"
-        tools:listitem="@layout/item_recycle_opds" />
+        tools:listitem="@layout/item_recycle_opds_list" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/addOpds"
+        android:id="@+id/opdsFeed_addOpdsFab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end|bottom"

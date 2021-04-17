@@ -48,13 +48,14 @@ import java.util.*
 class BookshelfViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository: BookRepository
-    private val mPreferences =
+    private val preferences =
         application.getSharedPreferences("org.readium.r2.settings", Context.MODE_PRIVATE)
-    private var mStreamer: Streamer
-    private var mServer: Server
-    private var mLcpService: Try<LcpService, Exception>
-    private var mR2Directory: String
+    private var streamer: Streamer
+    private var server: Server
+    private var lcpService: Try<LcpService, Exception>
+    private var r2Directory: String
     val channel = EventChannel(Channel<Event>(Channel.BUFFERED), viewModelScope)
+
     @SuppressLint("StaticFieldLeak")
     private val context = application.applicationContext
     val showProgressBar = ObservableBoolean()
@@ -63,19 +64,19 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
         val booksDao = BookDatabase.getDatabase(application).booksDao()
         repository = BookRepository(booksDao)
 
-        mLcpService = LcpService(context)
+        lcpService = LcpService(context)
             ?.let { Try.success(it) }
             ?: Try.failure(Exception("liblcp is missing on the classpath"))
 
-        mStreamer = Streamer(
+        streamer = Streamer(
             context,
             contentProtections = listOfNotNull(
-                mLcpService.getOrNull()?.contentProtection()
+                lcpService.getOrNull()?.contentProtection()
             )
         )
 
-        mR2Directory = R2App.R2DIRECTORY
-        mServer = R2App.server
+        r2Directory = R2App.R2DIRECTORY
+        server = R2App.server
     }
 
     val books = repository.getBooksFromDatabase()
@@ -98,20 +99,20 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun copySamplesFromAssetsToStorage() = viewModelScope.launch {
         withContext(Dispatchers.IO) {
-            if (!mPreferences.contains("samples")) {
-                val dir = File(mR2Directory)
+            if (!preferences.contains("samples")) {
+                val dir = File(r2Directory)
                 if (!dir.exists()) {
                     dir.mkdirs()
                 }
                 val samples = context.assets.list("Samples")?.filterNotNull().orEmpty()
                 for (element in samples) {
-                    val file = context.assets.open("Samples/$element").copyToTempFile(mR2Directory)
+                    val file = context.assets.open("Samples/$element").copyToTempFile(r2Directory)
                     if (file != null)
                         importPublication(file)
                     else if (BuildConfig.DEBUG)
                         error("Unable to load sample into the library")
                 }
-                mPreferences.edit().putBoolean("samples", true).apply()
+                preferences.edit().putBoolean("samples", true).apply()
             }
         }
     }
@@ -121,7 +122,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
         sourceUrl: String? = null
     ) = viewModelScope.launch {
         showProgressBar.set(true)
-        uri.copyToTempFile(context, mR2Directory)
+        uri.copyToTempFile(context, r2Directory)
             ?.let {
                 importPublication(it, sourceUrl)
             }
@@ -136,7 +137,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
             if (sourceMediaType != MediaType.LCP_LICENSE_DOCUMENT)
                 FileAsset(sourceFile, sourceMediaType)
             else {
-                mLcpService
+                lcpService
                     .flatMap { it.acquirePublication(sourceFile) }
                     .fold(
                         {
@@ -156,7 +157,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
 
         val mediaType = publicationAsset.mediaType()
         val fileName = "${UUID.randomUUID()}.${mediaType.fileExtension}"
-        val libraryAsset = FileAsset(File(mR2Directory + fileName), mediaType)
+        val libraryAsset = FileAsset(File(r2Directory + fileName), mediaType)
 
         try {
             publicationAsset.file.moveTo(libraryAsset.file)
@@ -184,7 +185,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
                     return
                 }
 
-        mStreamer.open(libraryAsset, allowUserInteraction = false, sender = context)
+        streamer.open(libraryAsset, allowUserInteraction = false, sender = context)
             .onSuccess {
                 addPublicationToDatabase(bddHref, extension, it).let { id ->
 
@@ -211,12 +212,11 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
     ) {
 
         val remoteAsset: FileAsset? =
-            tryOrNull { URL(book.href).copyToTempFile(mR2Directory)?.let { FileAsset(it) } }
-        val mediaType = MediaType.of(fileExtension = book.ext.removePrefix("."))
+            tryOrNull { URL(book.href).copyToTempFile(r2Directory)?.let { FileAsset(it) } }
         val asset = remoteAsset // remote file
-            ?: FileAsset(File(book.href), mediaType = mediaType) // local file
+            ?: FileAsset(File(book.href)) // local file
 
-        mStreamer.open(asset, allowUserInteraction = true, sender = context)
+        streamer.open(asset, allowUserInteraction = true, sender = context)
             .onFailure {
                 Timber.d(it)
                 channel.send(Event.OpenBookError(it.getUserMessage(context)))
@@ -229,7 +229,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                 } else {
                     val url = prepareToServe(it, asset)
-                    callback.invoke(asset, mediaType, it, remoteAsset, url)
+                    callback.invoke(asset, asset.mediaType(), it, remoteAsset, url)
                 }
             }
     }
@@ -237,16 +237,16 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
     private fun prepareToServe(publication: Publication, asset: PublicationAsset): URL? {
         val userProperties =
             context.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json"
-        return mServer.addPublication(publication, userPropertiesFile = File(userProperties))
+        return server.addPublication(publication, userPropertiesFile = File(userProperties))
     }
 
     private fun storeCoverImage(publication: Publication, imageName: String) = GlobalScope.launch {
         // TODO Figure out where to store these cover images
-        val coverImageDir = File("${mR2Directory}covers/")
+        val coverImageDir = File("${r2Directory}covers/")
         if (!coverImageDir.exists()) {
             coverImageDir.mkdirs()
         }
-        val coverImageFile = File("${mR2Directory}covers/${imageName}.png")
+        val coverImageFile = File("${r2Directory}covers/${imageName}.png")
 
         var bitmap: Bitmap? = null
         if (publication.cover() == null) {

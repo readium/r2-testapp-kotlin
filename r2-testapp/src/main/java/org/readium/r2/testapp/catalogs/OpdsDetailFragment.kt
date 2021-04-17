@@ -19,8 +19,8 @@ import org.readium.r2.testapp.databinding.FragmentOpdsDetailBinding
 
 class OpdsDetailFragment : Fragment() {
 
-    private var mPublication: Publication? = null
-    private lateinit var mCatalogViewModel: CatalogViewModel
+    private var publication: Publication? = null
+    private lateinit var catalogViewModel: CatalogViewModel
 
     private var _binding: FragmentOpdsDetailBinding? = null
     private val binding get() = _binding!!
@@ -35,33 +35,33 @@ class OpdsDetailFragment : Fragment() {
         )
         ViewModelProvider(this).get(CatalogViewModel::class.java).let { model ->
             model.detailChannel.receive(this) { handleEvent(it) }
-            mCatalogViewModel = model
+            catalogViewModel = model
         }
-        mPublication = arguments?.getPublicationOrNull()
-        binding.publication = mPublication
-        binding.viewModel = mCatalogViewModel
+        publication = arguments?.getPublicationOrNull()
+        binding.publication = publication
+        binding.viewModel = catalogViewModel
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        (activity as MainActivity).supportActionBar?.title = mPublication?.metadata?.title
+        (activity as MainActivity).supportActionBar?.title = publication?.metadata?.title
 
-        mPublication?.coverLink?.let { link ->
-            Picasso.with(requireContext()).load(link.href).into(binding.coverImageView)
+        publication?.coverLink?.let { link ->
+            Picasso.with(requireContext()).load(link.href).into(binding.catalogListCoverImage)
         } ?: run {
-            if (mPublication?.images?.isNotEmpty() == true) {
-                Picasso.with(requireContext()).load(mPublication!!.images.first().href)
-                    .into(binding.coverImageView)
+            if (publication?.images?.isNotEmpty() == true) {
+                Picasso.with(requireContext()).load(publication!!.images.first().href)
+                    .into(binding.catalogListCoverImage)
             }
         }
 //        viewLifecycleOwner.lifecycleScope.launchWhenCreated {
 //            binding.coverImageView.setImageBitmap(mPublication?.cover())
 //        }
 
-        binding.downloadButton.setOnClickListener {
-            mPublication?.let { it1 ->
-                mCatalogViewModel.downloadPublication(
+        binding.catalogDetailDownloadButton.setOnClickListener {
+            publication?.let { it1 ->
+                catalogViewModel.downloadPublication(
                     it1
                 )
             }

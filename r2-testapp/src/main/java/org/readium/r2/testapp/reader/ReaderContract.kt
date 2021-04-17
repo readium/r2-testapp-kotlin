@@ -45,7 +45,7 @@ class ReaderContract : ActivityResultContract<ReaderContract.Input, ReaderContra
 
     override fun createIntent(context: Context, input: Input): Intent {
         val intent = Intent(context, when (input.mediaType) {
-            MediaType.EPUB -> EpubActivity::class.java
+            MediaType.EPUB, MediaType.READIUM_WEBPUB_MANIFEST -> EpubActivity::class.java
             MediaType.ZAB, MediaType.READIUM_AUDIOBOOK,
             MediaType.READIUM_AUDIOBOOK_MANIFEST, MediaType.LCP_PROTECTED_AUDIOBOOK ->
                 AudiobookActivity::class.java

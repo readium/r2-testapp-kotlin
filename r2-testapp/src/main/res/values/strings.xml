@@ -178,6 +178,7 @@
     <string name="enter_url">Enter the URL</string>
     <string name="invalid_title">Please enter a title</string>
     <string name="invalid_url">Please enter a valid URL</string>
+    <string name="opds_parse_error">Error parsing OPDS feed. Please check the URL and try again</string>
 
     <string name="publication_image_description">Cover image for %1$s</string>
 

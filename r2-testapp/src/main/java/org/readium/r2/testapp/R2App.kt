@@ -67,7 +67,7 @@ class R2App : Application() {
                 server.start()
             } catch (e: IOException) {
                 // do nothing
-                if (BuildConfig.DEBUG) Timber.e(e)
+                if (DEBUG) Timber.e(e)
             }
             if (server.isAlive) {
 //                // Add your own resources here
@@ -96,7 +96,7 @@ class R2App : Application() {
         }
     }
 
-    fun stopServer() {
+    private fun stopServer() {
         if (server.isAlive) {
             server.stop()
             isServerStarted = false

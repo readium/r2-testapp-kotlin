@@ -12,7 +12,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <androidx.cardview.widget.CardView
-        android:id="@+id/card_view"
+        android:id="@+id/catalogList_cardView"
         android:layout_width="120dp"
         android:layout_height="wrap_content">
 
@@ -29,7 +29,7 @@
                 tools:ignore="UselessParent">
 
                 <ImageView
-                    android:id="@+id/coverImageView"
+                    android:id="@+id/catalogList_coverImage"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="@string/cover_image" />
@@ -42,7 +42,7 @@
                     android:orientation="vertical">
 
                     <TextView
-                        android:id="@+id/titleTextView"
+                        android:id="@+id/catalogList_titleText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:padding="16dp"

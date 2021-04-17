@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.github.kittinunf.fuel.Fuel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 import nl.komponents.kovenant.Promise
 import nl.komponents.kovenant.then
@@ -35,15 +36,15 @@ import java.net.URL
 
 class OpdsFeedListFragment : Fragment() {
 
-    private lateinit var mCatalogViewModel: CatalogViewModel
-    private lateinit var mCatalogsAdapter: OpdsFeedListAdapter
+    private lateinit var catalogViewModel: CatalogViewModel
+    private lateinit var catalogsAdapter: OpdsFeedListAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        mCatalogViewModel =
+        catalogViewModel =
             ViewModelProvider(this).get(CatalogViewModel::class.java)
         return inflater.inflate(R.layout.fragment_opds_feed_list, container, false)
     }
@@ -54,12 +55,12 @@ class OpdsFeedListFragment : Fragment() {
         val preferences =
             requireContext().getSharedPreferences("org.readium.r2.testapp", Context.MODE_PRIVATE)
 
-        mCatalogsAdapter = OpdsFeedListAdapter(onLongClick = { opds -> onLongClick(opds) })
+        catalogsAdapter = OpdsFeedListAdapter(onLongClick = { opds -> onLongClick(opds) })
 
-        view.findViewById<RecyclerView>(R.id.opds_list).apply {
+        view.findViewById<RecyclerView>(R.id.opdsFeed_list).apply {
             setHasFixedSize(true)
             layoutManager = LinearLayoutManager(requireContext())
-            adapter = mCatalogsAdapter
+            adapter = catalogsAdapter
             addItemDecoration(
                 VerticalSpaceItemDecoration(
                     10
@@ -67,8 +68,8 @@ class OpdsFeedListFragment : Fragment() {
             )
         }
 
-        mCatalogViewModel.opds.observe(viewLifecycleOwner, {
-            mCatalogsAdapter.submitList(it)
+        catalogViewModel.opds.observe(viewLifecycleOwner, {
+            catalogsAdapter.submitList(it)
         })
 
         val version = 2
@@ -94,12 +95,12 @@ class OpdsFeedListFragment : Fragment() {
                 type = 1
             )
 
-            mCatalogViewModel.insertOpds(oPDS2Catalog)
-            mCatalogViewModel.insertOpds(oTBCatalog)
-            mCatalogViewModel.insertOpds(sEBCatalog)
+            catalogViewModel.insertOpds(oPDS2Catalog)
+            catalogViewModel.insertOpds(oTBCatalog)
+            catalogViewModel.insertOpds(sEBCatalog)
         }
 
-        view.findViewById<FloatingActionButton>(R.id.addOpds).setOnClickListener {
+        view.findViewById<FloatingActionButton>(R.id.opdsFeed_addOpdsFab).setOnClickListener {
             val alertDialog = MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.add_opds))
                 .setView(R.layout.add_opds_dialog)
@@ -126,10 +127,10 @@ class OpdsFeedListFragment : Fragment() {
                             href = url?.text.toString(),
                             type = data.type
                         )
-                        mCatalogViewModel.insertOpds(opds)
+                        catalogViewModel.insertOpds(opds)
                     }
                     parseData.failUi {
-
+                        Snackbar.make(requireView(), getString(R.string.opds_parse_error), Snackbar.LENGTH_LONG)
                     }
                     alertDialog.dismiss()
                 }
@@ -159,7 +160,7 @@ class OpdsFeedListFragment : Fragment() {
 
     private fun deleteOpdsModel(opdsModelId: Long) {
         viewLifecycleOwner.lifecycleScope.launch {
-            mCatalogViewModel.deleteOpds(opdsModelId)
+            catalogViewModel.deleteOpds(opdsModelId)
         }
     }
 
@@ -168,7 +169,7 @@ class OpdsFeedListFragment : Fragment() {
             .setTitle(getString(R.string.confirm_delete_opds_title))
             .setMessage(getString(R.string.confirm_delete_opds_text))
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                dialog.dismiss()
+                dialog.cancel()
             }
             .setPositiveButton(getString(R.string.delete)) { dialog, _ ->
                 opds.id?.let { deleteOpdsModel(it) }

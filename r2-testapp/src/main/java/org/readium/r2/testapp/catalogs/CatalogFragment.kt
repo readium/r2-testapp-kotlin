@@ -23,9 +23,9 @@ import org.readium.r2.testapp.opds.GridAutoFitLayoutManager
 
 class CatalogFragment : Fragment() {
 
-    private lateinit var mCatalogViewModel: CatalogViewModel
-    private lateinit var mCatalogListAdapter: CatalogListAdapter
-    private lateinit var mOpds: OPDS
+    private lateinit var catalogViewModel: CatalogViewModel
+    private lateinit var catalogListAdapter: CatalogListAdapter
+    private lateinit var opds: OPDS
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -34,21 +34,21 @@ class CatalogFragment : Fragment() {
 
         ViewModelProvider(this).get(CatalogViewModel::class.java).let { model ->
             model.eventChannel.receive(this) { handleEvent(it) }
-            mCatalogViewModel = model
+            catalogViewModel = model
         }
-        mOpds = arguments?.get(OPDSFEED) as OPDS
+        opds = arguments?.get(OPDSFEED) as OPDS
         return inflater.inflate(R.layout.fragment_catalog, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mCatalogListAdapter = CatalogListAdapter()
-        val progressBar = view.findViewById<ProgressBar>(R.id.catalogProgressBar)
+        catalogListAdapter = CatalogListAdapter()
+        val progressBar = view.findViewById<ProgressBar>(R.id.catalog_ProgressBar)
 
-        view.findViewById<RecyclerView>(R.id.opdsDetailList).apply {
+        view.findViewById<RecyclerView>(R.id.catalog_DetailList).apply {
             setHasFixedSize(true)
             layoutManager = GridAutoFitLayoutManager(requireContext(), 120)
-            adapter = mCatalogListAdapter
+            adapter = catalogListAdapter
             addItemDecoration(
                 BookshelfFragment.VerticalSpaceItemDecoration(
                     10
@@ -56,14 +56,14 @@ class CatalogFragment : Fragment() {
             )
         }
 
-        (activity as MainActivity).supportActionBar?.title = mOpds.title
+        (activity as MainActivity).supportActionBar?.title = opds.title
 
         // TODO this feels hacky, I don't want to parse the file if it has not changed
-        if (mCatalogViewModel.parseData.value == null) {
+        if (catalogViewModel.parseData.value == null) {
             progressBar.visibility = View.VISIBLE
-            mCatalogViewModel.parseOpds(mOpds)
+            catalogViewModel.parseOpds(opds)
         }
-        mCatalogViewModel.parseData.observe(viewLifecycleOwner, { result ->
+        catalogViewModel.parseData.observe(viewLifecycleOwner, { result ->
 
             result.feed!!.navigation.forEachIndexed { index, navigation ->
                 val button = Button(requireContext())
@@ -77,18 +77,18 @@ class CatalogFragment : Fragment() {
                         val opds = OPDS(
                             href = navigation.href,
                             title = navigation.title!!,
-                            type = mOpds.type
+                            type = opds.type
                         )
                         val bundle = bundleOf(OPDSFEED to opds)
                         Navigation.findNavController(it)
                             .navigate(R.id.action_navigation_catalog_self, bundle)
                     }
                 }
-                view.findViewById<LinearLayout>(R.id.catalogLayout).addView(button, index)
+                view.findViewById<LinearLayout>(R.id.catalog_LinearLayout).addView(button, index)
             }
 
             if (result.feed!!.publications.isNotEmpty()) {
-                mCatalogListAdapter.submitList(result.feed!!.publications)
+                catalogListAdapter.submitList(result.feed!!.publications)
             }
 
             //TODO group publications
@@ -107,14 +107,14 @@ class CatalogFragment : Fragment() {
                                 val opds = OPDS(
                                     href = navigation.href,
                                     title = navigation.title!!,
-                                    type = mOpds.type
+                                    type = opds.type
                                 )
                                 val bundle = bundleOf(OPDSFEED to opds)
                                 Navigation.findNavController(it)
                                     .navigate(R.id.action_navigation_catalog_self, bundle)
                             }
                         }
-                        view.findViewById<LinearLayout>(R.id.catalogLayout).addView(button)
+                        view.findViewById<LinearLayout>(R.id.catalog_LinearLayout).addView(button)
                     }
                 }
             }

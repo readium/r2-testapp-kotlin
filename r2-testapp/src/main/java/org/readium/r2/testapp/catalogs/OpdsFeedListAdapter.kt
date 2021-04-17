@@ -39,12 +39,12 @@ class OpdsFeedListAdapter(private val onLongClick: (OPDS) -> Unit) :
 
         fun bind(opds: OPDS) {
             binding.opds = opds
-            binding.button.setOnClickListener {
+            binding.opdsListButton.setOnClickListener {
                 val bundle = bundleOf(OPDSFEED to opds)
                 Navigation.findNavController(it)
                     .navigate(R.id.action_navigation_catalog_list_to_navigation_catalog, bundle)
             }
-            binding.button.setOnLongClickListener {
+            binding.opdsListButton.setOnLongClickListener {
                 onLongClick(opds)
                 true
             }

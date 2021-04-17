@@ -7,9 +7,11 @@ import android.graphics.Rect
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.URLUtil
 import android.widget.EditText
 import android.widget.ImageView
 import androidx.activity.result.ActivityResultLauncher
@@ -18,7 +20,6 @@ import androidx.core.content.ContextCompat
 import androidx.databinding.BindingAdapter
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
@@ -40,10 +41,10 @@ import java.io.File
 
 class BookshelfFragment : Fragment() {
 
-    private lateinit var mBookshelfViewModel: BookshelfViewModel
-    private lateinit var mBookshelfAdapter: BookshelfAdapter
-    private lateinit var mDocumentPickerLauncher: ActivityResultLauncher<String>
-    private lateinit var mReaderLauncher: ActivityResultLauncher<ReaderContract.Input>
+    private lateinit var bookshelfViewModel: BookshelfViewModel
+    private lateinit var bookshelfAdapter: BookshelfAdapter
+    private lateinit var documentPickerLauncher: ActivityResultLauncher<String>
+    private lateinit var readerLauncher: ActivityResultLauncher<ReaderContract.Input>
     private var permissionAsked: Boolean = false
     private var _binding: FragmentBookshelfBinding? = null
     private val binding get() = _binding!!
@@ -65,28 +66,28 @@ class BookshelfFragment : Fragment() {
 
         ViewModelProvider(this).get(BookshelfViewModel::class.java).let { model ->
             model.channel.receive(this) { handleEvent(it) }
-            mBookshelfViewModel = model
+            bookshelfViewModel = model
         }
         _binding = FragmentBookshelfBinding.inflate(
             inflater, container, false
         )
-        binding.viewModel = mBookshelfViewModel
+        binding.viewModel = bookshelfViewModel
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        mBookshelfAdapter = BookshelfAdapter(onBookClick = { book -> openBook(book) },
+        bookshelfAdapter = BookshelfAdapter(onBookClick = { book -> openBook(book) },
             onBookLongClick = { book -> confirmDeleteBook(book) })
 
-        mDocumentPickerLauncher =
+        documentPickerLauncher =
             registerForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
                 uri?.let {
-                    mBookshelfViewModel.importPublicationFromUri(it)
+                    bookshelfViewModel.importPublicationFromUri(it)
                 }
             }
 
-        mReaderLauncher =
+        readerLauncher =
             registerForActivityResult(ReaderContract()) { pubData: ReaderContract.Output? ->
                 if (pubData == null)
                     return@registerForActivityResult
@@ -97,10 +98,10 @@ class BookshelfFragment : Fragment() {
                     tryOrNull { pubData.file.delete() }
             }
 
-        binding.bookList.apply {
+        binding.bookshelfBookList.apply {
             setHasFixedSize(true)
             layoutManager = GridAutoFitLayoutManager(requireContext(), 120)
-            adapter = mBookshelfAdapter
+            adapter = bookshelfAdapter
             addItemDecoration(
                 VerticalSpaceItemDecoration(
                     10
@@ -108,14 +109,14 @@ class BookshelfFragment : Fragment() {
             )
         }
 
-        mBookshelfViewModel.books.observe(viewLifecycleOwner, {
-            mBookshelfAdapter.submitList(it)
+        bookshelfViewModel.books.observe(viewLifecycleOwner, {
+            bookshelfAdapter.submitList(it)
         })
 
         importBooks()
 
         // FIXME embedded dialogs like this are ugly
-        binding.addBook.setOnClickListener {
+        binding.bookshelfAddBookFab.setOnClickListener {
             var selected = 0
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.add_book))
@@ -124,20 +125,27 @@ class BookshelfFragment : Fragment() {
                 }
                 .setPositiveButton(getString(R.string.ok)) { _, _ ->
                     if (selected == 0) {
-                        mDocumentPickerLauncher.launch("*/*")
+                        documentPickerLauncher.launch("*/*")
                     } else {
                         val urlEditText = EditText(requireContext())
                         MaterialAlertDialogBuilder(requireContext())
                             .setTitle(getString(R.string.add_book))
                             .setMessage(R.string.enter_url)
                             .setView(urlEditText)
-                            .setNegativeButton(R.string.cancel) { _, _ ->
-
+                            .setNegativeButton(R.string.cancel) { dialog, _ ->
+                                dialog.cancel()
                             }
-                            .setPositiveButton(R.string.ok) { _, _ ->
-                                val url = urlEditText.text.toString()
-                                val uri = Uri.parse(url)
-                                mBookshelfViewModel.importPublicationFromUri(uri, url)
+                            .setPositiveButton(R.string.ok) { dialog, _ ->
+                                if (TextUtils.isEmpty(urlEditText.text)) {
+                                    urlEditText.error = getString(R.string.invalid_url)
+                                } else if (!URLUtil.isValidUrl(urlEditText.text.toString())) {
+                                    urlEditText.error = getString(R.string.invalid_url)
+                                } else {
+                                    val url = urlEditText.text.toString()
+                                    val uri = Uri.parse(url)
+                                    bookshelfViewModel.importPublicationFromUri(uri, url)
+                                    dialog.dismiss()
+                                }
                             }
                             .show()
 
@@ -227,21 +235,21 @@ class BookshelfFragment : Fragment() {
             )
             == PackageManager.PERMISSION_GRANTED
         ) {
-            mBookshelfViewModel.copySamplesFromAssetsToStorage()
+            bookshelfViewModel.copySamplesFromAssetsToStorage()
         } else requestStoragePermission()
 
     }
 
     private fun deleteBook(book: Book) {
-        mBookshelfViewModel.deleteBook(book)
+        bookshelfViewModel.deleteBook(book)
     }
 
     private fun openBook(book: Book) {
         GlobalScope.launch {
-            mBookshelfViewModel.openBook(
+            bookshelfViewModel.openBook(
                 book,
                 callback = { asset, mediaType, publication, remoteAsset, url ->
-                    mReaderLauncher.launch(
+                    readerLauncher.launch(
                         ReaderContract.Input(
                             file = asset.file,
                             mediaType = mediaType,
@@ -266,7 +274,7 @@ class BookshelfFragment : Fragment() {
             .setTitle(getString(R.string.confirm_delete_book_title))
             .setMessage(getString(R.string.confirm_delete_book_text))
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-                dialog.dismiss()
+                dialog.cancel()
             }
             .setPositiveButton(getString(R.string.delete)) { dialog, _ ->
                 deleteBook(book)

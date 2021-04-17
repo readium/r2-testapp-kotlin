@@ -18,7 +18,7 @@
         tools:context=".bookshelf.BookshelfFragment">
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/book_list"
+            android:id="@+id/bookshelf_bookList"
             android:name="org.readium.r2.testapp.bookshelf"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -29,7 +29,7 @@
             tools:listitem="@layout/item_recycle_book" />
 
         <ProgressBar
-            android:id="@+id/progressBar"
+            android:id="@+id/bookshelf_progressBar"
             style="?android:attr/progressBarStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -37,7 +37,7 @@
             android:visibility="@{viewModel.showProgressBar ? View.VISIBLE : View.GONE}" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/addBook"
+            android:id="@+id/bookshelf_addBookFab"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="end|bottom"

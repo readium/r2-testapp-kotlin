@@ -9,13 +9,11 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import org.readium.r2.testapp.bookshelf.BookshelfViewModel
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var mNavController: NavController
+    private lateinit var navController: NavController
     private lateinit var viewModel: BookshelfViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,15 +30,18 @@ class MainActivity : AppCompatActivity() {
         val navView: BottomNavigationView = findViewById(R.id.nav_view)
         val navHostFragment =
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        mNavController = navHostFragment.navController
+        navController = navHostFragment.navController
 
-        val appBarConfiguration = AppBarConfiguration(setOf(
-                R.id.navigation_bookshelf, R.id.navigation_catalog_list, R.id.navigation_about))
-        setupActionBarWithNavController(mNavController, appBarConfiguration)
-        navView.setupWithNavController(mNavController)
+        val appBarConfiguration = AppBarConfiguration(
+            setOf(
+                R.id.navigation_bookshelf, R.id.navigation_catalog_list, R.id.navigation_about
+            )
+        )
+        setupActionBarWithNavController(navController, appBarConfiguration)
+        navView.setupWithNavController(navController)
     }
 
     override fun onSupportNavigateUp(): Boolean {
-        return mNavController.navigateUp() || super.onSupportNavigateUp()
+        return navController.navigateUp() || super.onSupportNavigateUp()
     }
 }
