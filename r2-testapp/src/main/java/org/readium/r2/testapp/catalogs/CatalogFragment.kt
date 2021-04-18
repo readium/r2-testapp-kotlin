@@ -1,16 +1,14 @@
 package org.readium.r2.testapp.catalogs
 
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.Button
-import android.widget.LinearLayout
-import android.widget.ProgressBar
+import android.view.*
+import android.widget.*
 import androidx.core.os.bundleOf
+import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.Navigation
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import org.readium.r2.testapp.MainActivity
@@ -27,6 +25,7 @@ class CatalogFragment : Fragment() {
     private lateinit var catalogListAdapter: CatalogListAdapter
     private lateinit var opds: OPDS
 
+    // FIXME the entire way this fragment is built feels like a hack. Need a cleaner UI
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -91,9 +90,57 @@ class CatalogFragment : Fragment() {
                 catalogListAdapter.submitList(result.feed!!.publications)
             }
 
-            //TODO group publications
-
             for (group in result.feed!!.groups) {
+                if (group.publications.isNotEmpty()) {
+                    val linearLayout = LinearLayout(requireContext()).apply {
+                        orientation = LinearLayout.HORIZONTAL
+                        setPadding(10)
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            1f
+                        )
+                        weightSum = 2f
+                        addView(TextView(requireContext()).apply {
+                            text = group.title
+                            layoutParams = LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                                1f
+                            )
+                        })
+                        if (group.links.size > 0) {
+                            addView(TextView(requireContext()).apply {
+                                text = getString(R.string.opds_list_more)
+                                gravity = Gravity.END
+                                layoutParams = LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                                    1f
+                                )
+                                setOnClickListener {
+                                    val opds = OPDS(
+                                        href = group.links.first().href,
+                                        title = group.title,
+                                        type = opds.type
+                                    )
+                                    val bundle = bundleOf(OPDSFEED to opds)
+                                    Navigation.findNavController(it)
+                                        .navigate(R.id.action_navigation_catalog_self, bundle)
+                                }
+                            })
+                        }
+                    }
+                    val publicationRecyclerView = RecyclerView(requireContext()).apply {
+                        layoutManager = LinearLayoutManager(requireContext())
+                        (layoutManager as LinearLayoutManager).orientation = LinearLayoutManager.HORIZONTAL
+                        adapter = CatalogListAdapter().apply {
+                            submitList(group.publications)
+                        }
+                    }
+                    view.findViewById<LinearLayout>(R.id.catalog_LinearLayout).addView(linearLayout)
+                    view.findViewById<LinearLayout>(R.id.catalog_LinearLayout).addView(publicationRecyclerView)
+                }
                 if (group.navigation.isNotEmpty()) {
                     for (navigation in group.navigation) {
                         val button = Button(requireContext())
