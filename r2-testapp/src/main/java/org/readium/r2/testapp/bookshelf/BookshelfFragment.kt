@@ -16,6 +16,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.databinding.BindingAdapter
 import androidx.fragment.app.Fragment
@@ -128,27 +129,27 @@ class BookshelfFragment : Fragment() {
                         documentPickerLauncher.launch("*/*")
                     } else {
                         val urlEditText = EditText(requireContext())
-                        MaterialAlertDialogBuilder(requireContext())
+                        val urlDialog = MaterialAlertDialogBuilder(requireContext())
                             .setTitle(getString(R.string.add_book))
                             .setMessage(R.string.enter_url)
                             .setView(urlEditText)
                             .setNegativeButton(R.string.cancel) { dialog, _ ->
                                 dialog.cancel()
                             }
-                            .setPositiveButton(R.string.ok) { dialog, _ ->
-                                if (TextUtils.isEmpty(urlEditText.text)) {
-                                    urlEditText.error = getString(R.string.invalid_url)
-                                } else if (!URLUtil.isValidUrl(urlEditText.text.toString())) {
-                                    urlEditText.error = getString(R.string.invalid_url)
-                                } else {
-                                    val url = urlEditText.text.toString()
-                                    val uri = Uri.parse(url)
-                                    bookshelfViewModel.importPublicationFromUri(uri, url)
-                                    dialog.dismiss()
-                                }
-                            }
+                            .setPositiveButton(getString(R.string.ok), null)
                             .show()
-
+                        urlDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                            if (TextUtils.isEmpty(urlEditText.text)) {
+                                urlEditText.error = getString(R.string.invalid_url)
+                            } else if (!URLUtil.isValidUrl(urlEditText.text.toString())) {
+                                urlEditText.error = getString(R.string.invalid_url)
+                            } else {
+                                val url = urlEditText.text.toString()
+                                val uri = Uri.parse(url)
+                                bookshelfViewModel.importPublicationFromUri(uri, url)
+                                urlDialog.dismiss()
+                            }
+                        }
                     }
                 }
                 .setSingleChoiceItems(R.array.documentSelectorArray, 0) { _, which ->
