@@ -59,19 +59,6 @@ class OPDSDownloader(context: Context) {
             },
             { error -> OpdsDownloadResult.OnFailure(error.message) }
         )
-//        return Fuel.download(url).destination { _, request_url ->
-//            if (DEBUG) Timber.i("request url %s", request_url.toString())
-//            if (DEBUG) Timber.i("download destination %s %s %s", "%s%s", rootDir, fileName)
-//            File(rootDir, fileName)
-//        }.promise() then {
-//            val (_, response, _) = it
-//            if (DEBUG) Timber.i("response url %s", response.url.toString())
-//            if (url == response.url.toString()) {
-//                Pair(rootDir + fileName, fileName)
-//            } else {
-//                redirectedDownload(response.url, fileName).get()
-//            }
-//        }
     }
 
     private suspend fun redirectedDownload(responseUrl: URL, fileName: String): OpdsDownloadResult {
@@ -86,15 +73,6 @@ class OPDSDownloader(context: Context) {
             },
             { error -> OpdsDownloadResult.OnFailure(error.message) }
         )
-//        return Fuel.download(responseUrl.toString()).destination { _, request_url ->
-//            if (DEBUG) Timber.i("request url %s", request_url.toString())
-//            if (DEBUG) Timber.i("download destination %s %s %s", "%s%s", rootDir, fileName)
-//            File(rootDir, fileName)
-//        }.promise() then {
-//            val (_, response, _) = it
-//            if (DEBUG) Timber.i("response url %s", response.url.toString())
-//            Pair(rootDir + fileName, fileName)
-//        }
     }
 
 }
