@@ -19,7 +19,7 @@ group = 'com.github.readium'
 int major = 2
 int minor = 2
 int patch = 0
-int build = 27
+int build = 28
 String type = ""
 
 def version = "$major.$minor.$patch"
@@ -83,7 +83,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
 
-    final READIUM_VERSION = '2.0.0-beta.2'
+    final READIUM_VERSION = '2.0.0'
     if (findProject(':r2-shared')) {
         implementation project(':r2-shared')
     } else {

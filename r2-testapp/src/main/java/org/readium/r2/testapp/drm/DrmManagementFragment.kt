@@ -19,6 +19,7 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
+import org.readium.r2.lcp.MaterialRenewListener
 import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.shared.UserException
 import org.readium.r2.testapp.R
@@ -35,7 +36,13 @@ class DrmManagementFragment : Fragment(R.layout.fragment_drm_management) {
 
         val publication = ViewModelProvider(requireActivity()).get(ReaderViewModel::class.java).publication
         val license = checkNotNull(publication.lcpLicense)
-        val modelFactory = LcpManagementViewModel.Factory(license)
+        val renewListener = MaterialRenewListener(
+            license = license,
+            caller = this,
+            fragmentManager = this.childFragmentManager
+        )
+
+        val modelFactory = LcpManagementViewModel.Factory(license, renewListener)
         model = ViewModelProvider(this, modelFactory).get(LcpManagementViewModel::class.java)
     }
 
