@@ -32,7 +32,7 @@ class ImageReaderFragment : VisualReaderFragment(), ImageNavigatorFragment.Liste
         }
 
         childFragmentManager.fragmentFactory =
-            ImageNavigatorFragment.createFactory(publication, (activity as ReaderActivity).initialLocation, this)
+            ImageNavigatorFragment.createFactory(publication, model.initialLocation, this)
 
         super.onCreate(savedInstanceState)
     }

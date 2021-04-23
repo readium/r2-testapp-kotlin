@@ -35,7 +35,7 @@ class PdfReaderFragment : VisualReaderFragment(), PdfNavigatorFragment.Listener 
         }
 
         childFragmentManager.fragmentFactory =
-            PdfNavigatorFragment.createFactory(publication, (activity as ReaderActivity).initialLocation, this)
+            PdfNavigatorFragment.createFactory(publication, model.initialLocation, this)
 
         super.onCreate(savedInstanceState)
     }

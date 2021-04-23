@@ -78,7 +78,7 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
         val baseUrl = checkNotNull(requireArguments().getString(BASE_URL_ARG))
 
         childFragmentManager.fragmentFactory =
-            EpubNavigatorFragment.createFactory(publication, baseUrl, activity.initialLocation, this)
+            EpubNavigatorFragment.createFactory(publication, baseUrl, model.initialLocation, this)
 
         childFragmentManager.setFragmentResultListener(
             SearchFragment::class.java.name,

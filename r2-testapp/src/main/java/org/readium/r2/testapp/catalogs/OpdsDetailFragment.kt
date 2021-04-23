@@ -6,7 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
 import com.google.android.material.snackbar.Snackbar
 import com.squareup.picasso.Picasso
 import org.readium.r2.shared.extensions.getPublicationOrNull
@@ -20,7 +20,7 @@ import org.readium.r2.testapp.databinding.FragmentOpdsDetailBinding
 class OpdsDetailFragment : Fragment() {
 
     private var publication: Publication? = null
-    private lateinit var catalogViewModel: CatalogViewModel
+    private val catalogViewModel: CatalogViewModel by viewModels()
 
     private var _binding: FragmentOpdsDetailBinding? = null
     private val binding get() = _binding!!
@@ -33,10 +33,7 @@ class OpdsDetailFragment : Fragment() {
             LayoutInflater.from(context),
             R.layout.fragment_opds_detail, container, false
         )
-        ViewModelProvider(this).get(CatalogViewModel::class.java).let { model ->
-            model.detailChannel.receive(this) { handleEvent(it) }
-            catalogViewModel = model
-        }
+        catalogViewModel.detailChannel.receive(this) { handleEvent(it) }
         publication = arguments?.getPublicationOrNull()
         binding.publication = publication
         binding.viewModel = catalogViewModel

@@ -206,10 +206,10 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
             }
     }
 
-    suspend fun openBook(
+    fun openBook(
         book: Book,
         callback: (file: FileAsset, mediaType: MediaType?, publication: Publication, remoteAsset: FileAsset?, url: URL?) -> Unit
-    ) {
+    ) = viewModelScope.launch {
 
         val remoteAsset: FileAsset? =
             tryOrNull { URL(book.href).copyToTempFile(r2Directory)?.let { FileAsset(it) } }

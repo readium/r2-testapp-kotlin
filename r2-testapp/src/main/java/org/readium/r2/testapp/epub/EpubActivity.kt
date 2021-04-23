@@ -55,7 +55,6 @@ class EpubActivity : R2EpubActivity() {
     private lateinit var modelFactory: ReaderViewModel.Factory
     private lateinit var readerFragment: EpubReaderFragment
     private lateinit var viewModel: ReaderViewModel
-    var initialLocation: Locator? = null
 
     lateinit var userSettings: UserSettings
 
@@ -74,7 +73,6 @@ class EpubActivity : R2EpubActivity() {
         check(R2App.isServerStarted)
 
         val inputData = ReaderContract.parseIntent(this)
-        initialLocation = inputData.initialLocator
         modelFactory = ReaderViewModel.Factory(applicationContext, inputData)
         super.onCreate(savedInstanceState)
 

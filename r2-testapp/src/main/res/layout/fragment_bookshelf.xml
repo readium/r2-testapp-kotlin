@@ -22,8 +22,6 @@
             android:name="org.readium.r2.testapp.bookshelf"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginLeft="16dp"
-            android:layout_marginRight="16dp"
             app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
             tools:context="org.readium.r2.testapp.bookshelf"
             tools:listitem="@layout/item_recycle_book" />

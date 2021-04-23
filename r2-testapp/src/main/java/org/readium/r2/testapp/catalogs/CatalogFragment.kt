@@ -1,12 +1,18 @@
 package org.readium.r2.testapp.catalogs
 
 import android.os.Bundle
-import android.view.*
-import android.widget.*
+import android.view.Gravity
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.core.os.bundleOf
 import androidx.core.view.setPadding
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
 import androidx.navigation.Navigation
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,9 +27,10 @@ import org.readium.r2.testapp.opds.GridAutoFitLayoutManager
 
 class CatalogFragment : Fragment() {
 
-    private lateinit var catalogViewModel: CatalogViewModel
+    private val catalogViewModel: CatalogViewModel by viewModels()
     private lateinit var catalogListAdapter: CatalogListAdapter
     private lateinit var opds: OPDS
+    private lateinit var progressBar: ProgressBar
 
     // FIXME the entire way this fragment is built feels like a hack. Need a cleaner UI
     override fun onCreateView(
@@ -31,10 +38,7 @@ class CatalogFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
 
-        ViewModelProvider(this).get(CatalogViewModel::class.java).let { model ->
-            model.eventChannel.receive(this) { handleEvent(it) }
-            catalogViewModel = model
-        }
+        catalogViewModel.eventChannel.receive(this) { handleEvent(it) }
         opds = arguments?.get(OPDSFEED) as OPDS
         return inflater.inflate(R.layout.fragment_catalog, container, false)
     }
@@ -42,7 +46,7 @@ class CatalogFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         catalogListAdapter = CatalogListAdapter()
-        val progressBar = view.findViewById<ProgressBar>(R.id.catalog_ProgressBar)
+        progressBar = view.findViewById(R.id.catalog_ProgressBar)
 
         view.findViewById<RecyclerView>(R.id.catalog_DetailList).apply {
             setHasFixedSize(true)
@@ -174,6 +178,7 @@ class CatalogFragment : Fragment() {
             when (event) {
                 is CatalogViewModel.Event.FeedEvent.OpdsParseFailed -> getString(R.string.failed_parsing_opds)
             }
+        progressBar.visibility = View.GONE
         Snackbar.make(
             requireView(),
             message,

@@ -27,7 +27,7 @@ class AudioReaderFragment : BaseReaderFragment(), AudioNavigatorFragment.Listene
         }
 
         childFragmentManager.fragmentFactory =
-            AudioNavigatorFragment.createFactory(publication, activity.initialLocation, this)
+            AudioNavigatorFragment.createFactory(publication, model.initialLocation, this)
 
         super.onCreate(savedInstanceState)
     }

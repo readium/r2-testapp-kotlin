@@ -2,16 +2,16 @@ package org.readium.r2.testapp.catalogs
 
 
 import androidx.lifecycle.LiveData
-import org.readium.r2.testapp.db.OpdsDao
+import org.readium.r2.testapp.db.CatalogDao
 import org.readium.r2.testapp.domain.model.OPDS
 
-class OpdsRepository(private val opdsDao: OpdsDao) {
+class OpdsRepository(private val catalogDao: CatalogDao) {
 
     suspend fun insertOpds(opds: OPDS): Long {
-        return opdsDao.insertOpds(opds)
+        return catalogDao.insertOpds(opds)
     }
 
-    fun getOpdsFromDatabase(): LiveData<List<OPDS>> = opdsDao.getOpdsModels()
+    fun getOpdsFromDatabase(): LiveData<List<OPDS>> = catalogDao.getOpdsModels()
 
-    suspend fun deleteOpds(id: Long) = opdsDao.deleteOpds(id)
+    suspend fun deleteOpds(id: Long) = catalogDao.deleteOpds(id)
 }

@@ -16,6 +16,8 @@
         See https://github.com/readium/r2-lcp-kotlin/issues/59
         -->
         <domain includeSubdomains="false">crl.edrlab.telesec.de</domain>
+        <domain includeSubdomains="false">open.minitex.org</domain>
+        <domain includeSubdomains="false">s3.amazonaws.com</domain>
 
     </domain-config>
 </network-security-config>

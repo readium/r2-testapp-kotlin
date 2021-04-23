@@ -20,13 +20,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.databinding.BindingAdapter
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.squareup.picasso.Picasso
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.readium.r2.shared.extensions.tryOrNull
 import org.readium.r2.shared.publication.Locator
@@ -42,7 +40,7 @@ import java.io.File
 
 class BookshelfFragment : Fragment() {
 
-    private lateinit var bookshelfViewModel: BookshelfViewModel
+    private val bookshelfViewModel: BookshelfViewModel by viewModels()
     private lateinit var bookshelfAdapter: BookshelfAdapter
     private lateinit var documentPickerLauncher: ActivityResultLauncher<String>
     private lateinit var readerLauncher: ActivityResultLauncher<ReaderContract.Input>
@@ -65,10 +63,7 @@ class BookshelfFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
 
-        ViewModelProvider(this).get(BookshelfViewModel::class.java).let { model ->
-            model.channel.receive(this) { handleEvent(it) }
-            bookshelfViewModel = model
-        }
+        bookshelfViewModel.channel.receive(this) { handleEvent(it) }
         _binding = FragmentBookshelfBinding.inflate(
             inflater, container, false
         )
@@ -246,28 +241,26 @@ class BookshelfFragment : Fragment() {
     }
 
     private fun openBook(book: Book) {
-        GlobalScope.launch {
-            bookshelfViewModel.openBook(
-                book,
-                callback = { asset, mediaType, publication, remoteAsset, url ->
-                    readerLauncher.launch(
-                        ReaderContract.Input(
-                            file = asset.file,
-                            mediaType = mediaType,
-                            publication = publication,
-                            bookId = book.id!!,
-                            initialLocator = Locator.fromJSON(
-                                JSONObject(
-                                    book.progression
-                                        ?: "{}"
-                                )
-                            ),
-                            deleteOnResult = remoteAsset != null,
-                            baseUrl = url
-                        )
+        bookshelfViewModel.openBook(
+            book,
+            callback = { asset, mediaType, publication, remoteAsset, url ->
+                readerLauncher.launch(
+                    ReaderContract.Input(
+                        file = asset.file,
+                        mediaType = mediaType,
+                        publication = publication,
+                        bookId = book.id!!,
+                        initialLocator = Locator.fromJSON(
+                            JSONObject(
+                                book.progression
+                                    ?: "{}"
+                            )
+                        ),
+                        deleteOnResult = remoteAsset != null,
+                        baseUrl = url
                     )
-                })
-        }
+                )
+            })
     }
 
     private fun confirmDeleteBook(book: Book) {

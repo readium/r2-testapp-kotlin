@@ -8,7 +8,7 @@ import androidx.room.Query
 import org.readium.r2.testapp.domain.model.OPDS
 
 @Dao
-interface OpdsDao {
+interface CatalogDao {
 
     /**
      * Inserts an OPDS

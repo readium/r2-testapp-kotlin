@@ -25,6 +25,7 @@ import org.readium.r2.testapp.domain.model.OPDS
 import org.readium.r2.testapp.opds.OPDSDownloader
 import org.readium.r2.testapp.opds.OpdsDownloadResult
 import org.readium.r2.testapp.utils.EventChannel
+import timber.log.Timber
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -45,9 +46,9 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         // FIXME
-        val opdsDao = BookDatabase.getDatabase(application).opdsDao()
+        val catalogDao = BookDatabase.getDatabase(application).catalogDao()
         val bookDao = BookDatabase.getDatabase(application).booksDao()
-        repository = OpdsRepository(opdsDao)
+        repository = OpdsRepository(catalogDao)
         bookRepository = BookRepository(bookDao)
 
         opdsDownloader = OPDSDownloader(application.applicationContext)
@@ -80,6 +81,10 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
         }
         parsePromise?.success {
             parseData.postValue(it)
+        }
+        parsePromise?.fail {
+            Timber.e(it)
+            eventChannel.send(Event.FeedEvent.OpdsParseFailed)
         }
     }
 

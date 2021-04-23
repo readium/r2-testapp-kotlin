@@ -11,7 +11,7 @@ import android.webkit.URLUtil
 import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -36,7 +36,7 @@ import java.net.URL
 
 class OpdsFeedListFragment : Fragment() {
 
-    private lateinit var catalogViewModel: CatalogViewModel
+    private val catalogViewModel: CatalogViewModel by viewModels()
     private lateinit var catalogsAdapter: OpdsFeedListAdapter
 
     override fun onCreateView(
@@ -44,8 +44,6 @@ class OpdsFeedListFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        catalogViewModel =
-            ViewModelProvider(this).get(CatalogViewModel::class.java)
         return inflater.inflate(R.layout.fragment_opds_feed_list, container, false)
     }
 

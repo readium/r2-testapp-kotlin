@@ -24,6 +24,7 @@ import org.readium.r2.navigator.epub.Highlight as NavigatorHighlight
 class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewModel() {
 
     val publication: Publication = arguments.publication
+    val initialLocation: Locator? = arguments.initialLocator
     val channel = EventChannel(Channel<Event>(Channel.BUFFERED), viewModelScope)
     val fragmentChannel = EventChannel(Channel<FeedbackEvent>(Channel.BUFFERED), viewModelScope)
     val bookId = arguments.bookId
