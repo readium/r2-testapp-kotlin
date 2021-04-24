@@ -13,8 +13,8 @@
     <data>
 
         <variable
-            name="opds"
-            type="org.readium.r2.testapp.domain.model.OPDS" />
+            name="catalog"
+            type="org.readium.r2.testapp.domain.model.Catalog" />
     </data>
 
     <LinearLayout
@@ -23,10 +23,10 @@
 
 
         <Button
-            android:id="@+id/opdsList_button"
+            android:id="@+id/catalogList_button"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="@{opds.title}" />
+            android:text="@{catalog.title}" />
 
     </LinearLayout>
 </layout>

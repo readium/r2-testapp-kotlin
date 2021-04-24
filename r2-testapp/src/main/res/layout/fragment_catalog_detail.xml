@@ -25,7 +25,7 @@
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:padding="10dp"
-            tools:context=".catalogs.OpdsDetailFragment">
+            tools:context=".catalogs.CatalogDetailFragment">
 
             <ImageView
                 android:id="@+id/catalogList_coverImage"
@@ -50,7 +50,7 @@
                 android:id="@+id/catalogDetail_downloadButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/opds_detail_download_button" />
+                android:text="@string/catalog_detail_download_button" />
         </LinearLayout>
 
         <ProgressBar

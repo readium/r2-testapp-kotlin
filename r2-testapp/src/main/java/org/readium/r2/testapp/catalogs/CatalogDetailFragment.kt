@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.catalogs
 
 import android.os.Bundle
@@ -14,15 +20,15 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.opds.images
 import org.readium.r2.testapp.MainActivity
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.databinding.FragmentOpdsDetailBinding
+import org.readium.r2.testapp.databinding.FragmentCatalogDetailBinding
 
 
-class OpdsDetailFragment : Fragment() {
+class CatalogDetailFragment : Fragment() {
 
     private var publication: Publication? = null
     private val catalogViewModel: CatalogViewModel by viewModels()
 
-    private var _binding: FragmentOpdsDetailBinding? = null
+    private var _binding: FragmentCatalogDetailBinding? = null
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -31,7 +37,7 @@ class OpdsDetailFragment : Fragment() {
     ): View {
         _binding = DataBindingUtil.inflate(
             LayoutInflater.from(context),
-            R.layout.fragment_opds_detail, container, false
+            R.layout.fragment_catalog_detail, container, false
         )
         catalogViewModel.detailChannel.receive(this) { handleEvent(it) }
         publication = arguments?.getPublicationOrNull()

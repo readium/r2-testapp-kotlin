@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.catalogs
 
 import android.app.Application
@@ -21,7 +27,7 @@ import org.readium.r2.shared.publication.services.cover
 import org.readium.r2.testapp.R2App
 import org.readium.r2.testapp.bookshelf.BookRepository
 import org.readium.r2.testapp.db.BookDatabase
-import org.readium.r2.testapp.domain.model.OPDS
+import org.readium.r2.testapp.domain.model.Catalog
 import org.readium.r2.testapp.opds.OPDSDownloader
 import org.readium.r2.testapp.opds.OpdsDownloadResult
 import org.readium.r2.testapp.utils.EventChannel
@@ -35,7 +41,7 @@ import java.net.URL
 
 class CatalogViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: OpdsRepository
+    private val repository: CatalogRepository
     private val bookRepository: BookRepository
     private var opdsDownloader: OPDSDownloader
     private var r2Directory: String
@@ -48,7 +54,7 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
         // FIXME
         val catalogDao = BookDatabase.getDatabase(application).catalogDao()
         val bookDao = BookDatabase.getDatabase(application).booksDao()
-        repository = OpdsRepository(catalogDao)
+        repository = CatalogRepository(catalogDao)
         bookRepository = BookRepository(bookDao)
 
         opdsDownloader = OPDSDownloader(application.applicationContext)
@@ -56,27 +62,27 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
         r2Directory = R2App.R2DIRECTORY
     }
 
-    val opds = repository.getOpdsFromDatabase()
+    val catalogs = repository.getCatalogsFromDatabase()
 
-    fun insertOpds(opds: OPDS) = viewModelScope.launch {
-        repository.insertOpds(opds)
+    fun insertCatalog(catalog: Catalog) = viewModelScope.launch {
+        repository.insertCatalog(catalog)
     }
 
-    fun deleteOpds(id: Long) = viewModelScope.launch {
-        repository.deleteOpds(id)
+    fun deleteCatalog(id: Long) = viewModelScope.launch {
+        repository.deleteCatalog(id)
     }
 
-    fun parseOpds(opds: OPDS) {
+    fun parseCatalog(catalog: Catalog) {
         var parsePromise: Promise<ParseData, Exception>? = null
-        opds.href.let {
+        catalog.href.let {
             try {
-                parsePromise = if (opds.type == 1) {
+                parsePromise = if (catalog.type == 1) {
                     OPDS1Parser.parseURL(URL(it))
                 } else {
                     OPDS2Parser.parseURL(URL(it))
                 }
             } catch (e: MalformedURLException) {
-                eventChannel.send(Event.FeedEvent.OpdsParseFailed)
+                eventChannel.send(Event.FeedEvent.CatalogParseFailed)
             }
         }
         parsePromise?.success {
@@ -84,7 +90,7 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
         }
         parsePromise?.fail {
             Timber.e(it)
-            eventChannel.send(Event.FeedEvent.OpdsParseFailed)
+            eventChannel.send(Event.FeedEvent.CatalogParseFailed)
         }
     }
 
@@ -178,7 +184,7 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
 
         sealed class FeedEvent : Event() {
 
-            object OpdsParseFailed : FeedEvent()
+            object CatalogParseFailed : FeedEvent()
         }
 
         sealed class DetailEvent : Event() {

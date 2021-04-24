@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.db
 
 import androidx.lifecycle.LiveData
@@ -5,37 +11,37 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import org.readium.r2.testapp.domain.model.OPDS
+import org.readium.r2.testapp.domain.model.Catalog
 
 @Dao
 interface CatalogDao {
 
     /**
-     * Inserts an OPDS
-     * @param opds The OPDS model to insert
-     * @return ID of the OPDS model that was added (primary key)
+     * Inserts an Catalog
+     * @param catalog The Catalog model to insert
+     * @return ID of the Catalog model that was added (primary key)
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertOpds(opds: OPDS): Long
+    suspend fun insertCatalog(catalog: Catalog): Long
 
     /**
-     * Retrieve list of OPDS models based on OPDS model
-     * @return List of OPDS models as LiveData
+     * Retrieve list of Catalog models based on Catalog model
+     * @return List of Catalog models as LiveData
      */
-    @Query("SELECT * FROM " + OPDS.TABLE_NAME + " WHERE " + OPDS.TITLE + " = :title AND " + OPDS.HREF + " = :href AND " + OPDS.TYPE + " = :type")
-    fun getOpdsModels(title: String, href: String, type: Int): LiveData<List<OPDS>>
+    @Query("SELECT * FROM " + Catalog.TABLE_NAME + " WHERE " + Catalog.TITLE + " = :title AND " + Catalog.HREF + " = :href AND " + Catalog.TYPE + " = :type")
+    fun getCatalogModels(title: String, href: String, type: Int): LiveData<List<Catalog>>
 
     /**
-     * Retrieve list of all OPDS models
-     * @return List of OPDS models as LiveData
+     * Retrieve list of all Catalog models
+     * @return List of Catalog models as LiveData
      */
-    @Query("SELECT * FROM " + OPDS.TABLE_NAME)
-    fun getOpdsModels(): LiveData<List<OPDS>>
+    @Query("SELECT * FROM " + Catalog.TABLE_NAME)
+    fun getCatalogModels(): LiveData<List<Catalog>>
 
     /**
-     * Deletes an OPDS model
-     * @param id The id of the OPDS model to delete
+     * Deletes an Catalog model
+     * @param id The id of the Catalog model to delete
      */
-    @Query("DELETE FROM " + OPDS.TABLE_NAME + " WHERE " + OPDS.ID + " = :id")
-    suspend fun deleteOpds(id: Long)
+    @Query("DELETE FROM " + Catalog.TABLE_NAME + " WHERE " + Catalog.ID + " = :id")
+    suspend fun deleteCatalog(id: Long)
 }

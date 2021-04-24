@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.catalogs
 
 import android.os.Bundle
@@ -20,8 +26,8 @@ import com.google.android.material.snackbar.Snackbar
 import org.readium.r2.testapp.MainActivity
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.bookshelf.BookshelfFragment
-import org.readium.r2.testapp.catalogs.OpdsFeedListAdapter.Companion.OPDSFEED
-import org.readium.r2.testapp.domain.model.OPDS
+import org.readium.r2.testapp.catalogs.CatalogFeedListAdapter.Companion.CATALOGFEED
+import org.readium.r2.testapp.domain.model.Catalog
 import org.readium.r2.testapp.opds.GridAutoFitLayoutManager
 
 
@@ -29,7 +35,7 @@ class CatalogFragment : Fragment() {
 
     private val catalogViewModel: CatalogViewModel by viewModels()
     private lateinit var catalogListAdapter: CatalogListAdapter
-    private lateinit var opds: OPDS
+    private lateinit var catalog: Catalog
     private lateinit var progressBar: ProgressBar
 
     // FIXME the entire way this fragment is built feels like a hack. Need a cleaner UI
@@ -39,7 +45,7 @@ class CatalogFragment : Fragment() {
     ): View? {
 
         catalogViewModel.eventChannel.receive(this) { handleEvent(it) }
-        opds = arguments?.get(OPDSFEED) as OPDS
+        catalog = arguments?.get(CATALOGFEED) as Catalog
         return inflater.inflate(R.layout.fragment_catalog, container, false)
     }
 
@@ -59,12 +65,12 @@ class CatalogFragment : Fragment() {
             )
         }
 
-        (activity as MainActivity).supportActionBar?.title = opds.title
+        (activity as MainActivity).supportActionBar?.title = catalog.title
 
         // TODO this feels hacky, I don't want to parse the file if it has not changed
         if (catalogViewModel.parseData.value == null) {
             progressBar.visibility = View.VISIBLE
-            catalogViewModel.parseOpds(opds)
+            catalogViewModel.parseCatalog(catalog)
         }
         catalogViewModel.parseData.observe(viewLifecycleOwner, { result ->
 
@@ -77,12 +83,12 @@ class CatalogFragment : Fragment() {
                     )
                     text = navigation.title
                     setOnClickListener {
-                        val opds = OPDS(
+                        val catalog1 = Catalog(
                             href = navigation.href,
                             title = navigation.title!!,
-                            type = opds.type
+                            type = catalog.type
                         )
-                        val bundle = bundleOf(OPDSFEED to opds)
+                        val bundle = bundleOf(CATALOGFEED to catalog1)
                         Navigation.findNavController(it)
                             .navigate(R.id.action_navigation_catalog_self, bundle)
                     }
@@ -115,7 +121,7 @@ class CatalogFragment : Fragment() {
                         })
                         if (group.links.size > 0) {
                             addView(TextView(requireContext()).apply {
-                                text = getString(R.string.opds_list_more)
+                                text = getString(R.string.catalog_list_more)
                                 gravity = Gravity.END
                                 layoutParams = LinearLayout.LayoutParams(
                                     LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -123,12 +129,12 @@ class CatalogFragment : Fragment() {
                                     1f
                                 )
                                 setOnClickListener {
-                                    val opds = OPDS(
+                                    val catalog1 = Catalog(
                                         href = group.links.first().href,
                                         title = group.title,
-                                        type = opds.type
+                                        type = catalog.type
                                     )
-                                    val bundle = bundleOf(OPDSFEED to opds)
+                                    val bundle = bundleOf(CATALOGFEED to catalog1)
                                     Navigation.findNavController(it)
                                         .navigate(R.id.action_navigation_catalog_self, bundle)
                                 }
@@ -155,12 +161,12 @@ class CatalogFragment : Fragment() {
                             )
                             text = navigation.title
                             setOnClickListener {
-                                val opds = OPDS(
+                                val catalog1 = Catalog(
                                     href = navigation.href,
                                     title = navigation.title!!,
-                                    type = opds.type
+                                    type = catalog.type
                                 )
-                                val bundle = bundleOf(OPDSFEED to opds)
+                                val bundle = bundleOf(CATALOGFEED to catalog1)
                                 Navigation.findNavController(it)
                                     .navigate(R.id.action_navigation_catalog_self, bundle)
                             }
@@ -176,7 +182,7 @@ class CatalogFragment : Fragment() {
     private fun handleEvent(event: CatalogViewModel.Event.FeedEvent) {
         val message =
             when (event) {
-                is CatalogViewModel.Event.FeedEvent.OpdsParseFailed -> getString(R.string.failed_parsing_opds)
+                is CatalogViewModel.Event.FeedEvent.CatalogParseFailed -> getString(R.string.failed_parsing_catalog)
             }
         progressBar.visibility = View.GONE
         Snackbar.make(

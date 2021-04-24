@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.bookshelf
 
 import android.Manifest
@@ -250,12 +256,8 @@ class BookshelfFragment : Fragment() {
                         mediaType = mediaType,
                         publication = publication,
                         bookId = book.id!!,
-                        initialLocator = Locator.fromJSON(
-                            JSONObject(
-                                book.progression
-                                    ?: "{}"
-                            )
-                        ),
+                        initialLocator = book.progression
+                            ?.let { Locator.fromJSON(JSONObject(it)) },
                         deleteOnResult = remoteAsset != null,
                         baseUrl = url
                     )

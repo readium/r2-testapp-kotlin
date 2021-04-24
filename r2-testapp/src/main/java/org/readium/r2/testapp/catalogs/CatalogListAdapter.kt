@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.catalogs
 
 import android.os.Bundle
@@ -13,7 +19,7 @@ import org.readium.r2.shared.extensions.putPublication
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.opds.images
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.databinding.ItemRecycleOpdsBinding
+import org.readium.r2.testapp.databinding.ItemRecycleCatalogBinding
 
 class CatalogListAdapter :
     ListAdapter<Publication, CatalogListAdapter.ViewHolder>(PublicationListDiff()) {
@@ -25,7 +31,7 @@ class CatalogListAdapter :
         return ViewHolder(
             DataBindingUtil.inflate(
                 LayoutInflater.from(parent.context),
-                R.layout.item_recycle_opds, parent, false
+                R.layout.item_recycle_catalog, parent, false
             )
         )
     }
@@ -37,7 +43,7 @@ class CatalogListAdapter :
         viewHolder.bind(publication)
     }
 
-    inner class ViewHolder(private val binding: ItemRecycleOpdsBinding) :
+    inner class ViewHolder(private val binding: ItemRecycleCatalogBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(publication: Publication) {
@@ -58,7 +64,7 @@ class CatalogListAdapter :
                     putPublication(publication)
                 }
                 Navigation.findNavController(it)
-                    .navigate(R.id.action_navigation_catalog_to_navigation_opds_detail, bundle)
+                    .navigate(R.id.action_navigation_catalog_to_navigation_catalog_detail, bundle)
             }
         }
     }

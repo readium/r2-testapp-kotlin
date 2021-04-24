@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.db
 
 import android.content.Context
@@ -7,10 +13,10 @@ import androidx.room.RoomDatabase
 import org.readium.r2.testapp.domain.model.Book
 import org.readium.r2.testapp.domain.model.Bookmark
 import org.readium.r2.testapp.domain.model.Highlight
-import org.readium.r2.testapp.domain.model.OPDS
+import org.readium.r2.testapp.domain.model.Catalog
 
 @Database(
-    entities = [Book::class, Bookmark::class, Highlight::class, OPDS::class],
+    entities = [Book::class, Bookmark::class, Highlight::class, Catalog::class],
     version = 1,
     exportSchema = false
 )

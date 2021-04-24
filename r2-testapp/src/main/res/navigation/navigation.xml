@@ -7,9 +7,9 @@
 
     <fragment
         android:id="@+id/navigation_catalog_list"
-        android:name="org.readium.r2.testapp.catalogs.OpdsFeedListFragment"
+        android:name="org.readium.r2.testapp.catalogs.CatalogFeedListFragment"
         android:label="@string/title_catalogs"
-        tools:layout="@layout/fragment_opds_feed_list">
+        tools:layout="@layout/fragment_catalog_feed_list">
         <action
             android:id="@+id/action_navigation_catalog_list_to_navigation_catalog"
             app:destination="@id/navigation_catalog" />
@@ -32,15 +32,15 @@
         android:name="org.readium.r2.testapp.catalogs.CatalogFragment"
         tools:layout="@layout/fragment_catalog">
         <action
-            android:id="@+id/action_navigation_catalog_to_navigation_opds_detail"
-            app:destination="@id/navigation_opds_detail" />
+            android:id="@+id/action_navigation_catalog_to_navigation_catalog_detail"
+            app:destination="@id/navigation_catalog_detail" />
         <action
             android:id="@+id/action_navigation_catalog_self"
             app:destination="@id/navigation_catalog" />
     </fragment>
 
     <fragment
-        android:id="@+id/navigation_opds_detail"
-        android:name="org.readium.r2.testapp.catalogs.OpdsDetailFragment"
-        tools:layout="@layout/fragment_opds_detail" />
+        android:id="@+id/navigation_catalog_detail"
+        android:name="org.readium.r2.testapp.catalogs.CatalogDetailFragment"
+        tools:layout="@layout/fragment_catalog_detail" />
 </navigation>

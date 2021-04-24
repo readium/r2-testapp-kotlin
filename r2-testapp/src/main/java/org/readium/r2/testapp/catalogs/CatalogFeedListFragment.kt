@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.catalogs
 
 import android.content.Context
@@ -30,21 +36,21 @@ import org.readium.r2.opds.OPDS2Parser
 import org.readium.r2.shared.opds.ParseData
 import org.readium.r2.shared.promise
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.domain.model.OPDS
+import org.readium.r2.testapp.domain.model.Catalog
 import java.net.URL
 
 
-class OpdsFeedListFragment : Fragment() {
+class CatalogFeedListFragment : Fragment() {
 
     private val catalogViewModel: CatalogViewModel by viewModels()
-    private lateinit var catalogsAdapter: OpdsFeedListAdapter
+    private lateinit var catalogsAdapter: CatalogFeedListAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.fragment_opds_feed_list, container, false)
+        return inflater.inflate(R.layout.fragment_catalog_feed_list, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -53,9 +59,9 @@ class OpdsFeedListFragment : Fragment() {
         val preferences =
             requireContext().getSharedPreferences("org.readium.r2.testapp", Context.MODE_PRIVATE)
 
-        catalogsAdapter = OpdsFeedListAdapter(onLongClick = { opds -> onLongClick(opds) })
+        catalogsAdapter = CatalogFeedListAdapter(onLongClick = { catalog -> onLongClick(catalog) })
 
-        view.findViewById<RecyclerView>(R.id.opdsFeed_list).apply {
+        view.findViewById<RecyclerView>(R.id.catalogFeed_list).apply {
             setHasFixedSize(true)
             layoutManager = LinearLayoutManager(requireContext())
             adapter = catalogsAdapter
@@ -66,7 +72,7 @@ class OpdsFeedListFragment : Fragment() {
             )
         }
 
-        catalogViewModel.opds.observe(viewLifecycleOwner, {
+        catalogViewModel.catalogs.observe(viewLifecycleOwner, {
             catalogsAdapter.submitList(it)
         })
 
@@ -77,39 +83,39 @@ class OpdsFeedListFragment : Fragment() {
 
             preferences.edit().putInt(VERSION_KEY, version).apply()
 
-            val oPDS2Catalog = OPDS(
+            val oPDS2Catalog = Catalog(
                 title = "OPDS 2.0 Test Catalog",
                 href = "https://test.opds.io/2.0/home.json",
                 type = 2
             )
-            val oTBCatalog = OPDS(
+            val oTBCatalog = Catalog(
                 title = "Open Textbooks Catalog",
                 href = "http://open.minitex.org/textbooks/",
                 type = 1
             )
-            val sEBCatalog = OPDS(
+            val sEBCatalog = Catalog(
                 title = "Standard eBooks Catalog",
                 href = "https://standardebooks.org/opds/all",
                 type = 1
             )
 
-            catalogViewModel.insertOpds(oPDS2Catalog)
-            catalogViewModel.insertOpds(oTBCatalog)
-            catalogViewModel.insertOpds(sEBCatalog)
+            catalogViewModel.insertCatalog(oPDS2Catalog)
+            catalogViewModel.insertCatalog(oTBCatalog)
+            catalogViewModel.insertCatalog(sEBCatalog)
         }
 
-        view.findViewById<FloatingActionButton>(R.id.opdsFeed_addOpdsFab).setOnClickListener {
+        view.findViewById<FloatingActionButton>(R.id.catalogFeed_addCatalogFab).setOnClickListener {
             val alertDialog = MaterialAlertDialogBuilder(requireContext())
-                .setTitle(getString(R.string.add_opds))
-                .setView(R.layout.add_opds_dialog)
+                .setTitle(getString(R.string.add_catalog))
+                .setView(R.layout.add_catalog_dialog)
                 .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                     dialog.cancel()
                 }
                 .setPositiveButton(getString(R.string.save), null)
                 .show()
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                val title = alertDialog.findViewById<EditText>(R.id.opdsTitle)
-                val url = alertDialog.findViewById<EditText>(R.id.opdsUrl)
+                val title = alertDialog.findViewById<EditText>(R.id.catalogTitle)
+                val url = alertDialog.findViewById<EditText>(R.id.catalogUrl)
                 if (TextUtils.isEmpty(title?.text)) {
                     title?.error = getString(R.string.invalid_title)
                 } else if (TextUtils.isEmpty(url?.text)) {
@@ -120,15 +126,15 @@ class OpdsFeedListFragment : Fragment() {
                     val parseData: Promise<ParseData, Exception>?
                     parseData = parseURL(URL(url?.text.toString()))
                     parseData.successUi { data ->
-                        val opds = OPDS(
+                        val catalog1 = Catalog(
                             title = title?.text.toString(),
                             href = url?.text.toString(),
                             type = data.type
                         )
-                        catalogViewModel.insertOpds(opds)
+                        catalogViewModel.insertCatalog(catalog1)
                     }
                     parseData.failUi {
-                        Snackbar.make(requireView(), getString(R.string.opds_parse_error), Snackbar.LENGTH_LONG)
+                        Snackbar.make(requireView(), getString(R.string.catalog_parse_error), Snackbar.LENGTH_LONG)
                     }
                     alertDialog.dismiss()
                 }
@@ -156,21 +162,21 @@ class OpdsFeedListFragment : Fragment() {
         }
     }
 
-    private fun deleteOpdsModel(opdsModelId: Long) {
+    private fun deleteCatalogModel(catalogModelId: Long) {
         viewLifecycleOwner.lifecycleScope.launch {
-            catalogViewModel.deleteOpds(opdsModelId)
+            catalogViewModel.deleteCatalog(catalogModelId)
         }
     }
 
-    private fun onLongClick(opds: OPDS) {
+    private fun onLongClick(catalog: Catalog) {
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle(getString(R.string.confirm_delete_opds_title))
-            .setMessage(getString(R.string.confirm_delete_opds_text))
+            .setTitle(getString(R.string.confirm_delete_catalog_title))
+            .setMessage(getString(R.string.confirm_delete_catalog_text))
             .setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
                 dialog.cancel()
             }
             .setPositiveButton(getString(R.string.delete)) { dialog, _ ->
-                opds.id?.let { deleteOpdsModel(it) }
+                catalog.id?.let { deleteCatalogModel(it) }
                 dialog.dismiss()
             }
             .show()

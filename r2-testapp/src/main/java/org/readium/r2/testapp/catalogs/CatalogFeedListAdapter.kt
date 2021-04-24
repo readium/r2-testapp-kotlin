@@ -1,3 +1,9 @@
+/*
+ * Copyright 2021 Readium Foundation. All rights reserved.
+ * Use of this source code is governed by the BSD-style license
+ * available in the top-level LICENSE file of the project.
+ */
+
 package org.readium.r2.testapp.catalogs
 
 import android.view.LayoutInflater
@@ -9,11 +15,11 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.databinding.ItemRecycleOpdsListBinding
-import org.readium.r2.testapp.domain.model.OPDS
+import org.readium.r2.testapp.databinding.ItemRecycleCatalogListBinding
+import org.readium.r2.testapp.domain.model.Catalog
 
-class OpdsFeedListAdapter(private val onLongClick: (OPDS) -> Unit) :
-    ListAdapter<OPDS, OpdsFeedListAdapter.ViewHolder>(OPDSListDiff()) {
+class CatalogFeedListAdapter(private val onLongClick: (Catalog) -> Unit) :
+    ListAdapter<Catalog, CatalogFeedListAdapter.ViewHolder>(CatalogListDiff()) {
 
     override fun onCreateViewHolder(
         parent: ViewGroup,
@@ -22,51 +28,51 @@ class OpdsFeedListAdapter(private val onLongClick: (OPDS) -> Unit) :
         return ViewHolder(
             DataBindingUtil.inflate(
                 LayoutInflater.from(parent.context),
-                R.layout.item_recycle_opds_list, parent, false
+                R.layout.item_recycle_catalog_list, parent, false
             )
         )
     }
 
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
 
-        val opds = getItem(position)
+        val catalog = getItem(position)
 
-        viewHolder.bind(opds)
+        viewHolder.bind(catalog)
     }
 
-    inner class ViewHolder(private val binding: ItemRecycleOpdsListBinding) :
+    inner class ViewHolder(private val binding: ItemRecycleCatalogListBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        fun bind(opds: OPDS) {
-            binding.opds = opds
-            binding.opdsListButton.setOnClickListener {
-                val bundle = bundleOf(OPDSFEED to opds)
+        fun bind(catalog: Catalog) {
+            binding.catalog = catalog
+            binding.catalogListButton.setOnClickListener {
+                val bundle = bundleOf(CATALOGFEED to catalog)
                 Navigation.findNavController(it)
                     .navigate(R.id.action_navigation_catalog_list_to_navigation_catalog, bundle)
             }
-            binding.opdsListButton.setOnLongClickListener {
-                onLongClick(opds)
+            binding.catalogListButton.setOnLongClickListener {
+                onLongClick(catalog)
                 true
             }
         }
     }
 
     companion object {
-        const val OPDSFEED = "opdsFeed"
+        const val CATALOGFEED = "catalogFeed"
     }
 
-    private class OPDSListDiff : DiffUtil.ItemCallback<OPDS>() {
+    private class CatalogListDiff : DiffUtil.ItemCallback<Catalog>() {
 
         override fun areItemsTheSame(
-            oldItem: OPDS,
-            newItem: OPDS
+            oldItem: Catalog,
+            newItem: Catalog
         ): Boolean {
             return oldItem.id == newItem.id
         }
 
         override fun areContentsTheSame(
-            oldItem: OPDS,
-            newItem: OPDS
+            oldItem: Catalog,
+            newItem: Catalog
         ): Boolean {
             return oldItem.title == newItem.title
                     && oldItem.href == newItem.href
