@@ -6,7 +6,6 @@
 
 package org.readium.r2.testapp.bookshelf
 
-import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
@@ -53,37 +52,24 @@ import java.util.*
 
 class BookshelfViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: BookRepository
+    private val r2Application = application
+    private val booksDao = BookDatabase.getDatabase(application).booksDao()
+    private val repository = BookRepository(booksDao)
     private val preferences =
         application.getSharedPreferences("org.readium.r2.settings", Context.MODE_PRIVATE)
-    private var streamer: Streamer
-    private var server: Server
-    private var lcpService: Try<LcpService, Exception>
-    private var r2Directory: String
-    val channel = EventChannel(Channel<Event>(Channel.BUFFERED), viewModelScope)
-
-    @SuppressLint("StaticFieldLeak")
-    private val context = application.applicationContext
-    val showProgressBar = ObservableBoolean()
-
-    init {
-        val booksDao = BookDatabase.getDatabase(application).booksDao()
-        repository = BookRepository(booksDao)
-
-        lcpService = LcpService(context)
-            ?.let { Try.success(it) }
-            ?: Try.failure(Exception("liblcp is missing on the classpath"))
-
-        streamer = Streamer(
-            context,
-            contentProtections = listOfNotNull(
-                lcpService.getOrNull()?.contentProtection()
-            )
+    private var server: Server = R2App.server
+    private var lcpService = LcpService(application)
+        ?.let { Try.success(it) }
+        ?: Try.failure(Exception("liblcp is missing on the classpath"))
+    private var streamer = Streamer(
+        application,
+        contentProtections = listOfNotNull(
+            lcpService.getOrNull()?.contentProtection()
         )
-
-        r2Directory = R2App.R2DIRECTORY
-        server = R2App.server
-    }
+    )
+    private var r2Directory: String = R2App.R2DIRECTORY
+    val channel = EventChannel(Channel<Event>(Channel.BUFFERED), viewModelScope)
+    val showProgressBar = ObservableBoolean()
 
     val books = repository.getBooksFromDatabase()
 
@@ -110,9 +96,9 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
                 if (!dir.exists()) {
                     dir.mkdirs()
                 }
-                val samples = context.assets.list("Samples")?.filterNotNull().orEmpty()
+                val samples = r2Application.assets.list("Samples")?.filterNotNull().orEmpty()
                 for (element in samples) {
-                    val file = context.assets.open("Samples/$element").copyToTempFile(r2Directory)
+                    val file = r2Application.assets.open("Samples/$element").copyToTempFile(r2Directory)
                     if (file != null)
                         importPublication(file)
                     else if (BuildConfig.DEBUG)
@@ -128,7 +114,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
         sourceUrl: String? = null
     ) = viewModelScope.launch {
         showProgressBar.set(true)
-        uri.copyToTempFile(context, r2Directory)
+        uri.copyToTempFile(r2Application, r2Directory)
             ?.let {
                 importPublication(it, sourceUrl)
             }
@@ -191,7 +177,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
                     return
                 }
 
-        streamer.open(libraryAsset, allowUserInteraction = false, sender = context)
+        streamer.open(libraryAsset, allowUserInteraction = false, sender = r2Application)
             .onSuccess {
                 addPublicationToDatabase(bddHref, extension, it).let { id ->
 
@@ -208,7 +194,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
                 tryOrNull { libraryAsset.file.delete() }
                 Timber.d(it)
                 showProgressBar.set(false)
-                channel.send(Event.ImportPublicationFailed(it.getUserMessage(context)))
+                channel.send(Event.ImportPublicationFailed(it.getUserMessage(r2Application)))
             }
     }
 
@@ -222,16 +208,16 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
         val asset = remoteAsset // remote file
             ?: FileAsset(File(book.href)) // local file
 
-        streamer.open(asset, allowUserInteraction = true, sender = context)
+        streamer.open(asset, allowUserInteraction = true, sender = r2Application)
             .onFailure {
                 Timber.d(it)
-                channel.send(Event.OpenBookError(it.getUserMessage(context)))
+                channel.send(Event.OpenBookError(it.getUserMessage(r2Application)))
             }
             .onSuccess {
                 if (it.isRestricted) {
                     it.protectionError?.let { error ->
                         Timber.d(error)
-                        channel.send(Event.OpenBookError(error.getUserMessage(context)))
+                        channel.send(Event.OpenBookError(error.getUserMessage(r2Application)))
                     }
                 } else {
                     val url = prepareToServe(it, asset)
@@ -242,7 +228,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
 
     private fun prepareToServe(publication: Publication, asset: PublicationAsset): URL? {
         val userProperties =
-            context.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json"
+            r2Application.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json"
         return server.addPublication(publication, userPropertiesFile = File(userProperties))
     }
 

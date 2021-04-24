@@ -41,26 +41,16 @@ import java.net.URL
 
 class CatalogViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val repository: CatalogRepository
-    private val bookRepository: BookRepository
-    private var opdsDownloader: OPDSDownloader
-    private var r2Directory: String
+    private val catalogDao = BookDatabase.getDatabase(application).catalogDao()
+    private val bookDao = BookDatabase.getDatabase(application).booksDao()
+    private val repository = CatalogRepository(catalogDao)
+    private val bookRepository = BookRepository(bookDao)
+    private var opdsDownloader = OPDSDownloader(application.applicationContext)
+    private var r2Directory = R2App.R2DIRECTORY
     val detailChannel = EventChannel(Channel<Event.DetailEvent>(Channel.BUFFERED), viewModelScope)
     val eventChannel = EventChannel(Channel<Event.FeedEvent>(Channel.BUFFERED), viewModelScope)
     val parseData = MutableLiveData<ParseData>()
     val showProgressBar = ObservableBoolean()
-
-    init {
-        // FIXME
-        val catalogDao = BookDatabase.getDatabase(application).catalogDao()
-        val bookDao = BookDatabase.getDatabase(application).booksDao()
-        repository = CatalogRepository(catalogDao)
-        bookRepository = BookRepository(bookDao)
-
-        opdsDownloader = OPDSDownloader(application.applicationContext)
-
-        r2Directory = R2App.R2DIRECTORY
-    }
 
     val catalogs = repository.getCatalogsFromDatabase()
 
