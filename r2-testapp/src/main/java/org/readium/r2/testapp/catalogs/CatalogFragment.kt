@@ -53,9 +53,9 @@ class CatalogFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         catalogListAdapter = CatalogListAdapter()
         progressBar = view.findViewById(R.id.catalog_ProgressBar)
+        val catalogLayout = view.findViewById<LinearLayout>(R.id.catalog_LinearLayout)
 
         view.findViewById<RecyclerView>(R.id.catalog_DetailList).apply {
-            setHasFixedSize(true)
             layoutManager = GridAutoFitLayoutManager(requireContext(), 120)
             adapter = catalogListAdapter
             addItemDecoration(
@@ -93,7 +93,7 @@ class CatalogFragment : Fragment() {
                             .navigate(R.id.action_navigation_catalog_self, bundle)
                     }
                 }
-                view.findViewById<LinearLayout>(R.id.catalog_LinearLayout).addView(button, index)
+                catalogLayout.addView(button, index)
             }
 
             if (result.feed!!.publications.isNotEmpty()) {
@@ -148,8 +148,8 @@ class CatalogFragment : Fragment() {
                             submitList(group.publications)
                         }
                     }
-                    view.findViewById<LinearLayout>(R.id.catalog_LinearLayout).addView(linearLayout)
-                    view.findViewById<LinearLayout>(R.id.catalog_LinearLayout).addView(publicationRecyclerView)
+                    catalogLayout.addView(linearLayout)
+                    catalogLayout.addView(publicationRecyclerView)
                 }
                 if (group.navigation.isNotEmpty()) {
                     for (navigation in group.navigation) {
@@ -171,7 +171,7 @@ class CatalogFragment : Fragment() {
                                     .navigate(R.id.action_navigation_catalog_self, bundle)
                             }
                         }
-                        view.findViewById<LinearLayout>(R.id.catalog_LinearLayout).addView(button)
+                        catalogLayout.addView(button)
                     }
                 }
             }

@@ -28,7 +28,7 @@
                 android:id="@+id/catalog_DetailList"
                 android:name="org.readium.r2.testapp.catalogs.CatalogFragment"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 tools:context="org.readium.r2.testapp.catalogs.CatalogFragment"
                 tools:listitem="@layout/item_recycle_catalog" />
 

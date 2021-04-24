@@ -14,7 +14,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import nl.komponents.kovenant.Promise
@@ -126,35 +125,34 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
         return id
     }
 
-    private suspend fun storeCoverImage(publication: Publication, imageName: String) {
-        // TODO Figure out where to store these cover images
-        val coverImageDir = File("${r2Directory}covers/")
-        if (!coverImageDir.exists()) {
-            coverImageDir.mkdirs()
-        }
-        val coverImageFile = File("${r2Directory}covers/${imageName}.png")
-
-        var bitmap: Bitmap? = null
-        if (publication.cover() == null) {
-            publication.coverLink?.let { link ->
-                bitmap = getBitmapFromURL(link.href)
-            } ?: run {
-                if (publication.images.isNotEmpty()) {
-                    bitmap = getBitmapFromURL(publication.images.first().href)
-                }
+    private fun storeCoverImage(publication: Publication, imageName: String) =
+        viewModelScope.launch(Dispatchers.IO) {
+            // TODO Figure out where to store these cover images
+            val coverImageDir = File("${r2Directory}covers/")
+            if (!coverImageDir.exists()) {
+                coverImageDir.mkdirs()
             }
-        } else {
-            bitmap = publication.cover()
-        }
+            val coverImageFile = File("${r2Directory}covers/${imageName}.png")
 
-        val resized = bitmap?.let { Bitmap.createScaledBitmap(it, 120, 200, true) }
-        GlobalScope.launch(Dispatchers.IO) {
+            var bitmap: Bitmap? = null
+            if (publication.cover() == null) {
+                publication.coverLink?.let { link ->
+                    bitmap = getBitmapFromURL(link.href)
+                } ?: run {
+                    if (publication.images.isNotEmpty()) {
+                        bitmap = getBitmapFromURL(publication.images.first().href)
+                    }
+                }
+            } else {
+                bitmap = publication.cover()
+            }
+
+            val resized = bitmap?.let { Bitmap.createScaledBitmap(it, 120, 200, true) }
             val fos = FileOutputStream(coverImageFile)
             resized?.compress(Bitmap.CompressFormat.PNG, 80, fos)
             fos.flush()
             fos.close()
         }
-    }
 
     private fun getBitmapFromURL(src: String): Bitmap? {
         return try {

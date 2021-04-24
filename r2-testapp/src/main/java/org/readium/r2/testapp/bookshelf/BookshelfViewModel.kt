@@ -15,7 +15,6 @@ import androidx.databinding.ObservableBoolean
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -89,7 +88,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
         return id
     }
 
-    fun copySamplesFromAssetsToStorage() = viewModelScope.launch {
+    fun copySamplesFromAssetsToStorage() = viewModelScope.launch(Dispatchers.IO) {
         withContext(Dispatchers.IO) {
             if (!preferences.contains("samples")) {
                 val dir = File(r2Directory)
@@ -98,7 +97,8 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
                 }
                 val samples = r2Application.assets.list("Samples")?.filterNotNull().orEmpty()
                 for (element in samples) {
-                    val file = r2Application.assets.open("Samples/$element").copyToTempFile(r2Directory)
+                    val file =
+                        r2Application.assets.open("Samples/$element").copyToTempFile(r2Directory)
                     if (file != null)
                         importPublication(file)
                     else if (BuildConfig.DEBUG)
@@ -232,33 +232,34 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
         return server.addPublication(publication, userPropertiesFile = File(userProperties))
     }
 
-    private fun storeCoverImage(publication: Publication, imageName: String) = GlobalScope.launch {
-        // TODO Figure out where to store these cover images
-        val coverImageDir = File("${r2Directory}covers/")
-        if (!coverImageDir.exists()) {
-            coverImageDir.mkdirs()
-        }
-        val coverImageFile = File("${r2Directory}covers/${imageName}.png")
-
-        var bitmap: Bitmap? = null
-        if (publication.cover() == null) {
-            publication.coverLink?.let { link ->
-                bitmap = getBitmapFromURL(link.href)
-            } ?: run {
-                if (publication.images.isNotEmpty()) {
-                    bitmap = getBitmapFromURL(publication.images.first().href)
-                }
+    private fun storeCoverImage(publication: Publication, imageName: String) =
+        viewModelScope.launch(Dispatchers.IO) {
+            // TODO Figure out where to store these cover images
+            val coverImageDir = File("${r2Directory}covers/")
+            if (!coverImageDir.exists()) {
+                coverImageDir.mkdirs()
             }
-        } else {
-            bitmap = publication.cover()
-        }
+            val coverImageFile = File("${r2Directory}covers/${imageName}.png")
 
-        val resized = bitmap?.let { Bitmap.createScaledBitmap(it, 120, 200, true) }
-        val fos = FileOutputStream(coverImageFile)
-        resized?.compress(Bitmap.CompressFormat.PNG, 80, fos)
-        fos.flush()
-        fos.close()
-    }
+            var bitmap: Bitmap? = null
+            if (publication.cover() == null) {
+                publication.coverLink?.let { link ->
+                    bitmap = getBitmapFromURL(link.href)
+                } ?: run {
+                    if (publication.images.isNotEmpty()) {
+                        bitmap = getBitmapFromURL(publication.images.first().href)
+                    }
+                }
+            } else {
+                bitmap = publication.cover()
+            }
+
+            val resized = bitmap?.let { Bitmap.createScaledBitmap(it, 120, 200, true) }
+            val fos = FileOutputStream(coverImageFile)
+            resized?.compress(Bitmap.CompressFormat.PNG, 80, fos)
+            fos.flush()
+            fos.close()
+        }
 
     private fun getBitmapFromURL(src: String): Bitmap? {
         return try {
