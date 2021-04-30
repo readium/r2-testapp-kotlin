@@ -199,7 +199,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun openBook(
-        book: Book,
+        book: Book, context: Context,
         callback: (file: FileAsset, mediaType: MediaType?, publication: Publication, remoteAsset: FileAsset?, url: URL?) -> Unit
     ) = viewModelScope.launch {
 
@@ -208,7 +208,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
         val asset = remoteAsset // remote file
             ?: FileAsset(File(book.href)) // local file
 
-        streamer.open(asset, allowUserInteraction = true, sender = r2Application)
+        streamer.open(asset, allowUserInteraction = true, sender = context)
             .onFailure {
                 Timber.d(it)
                 channel.send(Event.OpenBookError(it.getUserMessage(r2Application)))

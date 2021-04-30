@@ -248,7 +248,7 @@ class BookshelfFragment : Fragment() {
 
     private fun openBook(book: Book) {
         bookshelfViewModel.openBook(
-            book,
+            book, requireContext(),
             callback = { asset, mediaType, publication, remoteAsset, url ->
                 readerLauncher.launch(
                     ReaderContract.Input(
