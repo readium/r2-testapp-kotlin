@@ -19,7 +19,6 @@ import org.readium.r2.shared.UserException
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.search.SearchIterator
-import org.readium.r2.shared.publication.services.search.SearchService
 import org.readium.r2.shared.publication.services.search.search
 import org.readium.r2.testapp.bookshelf.BookRepository
 import org.readium.r2.testapp.db.BookDatabase
