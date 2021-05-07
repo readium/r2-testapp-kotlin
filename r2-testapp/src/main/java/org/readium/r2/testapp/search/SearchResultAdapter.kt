@@ -30,9 +30,8 @@ class SearchResultAdapter(private var listener: Listener) : PagingDataAdapter<Lo
 
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
         val locator = getItem(position) ?: return
-
-        viewHolder.chapterView.text = locator.title
-        viewHolder.textView.text = Html.fromHtml("${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}")
+        val title = locator.title?.let { "<h6>$it</h6>"}
+        viewHolder.textView.text = Html.fromHtml("$title\n${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}")
 
         viewHolder.itemView.singleClick { v->
             listener.onItemClicked(v, locator)
@@ -40,7 +39,6 @@ class SearchResultAdapter(private var listener: Listener) : PagingDataAdapter<Lo
     }
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val chapterView: TextView = view.findViewById<View>(R.id.chapter) as TextView
         val textView: TextView = view.findViewById<View>(R.id.text) as TextView
     }
 
