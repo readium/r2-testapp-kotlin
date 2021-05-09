@@ -21,20 +21,19 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.github.kittinunf.fuel.Fuel
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import nl.komponents.kovenant.Promise
-import nl.komponents.kovenant.then
-import nl.komponents.kovenant.ui.failUi
-import nl.komponents.kovenant.ui.successUi
 import org.json.JSONObject
 import org.readium.r2.opds.OPDS1Parser
 import org.readium.r2.opds.OPDS2Parser
 import org.readium.r2.shared.opds.ParseData
-import org.readium.r2.shared.promise
+import org.readium.r2.shared.util.Try
+import org.readium.r2.shared.util.http.DefaultHttpClient
+import org.readium.r2.shared.util.http.HttpRequest
+import org.readium.r2.shared.util.http.fetchWithDecoder
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.domain.model.Catalog
 import java.net.URL
@@ -123,28 +122,33 @@ class CatalogFeedListFragment : Fragment() {
                 } else if (!URLUtil.isValidUrl(url?.text.toString())) {
                     url?.error = getString(R.string.invalid_url)
                 } else {
-                    val parseData: Promise<ParseData, Exception>?
-                    parseData = parseURL(URL(url?.text.toString()))
-                    parseData.successUi { data ->
-                        val catalog1 = Catalog(
-                            title = title?.text.toString(),
-                            href = url?.text.toString(),
-                            type = data.type
-                        )
-                        catalogViewModel.insertCatalog(catalog1)
+                    GlobalScope.launch {
+                        val parseData = parseURL(URL(url?.text.toString()))
+                        parseData.onSuccess { data ->
+                            val catalog1 = Catalog(
+                                title = title?.text.toString(),
+                                href = url?.text.toString(),
+                                type = data.type
+                            )
+                            catalogViewModel.insertCatalog(catalog1)
+                        }
+                        parseData.onFailure {
+                            Snackbar.make(
+                                requireView(),
+                                getString(R.string.catalog_parse_error),
+                                Snackbar.LENGTH_LONG
+                            ).show()
+                        }
+                        alertDialog.dismiss()
                     }
-                    parseData.failUi {
-                        Snackbar.make(requireView(), getString(R.string.catalog_parse_error), Snackbar.LENGTH_LONG)
-                    }
-                    alertDialog.dismiss()
                 }
             }
         }
     }
 
-    private fun parseURL(url: URL): Promise<ParseData, Exception> {
-        return Fuel.get(url.toString(), null).promise() then {
-            val (_, _, result) = it
+    private suspend fun parseURL(url: URL): Try<ParseData, Exception> {
+        return DefaultHttpClient().fetchWithDecoder(HttpRequest(url.toString())) {
+            val result = it.body
             if (isJson(result)) {
                 OPDS2Parser.parse(result, url)
             } else {
