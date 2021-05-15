@@ -124,7 +124,6 @@ dependencies {
     implementation "androidx.recyclerview:recyclerview:1.1.0"
     implementation "androidx.viewpager2:viewpager2:1.0.0"
     implementation "androidx.webkit:webkit:1.4.0"
-    implementation "com.duolingo.open:rtl-viewpager:1.0.3"
     //noinspection GradleDependency
     implementation ("com.github.edrlab.nanohttpd:nanohttpd:master-SNAPSHOT") {
         exclude group: 'org.parboiled'
