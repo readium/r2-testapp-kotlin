@@ -40,9 +40,7 @@ import java.net.URL
 
 class CatalogViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val catalogDao = BookDatabase.getDatabase(application).catalogDao()
     private val bookDao = BookDatabase.getDatabase(application).booksDao()
-    private val repository = CatalogRepository(catalogDao)
     private val bookRepository = BookRepository(bookDao)
     private var opdsDownloader = OPDSDownloader(application.applicationContext)
     private var r2Directory = R2App.R2DIRECTORY
@@ -50,16 +48,6 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
     val eventChannel = EventChannel(Channel<Event.FeedEvent>(Channel.BUFFERED), viewModelScope)
     val parseData = MutableLiveData<ParseData>()
     val showProgressBar = ObservableBoolean()
-
-    val catalogs = repository.getCatalogsFromDatabase()
-
-    fun insertCatalog(catalog: Catalog) = viewModelScope.launch {
-        repository.insertCatalog(catalog)
-    }
-
-    fun deleteCatalog(id: Long) = viewModelScope.launch {
-        repository.deleteCatalog(id)
-    }
 
     fun parseCatalog(catalog: Catalog) = viewModelScope.launch {
         var parseRequest: Try<ParseData, Exception>? = null
