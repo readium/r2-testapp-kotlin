@@ -15,6 +15,7 @@ import androidx.paging.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import org.readium.r2.shared.Search
 import org.readium.r2.shared.UserException
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
@@ -26,6 +27,7 @@ import org.readium.r2.testapp.domain.model.Highlight
 import org.readium.r2.testapp.utils.EventChannel
 import org.readium.r2.navigator.epub.Highlight as NavigatorHighlight
 
+@OptIn(Search::class)
 class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewModel() {
 
     val publication: Publication = arguments.publication
