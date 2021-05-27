@@ -300,15 +300,15 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
                 when (i) {
                     0 -> {
                         resourcePager.setBackgroundColor(Color.parseColor("#ffffff"))
-                        (resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#000000"))
+                        //(resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#000000"))
                     }
                     1 -> {
                         resourcePager.setBackgroundColor(Color.parseColor("#faf4e8"))
-                        (resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#000000"))
+                        //(resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#000000"))
                     }
                     2 -> {
                         resourcePager.setBackgroundColor(Color.parseColor("#000000"))
-                        (resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#ffffff"))
+                        //(resourcePager.focusedChild?.findViewById(R.id.book_title) as? TextView)?.setTextColor(Color.parseColor("#ffffff"))
                     }
                 }
                 updateEnumerable(appearance)
@@ -368,23 +368,13 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
                 val previousFragment = (resourcePager.adapter as R2PagerAdapter).getPreviousFragment()
                 val nextFragment = (resourcePager.adapter as R2PagerAdapter).getNextFragment()
                 if (currentFragment is R2EpubPageFragment) {
-                    currentFragment.webView.scrollToPosition(currentFragment.webView.progression)
-                    (previousFragment as? R2EpubPageFragment)?.webView?.scrollToEnd()
-                    (nextFragment as? R2EpubPageFragment)?.webView?.scrollToStart()
-                    currentFragment.webView.setScrollMode(b)
-                    (previousFragment as? R2EpubPageFragment)?.webView?.setScrollMode(b)
-                    (nextFragment as? R2EpubPageFragment)?.webView?.setScrollMode(b)
-                    when (b) {
-                        true -> {
-                            currentFragment.view?.setPadding(0, 0, 0, 0)
-                            previousFragment?.view?.setPadding(0, 0, 0, 0)
-                            nextFragment?.view?.setPadding(0, 0, 0, 0)
-                        }
-                        false -> {
-                            currentFragment.view?.setPadding(0, 60, 0, 40)
-                            previousFragment?.view?.setPadding(0, 60, 0, 40)
-                            nextFragment?.view?.setPadding(0, 60, 0, 40)
-                        }
+                    currentFragment.webView?.let { webView ->
+                        webView.scrollToPosition(webView.progression)
+                        (previousFragment as? R2EpubPageFragment)?.webView?.scrollToEnd()
+                        (nextFragment as? R2EpubPageFragment)?.webView?.scrollToStart()
+                        webView.setScrollMode(b)
+                        (previousFragment as? R2EpubPageFragment)?.webView?.setScrollMode(b)
+                        (nextFragment as? R2EpubPageFragment)?.webView?.setScrollMode(b)
                     }
                 }
             }
@@ -408,21 +398,9 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
             }
         } ?: run {
             alignmentRadios[alignment.index].isChecked = true
-            alignmentRadios[0].setCompoundDrawablesWithIntrinsicBounds(null,
-                    (if (alignment.index == 0) context.getDrawable(R.drawable.icon_justify_white) else context.getDrawable(R.drawable.icon_justify)),
-                    null, null)
-            alignmentRadios[1].setCompoundDrawablesWithIntrinsicBounds(null,
-                    (if (alignment.index == 0) context.getDrawable(R.drawable.icon_left) else context.getDrawable(R.drawable.icon_left_white)),
-                    null, null)
 
             alignmentGroup.setOnCheckedChangeListener { _, i ->
                 alignment.index = findIndexOfId(i, alignmentRadios)
-                alignmentRadios[0].setCompoundDrawablesWithIntrinsicBounds(null,
-                        (if (alignment.index == 0) context.getDrawable(R.drawable.icon_justify_white) else context.getDrawable(R.drawable.icon_justify)),
-                        null, null)
-                alignmentRadios[1].setCompoundDrawablesWithIntrinsicBounds(null,
-                        (if (alignment.index == 0) context.getDrawable(R.drawable.icon_left) else context.getDrawable(R.drawable.icon_left_white)),
-                        null, null)
                 publisherDefaultSwitch.isChecked = false
                 updateEnumerable(alignment)
                 updateViewCSS(TEXT_ALIGNMENT_REF)
@@ -611,11 +589,7 @@ class UserSettings(var preferences: SharedPreferences, val context: Context, pri
                     }
 
                     override fun onStopTrackingTouch(bar: SeekBar) {
-                        //Convert seekBar percent to a float value between 0.25 and 3.
-                        val speechSpeed = 0.25.toFloat() + (bar.progress.toFloat() / 100.toFloat()) * 2.75.toFloat()
                         preferences.edit().putInt("reader_TTS_speed", bar.progress).apply()
-                        // TODO this might need to be refactored
-                        (context as EpubActivity).updateScreenReaderSpeed(speechSpeed, true)
                     }
                 })
 

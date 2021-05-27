@@ -8,20 +8,26 @@ package org.readium.r2.testapp.audiobook
 
 import android.app.PendingIntent
 import android.content.Intent
+import kotlinx.coroutines.launch
 import org.readium.r2.navigator.media.MediaService
-import org.readium.r2.shared.AudioSupport
+import org.readium.r2.shared.AudiobookNavigator
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.PublicationId
-import org.readium.r2.testapp.db.BooksDatabase
+import org.readium.r2.testapp.bookshelf.BookRepository
+import org.readium.r2.testapp.db.BookDatabase
 
-@OptIn(AudioSupport::class)
+@OptIn(AudiobookNavigator::class)
 class AudiobookService : MediaService() {
 
-    private val books by lazy { BooksDatabase(this).books }
+    private val books by lazy {
+        BookRepository(BookDatabase.getDatabase(this).booksDao())
+    }
 
     override fun onCurrentLocatorChanged(publication: Publication, publicationId: PublicationId, locator: Locator) {
-        books.saveProgression(locator, publicationId.toLong())
+        launch {
+            books.saveProgression(locator, publicationId.toLong())
+        }
     }
 
     override val navigatorActivityIntent: PendingIntent?
