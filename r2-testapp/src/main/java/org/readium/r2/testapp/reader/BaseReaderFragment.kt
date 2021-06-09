@@ -52,6 +52,11 @@ abstract class BaseReaderFragment : Fragment() {
         return binding.root
     }
 
+    override fun onDestroyView() {
+        _binding = null
+        super.onDestroyView()
+    }
+
     override fun onStop() {
         model.saveProgression(navigator.currentLocator.value.toJSON().toString())
         super.onStop()
