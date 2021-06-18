@@ -135,17 +135,6 @@
     <string name="progression">Progression</string>
     <string name="timestamp">Timestamp</string>
 
-    <string-array name="font_list">
-        <item>Original</item>
-        <item>PT Serif</item>
-        <item>Roboto</item>
-        <item>Source Sans Pro</item>
-        <item>Vollkorn</item>
-        <item>OpenDyslexic</item>
-        <item>AccessibleDfA</item>
-        <item>IA Writer Duospace</item>
-    </string-array>
-
     <!-- Outlines -->
     <string name="contents_tab_label">Contents</string>
     <string name="bookmarks_tab_label">Bookmarks</string>

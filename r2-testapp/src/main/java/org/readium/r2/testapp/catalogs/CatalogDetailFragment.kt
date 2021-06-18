@@ -50,6 +50,8 @@ class CatalogDetailFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         (activity as MainActivity).supportActionBar?.title = publication?.metadata?.title
 
+        // There are issues with Publication.cover not always having a bitmap
+        @Suppress("DEPRECATION")
         publication?.coverLink?.let { link ->
             Picasso.with(requireContext()).load(link.href).into(binding.catalogListCoverImage)
         } ?: run {

@@ -6,6 +6,7 @@
 
 package org.readium.r2.testapp.search
 
+import android.os.Build
 import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
@@ -32,10 +33,18 @@ class SearchResultAdapter(private var listener: Listener) : PagingDataAdapter<Lo
 
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
         val locator = getItem(position) ?: return
-        val title = locator.title?.let { "<h6>$it</h6>"}
-        viewHolder.textView.text = Html.fromHtml("$title\n${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}")
+        val title = locator.title?.let { "<h6>$it</h6>" }
+        viewHolder.textView.text = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            Html.fromHtml(
+                "$title\n${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}",
+                Html.FROM_HTML_MODE_COMPACT
+            )
+        } else {
+            @Suppress("DEPRECATION")
+            Html.fromHtml("$title\n${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}")
+        }
 
-        viewHolder.itemView.singleClick { v->
+        viewHolder.itemView.singleClick { v ->
             listener.onItemClicked(v, locator)
         }
     }

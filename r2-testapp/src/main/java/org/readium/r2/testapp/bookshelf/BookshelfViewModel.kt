@@ -24,7 +24,6 @@ import org.readium.r2.shared.extensions.mediaType
 import org.readium.r2.shared.extensions.tryOrNull
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.asset.FileAsset
-import org.readium.r2.shared.publication.asset.PublicationAsset
 import org.readium.r2.shared.publication.opds.images
 import org.readium.r2.shared.publication.services.cover
 import org.readium.r2.shared.publication.services.isRestricted
@@ -220,13 +219,13 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
                         channel.send(Event.OpenBookError(error.getUserMessage(r2Application)))
                     }
                 } else {
-                    val url = prepareToServe(it, asset)
+                    val url = prepareToServe(it)
                     callback.invoke(asset, asset.mediaType(), it, remoteAsset, url)
                 }
             }
     }
 
-    private fun prepareToServe(publication: Publication, asset: PublicationAsset): URL? {
+    private fun prepareToServe(publication: Publication): URL? {
         val userProperties =
             r2Application.filesDir.path + "/" + Injectable.Style.rawValue + "/UserProperties.json"
         return server.addPublication(publication, userPropertiesFile = File(userProperties))
@@ -242,7 +241,9 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
             val coverImageFile = File("${r2Directory}covers/${imageName}.png")
 
             var bitmap: Bitmap? = null
+            // There are issues with Publication.cover not always having a bitmap
             if (publication.cover() == null) {
+                @Suppress("DEPRECATION")
                 publication.coverLink?.let { link ->
                     bitmap = getBitmapFromURL(link.href)
                 } ?: run {
