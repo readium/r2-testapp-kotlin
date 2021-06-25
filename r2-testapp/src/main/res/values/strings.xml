@@ -187,4 +187,8 @@
     <string name="previous_chapter">Previous chapter</string>
     <string name="replay_10">Replay previous 10 seconds</string>
     <string name="forward_10">Fast forward 10 seconds</string>
+    <string name="brightness_lower">Brightness lower</string>
+    <string name="brightness_higher">Brightness higher</string>
+    <string name="tts_slower">TTS slower</string>
+    <string name="tts_faster">TTS faster</string>
 </resources>
