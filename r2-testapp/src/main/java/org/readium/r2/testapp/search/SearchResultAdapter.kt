@@ -21,7 +21,8 @@ import org.readium.r2.testapp.utils.singleClick
 /**
  * This class is an adapter for Search results' list view
  */
-class SearchResultAdapter(private var listener: Listener) : PagingDataAdapter<Locator, SearchResultAdapter.ViewHolder>(ItemCallback()) {
+class SearchResultAdapter(private var listener: Listener) :
+    PagingDataAdapter<Locator, SearchResultAdapter.ViewHolder>(ItemCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         return ViewHolder(
@@ -34,14 +35,13 @@ class SearchResultAdapter(private var listener: Listener) : PagingDataAdapter<Lo
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
         val locator = getItem(position) ?: return
         val title = locator.title?.let { "<h6>$it</h6>" }
+        val html =
+            "$title\n${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}"
         viewHolder.textView.text = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            Html.fromHtml(
-                "$title\n${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}",
-                Html.FROM_HTML_MODE_COMPACT
-            )
+            Html.fromHtml(html, Html.FROM_HTML_MODE_COMPACT)
         } else {
             @Suppress("DEPRECATION")
-            Html.fromHtml("$title\n${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}")
+            Html.fromHtml(html)
         }
 
         viewHolder.itemView.singleClick { v ->
@@ -49,7 +49,8 @@ class SearchResultAdapter(private var listener: Listener) : PagingDataAdapter<Lo
         }
     }
 
-    inner class ViewHolder(val binding: ItemRecycleSearchBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class ViewHolder(val binding: ItemRecycleSearchBinding) :
+        RecyclerView.ViewHolder(binding.root) {
         val textView = binding.text
     }
 

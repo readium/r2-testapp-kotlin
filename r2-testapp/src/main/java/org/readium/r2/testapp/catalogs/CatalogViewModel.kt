@@ -123,20 +123,8 @@ class CatalogViewModel(application: Application) : AndroidViewModel(application)
             }
             val coverImageFile = File("${r2Directory}covers/${imageName}.png")
 
-            var bitmap: Bitmap? = null
-            // There are issues with Publication.cover not always having a bitmap
-            if (publication.cover() == null) {
-                @Suppress("DEPRECATION")
-                publication.coverLink?.let { link ->
-                    bitmap = getBitmapFromURL(link.href)
-                } ?: run {
-                    if (publication.images.isNotEmpty()) {
-                        bitmap = getBitmapFromURL(publication.images.first().href)
-                    }
-                }
-            } else {
-                bitmap = publication.cover()
-            }
+            val bitmap: Bitmap? =
+                publication.cover() ?: getBitmapFromURL(publication.images.first().href)
 
             val resized = bitmap?.let { Bitmap.createScaledBitmap(it, 120, 200, true) }
             val fos = FileOutputStream(coverImageFile)

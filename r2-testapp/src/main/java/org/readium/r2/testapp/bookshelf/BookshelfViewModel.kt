@@ -24,7 +24,6 @@ import org.readium.r2.shared.extensions.mediaType
 import org.readium.r2.shared.extensions.tryOrNull
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.asset.FileAsset
-import org.readium.r2.shared.publication.opds.images
 import org.readium.r2.shared.publication.services.cover
 import org.readium.r2.shared.publication.services.isRestricted
 import org.readium.r2.shared.publication.services.protectionError
@@ -240,20 +239,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
             }
             val coverImageFile = File("${r2Directory}covers/${imageName}.png")
 
-            var bitmap: Bitmap? = null
-            // There are issues with Publication.cover not always having a bitmap
-            if (publication.cover() == null) {
-                @Suppress("DEPRECATION")
-                publication.coverLink?.let { link ->
-                    bitmap = getBitmapFromURL(link.href)
-                } ?: run {
-                    if (publication.images.isNotEmpty()) {
-                        bitmap = getBitmapFromURL(publication.images.first().href)
-                    }
-                }
-            } else {
-                bitmap = publication.cover()
-            }
+            val bitmap: Bitmap? = publication.cover()
 
             val resized = bitmap?.let { Bitmap.createScaledBitmap(it, 120, 200, true) }
             val fos = FileOutputStream(coverImageFile)
