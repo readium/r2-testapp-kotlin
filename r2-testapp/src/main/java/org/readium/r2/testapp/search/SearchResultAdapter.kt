@@ -34,9 +34,8 @@ class SearchResultAdapter(private var listener: Listener) :
 
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
         val locator = getItem(position) ?: return
-        val title = locator.title?.let { "<h6>$it</h6>" }
         val html =
-            "$title\n${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}"
+            "${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}"
         viewHolder.textView.text = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             Html.fromHtml(html, Html.FROM_HTML_MODE_COMPACT)
         } else {
