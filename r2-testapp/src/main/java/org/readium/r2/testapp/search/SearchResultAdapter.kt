@@ -19,7 +19,7 @@ import org.readium.r2.testapp.databinding.ItemRecycleSearchBinding
 import org.readium.r2.testapp.utils.singleClick
 
 /**
- * This class is an adapter for Search results' recycler view view
+ * This class is an adapter for Search results' recycler view.
  */
 class SearchResultAdapter(private var listener: Listener) :
     PagingDataAdapter<Locator, SearchResultAdapter.ViewHolder>(ItemCallback()) {
