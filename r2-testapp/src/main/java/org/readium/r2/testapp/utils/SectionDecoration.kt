@@ -16,7 +16,6 @@ import android.widget.TextView
 import androidx.core.view.children
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.NO_POSITION
-import org.readium.r2.shared.publication.Locator
 import org.readium.r2.testapp.databinding.SectionHeaderBinding
 
 class SectionDecoration(
@@ -32,6 +31,8 @@ class SectionDecoration(
     private lateinit var headerView: View
     private lateinit var sectionTitle: TextView
 
+    private val headerHeight get() = headerView.height
+
     override fun getItemOffsets(
         outRect: Rect,
         view: View,
@@ -41,7 +42,7 @@ class SectionDecoration(
         super.getItemOffsets(outRect, view, parent, state)
         val pos = parent.getChildAdapterPosition(view)
         if (listener.isStartOfSection(pos))
-            outRect.top = 100
+            outRect.top = headerHeight
     }
 
     override fun onDrawOver(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {

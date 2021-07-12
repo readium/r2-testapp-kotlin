@@ -23,6 +23,7 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.search.SearchIterator
 import org.readium.r2.shared.publication.services.search.SearchTry
 import org.readium.r2.shared.publication.services.search.search
+import org.readium.r2.shared.util.Try
 import org.readium.r2.testapp.bookshelf.BookRepository
 import org.readium.r2.testapp.db.BookDatabase
 import org.readium.r2.testapp.domain.model.Highlight
@@ -111,14 +112,16 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
     private var searchIterator: SearchIterator? = null
 
     private val pagingSourceFactory = InvalidatingPagingSourceFactory {
-        SearchPagingSource(searchIterator?.let { iterator ->
-            object : SearchPagingSource.Listener {
-                override suspend fun next(): SearchTry<LocatorCollection?> =
-                    iterator.next().onSuccess {
-                        _searchLocators.addAll(it?.locators ?: emptyList())
-                    }
+        SearchPagingSource(listener = PagingSourceListener())
+    }
+
+    inner class PagingSourceListener : SearchPagingSource.Listener {
+        override suspend fun next(): SearchTry<LocatorCollection?> {
+            val iterator = searchIterator ?: return Try.success(null)
+            return iterator.next().onSuccess {
+                _searchLocators.addAll(it?.locators ?: emptyList())
             }
-        })
+        }
     }
 
     val searchResult: Flow<PagingData<Locator>> =

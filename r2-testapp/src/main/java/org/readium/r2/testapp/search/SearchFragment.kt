@@ -52,9 +52,8 @@ class SearchFragment : Fragment(R.layout.fragment_search) {
         viewModel.channel
             .receive(viewLifecycleOwner) { event ->
                 when (event) {
-                    ReaderViewModel.Event.StartNewSearch -> {
+                    ReaderViewModel.Event.StartNewSearch ->
                         binding.searchRecyclerView.scrollToPosition(0)
-                    }
                     else -> {}
                 }
             }

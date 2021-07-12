@@ -15,7 +15,7 @@ import org.readium.r2.shared.publication.services.search.SearchIterator
 import org.readium.r2.shared.publication.services.search.SearchTry
 
 @OptIn(Search::class)
-class SearchPagingSource constructor(
+class SearchPagingSource(
     private val listener: Listener?
 ) : PagingSource<Unit, Locator>() {
 
