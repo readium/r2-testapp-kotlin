@@ -25,13 +25,11 @@ class SectionDecoration(
 
     interface Listener {
         fun isStartOfSection(itemPos: Int): Boolean
-        fun sectionTitle(itemPos: Int): String
+        fun locatorTitle(itemPos: Int): String
     }
 
     private lateinit var headerView: View
     private lateinit var sectionTitle: TextView
-
-    private val headerHeight get() = headerView.height
 
     override fun getItemOffsets(
         outRect: Rect,
@@ -41,8 +39,8 @@ class SectionDecoration(
     ) {
         super.getItemOffsets(outRect, view, parent, state)
         val pos = parent.getChildAdapterPosition(view)
-        if (listener.isStartOfSection(pos))
-            outRect.top = headerHeight
+        if (::headerView.isInitialized && listener.locatorTitle(pos) != "" && listener.isStartOfSection(pos))
+            outRect.top = headerView.height
     }
 
     override fun onDrawOver(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
@@ -55,13 +53,13 @@ class SectionDecoration(
             headerView = root
             sectionTitle = header
         }
-        fixLayoutSize(headerView, parent)
 
         val children = parent.children.toList()
         children.forEach { child ->
             val pos = parent.getChildAdapterPosition(child)
-            if (pos != NO_POSITION && (listener.isStartOfSection(pos) || isTopChild(child, children))) {
-                sectionTitle.text = listener.sectionTitle(pos)
+            if (pos != NO_POSITION && listener.locatorTitle(pos) != "" && (listener.isStartOfSection(pos) || isTopChild(child, children))) {
+                sectionTitle.text = listener.locatorTitle(pos)
+                fixLayoutSize(headerView, parent)
                 drawHeader(c, child, headerView)
             }
         }
