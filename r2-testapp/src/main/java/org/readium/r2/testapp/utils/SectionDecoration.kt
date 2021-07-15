@@ -25,11 +25,11 @@ class SectionDecoration(
 
     interface Listener {
         fun isStartOfSection(itemPos: Int): Boolean
-        fun locatorTitle(itemPos: Int): String
+        fun sectionTitle(itemPos: Int): String
     }
 
     private lateinit var headerView: View
-    private lateinit var sectionTitle: TextView
+    private lateinit var sectionTitleView: TextView
 
     override fun getItemOffsets(
         outRect: Rect,
@@ -39,29 +39,39 @@ class SectionDecoration(
     ) {
         super.getItemOffsets(outRect, view, parent, state)
         val pos = parent.getChildAdapterPosition(view)
-        if (::headerView.isInitialized && listener.locatorTitle(pos) != "" && listener.isStartOfSection(pos))
+        initHeaderViewIfNeeded(parent)
+        if (listener.sectionTitle(pos) != "" && listener.isStartOfSection(pos)) {
+            sectionTitleView.text = listener.sectionTitle(pos)
+            fixLayoutSize(headerView, parent)
             outRect.top = headerView.height
+        }
     }
 
     override fun onDrawOver(c: Canvas, parent: RecyclerView, state: RecyclerView.State) {
         super.onDrawOver(c, parent, state)
+        initHeaderViewIfNeeded(parent)
+
+        val children = parent.children.toList()
+        children.forEach { child ->
+            val pos = parent.getChildAdapterPosition(child)
+            if (pos != NO_POSITION && listener.sectionTitle(pos) != "" &&
+                (listener.isStartOfSection(pos) || isTopChild(child, children))) {
+                sectionTitleView.text = listener.sectionTitle(pos)
+                fixLayoutSize(headerView, parent)
+                drawHeader(c, child, headerView)
+            }
+        }
+    }
+
+    private fun initHeaderViewIfNeeded(parent: RecyclerView) {
+        if (::headerView.isInitialized) return
         SectionHeaderBinding.inflate(
             LayoutInflater.from(context),
             parent,
             false
         ).apply {
             headerView = root
-            sectionTitle = header
-        }
-
-        val children = parent.children.toList()
-        children.forEach { child ->
-            val pos = parent.getChildAdapterPosition(child)
-            if (pos != NO_POSITION && listener.locatorTitle(pos) != "" && (listener.isStartOfSection(pos) || isTopChild(child, children))) {
-                sectionTitle.text = listener.locatorTitle(pos)
-                fixLayoutSize(headerView, parent)
-                drawHeader(c, child, headerView)
-            }
+            sectionTitleView = header
         }
     }
 

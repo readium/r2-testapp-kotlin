@@ -93,17 +93,15 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
         searchIterator = publication.search(query)
             .onFailure { channel.send(Event.Failure(it)) }
             .getOrNull()
-
         pagingSourceFactory.invalidate()
         channel.send(Event.StartNewSearch)
     }
 
-    fun cancelSearch() {
-        viewModelScope.launch {
-            searchIterator?.close()
-            searchIterator = null
-            pagingSourceFactory.invalidate()
-        }
+    fun cancelSearch() = viewModelScope.launch {
+        _searchLocators.clear()
+        searchIterator?.close()
+        searchIterator = null
+        pagingSourceFactory.invalidate()
     }
 
     val searchLocators: List<Locator> get() = _searchLocators

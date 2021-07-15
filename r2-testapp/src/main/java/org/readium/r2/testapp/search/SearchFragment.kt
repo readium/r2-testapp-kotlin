@@ -72,7 +72,7 @@ class SearchFragment : Fragment(R.layout.fragment_search) {
                         }
                     }
 
-                override fun locatorTitle(itemPos: Int): String =
+                override fun sectionTitle(itemPos: Int): String =
                     viewModel.searchLocators.getOrNull(itemPos)?.title ?: ""
             }))
             addItemDecoration(DividerItemDecoration(context, DividerItemDecoration.VERTICAL))
