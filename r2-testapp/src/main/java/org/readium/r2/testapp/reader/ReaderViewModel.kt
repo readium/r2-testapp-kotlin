@@ -74,37 +74,54 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
         repository.highlightsForBook(bookId)
     }
 
+    /**
+     * Database ID of the active highlight for the current highlight pop-up. This is used to show
+     * the highlight decoration in an "active" state.
+     */
     var activeHighlightId = MutableStateFlow<Long?>(null)
 
+    /**
+     * Current state of the highlight decorations.
+     *
+     * It will automatically be updated when the highlights database table or the current
+     * [activeHighlightId] change.
+     */
     val highlightDecorations: Flow<List<Decoration>> by lazy {
         highlights.combine(activeHighlightId) { highlights, activeId ->
-            highlights.flatMap {
-                it.toDecorations(isActive = it.id == activeId)
+            highlights.flatMap { highlight ->
+                highlight.toDecorations(isActive = (highlight.id == activeId))
             }
         }
     }
 
+    /**
+     * Creates a list of [Decoration] for the receiver [Highlight].
+     */
     private fun Highlight.toDecorations(isActive: Boolean): List<Decoration> {
-        fun toDecoration(suffix: String, style: Decoration.Style) = Decoration(
-            id = "$id-$suffix",
+        fun createDecoration(idSuffix: String, style: Decoration.Style) = Decoration(
+            id = "$id-$idSuffix",
             locator = locator,
             style = style,
             extras = Bundle().apply {
+                // We store the highlight's database ID in the extras bundle, for easy retrieval
+                // later. You can store arbitrary information in the bundle.
                 putLong("id", id)
             }
         )
 
         return listOfNotNull(
-            toDecoration(
-                suffix = "highlight",
+            // Decoration for the actual highlight / underline.
+            createDecoration(
+                idSuffix = "highlight",
                 style = when (style) {
                     Highlight.Style.HIGHLIGHT -> Decoration.Style.Highlight(tint = tint, isActive = isActive)
                     Highlight.Style.UNDERLINE -> Decoration.Style.Underline(tint = tint, isActive = isActive)
                 }
             ),
+            // Additional page margin icon decoration, if the highlight has an associated note.
             annotation.takeIf { it.isNotEmpty() }?.let {
-                toDecoration(
-                    suffix = "annotation",
+                createDecoration(
+                    idSuffix = "annotation",
                     style = DecorationStyleAnnotationMark(tint = tint),
                 )
             }
@@ -151,10 +168,16 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
     val searchLocators: StateFlow<List<Locator>> get() = _searchLocators
     private var _searchLocators = MutableStateFlow<List<Locator>>(emptyList())
 
+    /**
+     * Maps the current list of search result locators into a list of [Decoration] objects to
+     * underline the results in the navigator.
+     */
     val searchDecorations: Flow<List<Decoration>> by lazy {
         searchLocators.map {
             it.mapIndexed { index, locator ->
                 Decoration(
+                    // The index in the search result list is a suitable Decoration ID, as long as
+                    // we clear the search decorations between two searches.
                     id = index.toString(),
                     locator = locator,
                     style = Decoration.Style.Underline(tint = Color.RED)

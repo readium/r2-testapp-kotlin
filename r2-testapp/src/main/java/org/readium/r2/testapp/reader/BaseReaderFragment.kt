@@ -77,16 +77,23 @@ abstract class BaseReaderFragment : Fragment() {
         (navigator as? DecorableNavigator)?.let { navigator ->
             navigator.addDecorationListener("highlights",
                 onActivated = { decoration, _, rect ->
+                    // We stored the highlight's database ID in the `Decoration.extras` bundle, for
+                    // easy retrieval. You can store arbitrary information in the bundle.
                     val id = decoration.extras.getLong("id")
                         .takeIf { it > 0 } ?: return@addDecorationListener
 
+                    // This listener will be called when tapping on any of the decorations in the
+                    // "highlights" group. To differentiate between the page margin icon and the
+                    // actual highlight, we check for the type of `decoration.style`. But you could
+                    // use any other information, including the decoration ID or the extras bundle.
                     if (decoration.style is DecorationStyleAnnotationMark) {
                         showAnnotationPopup(id)
+
                     } else if (rect != null) {
+                        val isUnderline = (decoration.style is Decoration.Style.Underline)
                         showHighlightPopup(rect,
-                            style =
-                            if (decoration.style is Decoration.Style.Underline) Highlight.Style.UNDERLINE
-                            else Highlight.Style.HIGHLIGHT,
+                            style = if (isUnderline) Highlight.Style.UNDERLINE
+                                else Highlight.Style.HIGHLIGHT,
                             highlightId = id
                         )
                     }
@@ -145,6 +152,7 @@ abstract class BaseReaderFragment : Fragment() {
     private var popupWindow: PopupWindow? = null
     private var mode: ActionMode? = null
 
+    // Available tint colors for highlight and underline annotations.
     private val highlightTints = mapOf<@IdRes Int, @ColorInt Int>(
         R.id.red to Color.rgb(247, 124, 124),
         R.id.green to Color.rgb(173, 247, 123),
@@ -158,22 +166,24 @@ abstract class BaseReaderFragment : Fragment() {
         val navigator = (navigator as? SelectableNavigator) ?: return
 
         this.mode = mode?.apply {
+            // Remove the default text selection menu items and set our own menu.
             menu.clear()
             menuInflater.inflate(R.menu.menu_action_mode, menu)
-            menu.findItem(R.id.highlight).setOnMenuItemClickListener {
-                viewScope.launchWhenResumed {
-                    navigator.currentSelection()?.rect?.let { selectionRect ->
-                        showHighlightPopup(selectionRect, Highlight.Style.HIGHLIGHT)
-                    }
+
+            fun showHighlightPopupWithStyle(style: Highlight.Style) = viewScope.launchWhenResumed {
+                // Get the rect of the current selection to know where to position the highlight
+                // popup.
+                navigator.currentSelection()?.rect?.let { selectionRect ->
+                    showHighlightPopup(selectionRect, style)
                 }
+            }
+
+            menu.findItem(R.id.highlight).setOnMenuItemClickListener {
+                showHighlightPopupWithStyle(Highlight.Style.HIGHLIGHT)
                 true
             }
             menu.findItem(R.id.underline).setOnMenuItemClickListener {
-                viewScope.launchWhenResumed {
-                    navigator.currentSelection()?.rect?.let { selectionRect ->
-                        showHighlightPopup(selectionRect, Highlight.Style.UNDERLINE)
-                    }
-                }
+                showHighlightPopupWithStyle(Highlight.Style.UNDERLINE)
                 true
             }
             menu.findItem(R.id.note).setOnMenuItemClickListener {
@@ -316,6 +326,11 @@ abstract class BaseReaderFragment : Fragment() {
 
 }
 
+/**
+ * Decoration Style for a page margin icon.
+ *
+ * This is an example of a custom Decoration Style declaration.
+ */
 @Parcelize
 @OptIn(ExperimentalDecorator::class)
 data class DecorationStyleAnnotationMark(@ColorInt val tint: Int) : Decoration.Style
