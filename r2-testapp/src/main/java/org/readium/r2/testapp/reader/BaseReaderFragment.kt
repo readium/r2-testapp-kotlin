@@ -75,30 +75,7 @@ abstract class BaseReaderFragment : Fragment() {
             .launchIn(viewScope)
 
         (navigator as? DecorableNavigator)?.let { navigator ->
-            navigator.addDecorationListener("highlights",
-                onActivated = { decoration, _, rect ->
-                    // We stored the highlight's database ID in the `Decoration.extras` bundle, for
-                    // easy retrieval. You can store arbitrary information in the bundle.
-                    val id = decoration.extras.getLong("id")
-                        .takeIf { it > 0 } ?: return@addDecorationListener
-
-                    // This listener will be called when tapping on any of the decorations in the
-                    // "highlights" group. To differentiate between the page margin icon and the
-                    // actual highlight, we check for the type of `decoration.style`. But you could
-                    // use any other information, including the decoration ID or the extras bundle.
-                    if (decoration.style is DecorationStyleAnnotationMark) {
-                        showAnnotationPopup(id)
-
-                    } else if (rect != null) {
-                        val isUnderline = (decoration.style is Decoration.Style.Underline)
-                        showHighlightPopup(rect,
-                            style = if (isUnderline) Highlight.Style.UNDERLINE
-                                else Highlight.Style.HIGHLIGHT,
-                            highlightId = id
-                        )
-                    }
-                }
-            )
+            navigator.addDecorationListener("highlights", decorationListener)
 
             model.highlightDecorations
                 .onEach { navigator.applyDecorations(it, "highlights") }
@@ -112,6 +89,7 @@ abstract class BaseReaderFragment : Fragment() {
 
     override fun onDestroyView() {
         _binding = null
+        (navigator as? DecorableNavigator)?.removeDecorationListener(decorationListener)
         super.onDestroyView()
     }
 
@@ -146,6 +124,40 @@ abstract class BaseReaderFragment : Fragment() {
 
     fun go(locator: Locator, animated: Boolean) =
         navigator.go(locator, animated)
+
+    // DecorableNavigator.Listener
+
+    private val decorationListener by lazy { DecorationListener() }
+
+    inner class DecorationListener : DecorableNavigator.Listener {
+        override fun onDecorationActivated(event: DecorableNavigator.OnActivatedEvent): Boolean {
+            val decoration = event.decoration
+            // We stored the highlight's database ID in the `Decoration.extras` bundle, for
+            // easy retrieval. You can store arbitrary information in the bundle.
+            val id = decoration.extras.getLong("id")
+                .takeIf { it > 0 } ?: return false
+
+            // This listener will be called when tapping on any of the decorations in the
+            // "highlights" group. To differentiate between the page margin icon and the
+            // actual highlight, we check for the type of `decoration.style`. But you could
+            // use any other information, including the decoration ID or the extras bundle.
+            if (decoration.style is DecorationStyleAnnotationMark) {
+                showAnnotationPopup(id)
+            } else {
+                event.rect?.let { rect ->
+                    val isUnderline = (decoration.style is Decoration.Style.Underline)
+                    showHighlightPopup(rect,
+                        style = if (isUnderline) Highlight.Style.UNDERLINE
+                        else Highlight.Style.HIGHLIGHT,
+                        highlightId = id
+                    )
+                }
+            }
+
+            return true
+        }
+
+    }
 
     // Highlights
 
