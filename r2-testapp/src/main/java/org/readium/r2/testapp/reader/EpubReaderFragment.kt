@@ -29,12 +29,10 @@ import org.readium.r2.navigator.ExperimentalDecorator
 import org.readium.r2.navigator.Navigator
 import org.readium.r2.navigator.epub.EpubNavigatorFragment
 import org.readium.r2.navigator.html.HtmlDecorationTemplate
-import org.readium.r2.navigator.html.HtmlDecorationTemplates
 import org.readium.r2.navigator.html.toCss
 import org.readium.r2.shared.APPEARANCE_REF
 import org.readium.r2.shared.ReadiumCSSName
 import org.readium.r2.shared.SCROLL_REF
-import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.R2App
@@ -95,17 +93,6 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
             )
 
         childFragmentManager.setFragmentResultListener(
-            SearchFragment::class.java.name,
-            this,
-            FragmentResultListener { _, result ->
-                menuSearch.collapseActionView()
-                result.getParcelable<Locator>(SearchFragment::class.java.name)?.let {
-                    navigatorFragment.go(it)
-                }
-            }
-        )
-
-        childFragmentManager.setFragmentResultListener(
             ScreenReaderContract.REQUEST_KEY,
             this,
             FragmentResultListener { _, result ->
@@ -148,6 +135,16 @@ class EpubReaderFragment : VisualReaderFragment(), EpubNavigatorFragment.Listene
             val backgroundsColors = mutableListOf("#ffffff", "#faf4e8", "#000000")
             navigatorFragment.resourcePager.setBackgroundColor(Color.parseColor(backgroundsColors[appearancePref]))
         }
+
+        model.channel
+            .receive(viewLifecycleOwner) { event ->
+                when (event) {
+                    is ReaderViewModel.Event.GoToSearchResult -> {
+                        menuSearch.collapseActionView()
+                        navigator.go(event.locator)
+                    }
+                }
+            }
     }
 
     override fun onResume() {

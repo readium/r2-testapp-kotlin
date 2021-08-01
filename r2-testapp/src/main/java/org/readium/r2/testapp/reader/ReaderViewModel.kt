@@ -13,9 +13,14 @@ import androidx.annotation.ColorInt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.paging.*
+import androidx.paging.InvalidatingPagingSourceFactory
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.readium.r2.navigator.Decoration
 import org.readium.r2.navigator.ExperimentalDecorator
@@ -148,25 +153,19 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
     }
 
     fun search(query: String) = viewModelScope.launch {
-        if (query == lastSearchQuery) return@launch
-        lastSearchQuery = query
-        _searchLocators.value = emptyList()
         searchIterator = publication.search(query)
             .onFailure { channel.send(Event.Failure(it)) }
             .getOrNull()
         pagingSourceFactory.invalidate()
-        channel.send(Event.StartNewSearch)
     }
 
     fun cancelSearch() = viewModelScope.launch {
-        _searchLocators.value = emptyList()
         searchIterator?.close()
         searchIterator = null
         pagingSourceFactory.invalidate()
     }
 
-    val searchLocators: StateFlow<List<Locator>> get() = _searchLocators
-    private var _searchLocators = MutableStateFlow<List<Locator>>(emptyList())
+    private var searchLocators = MutableStateFlow<List<Locator>>(emptyList())
 
     /**
      * Maps the current list of search result locators into a list of [Decoration] objects to
@@ -186,8 +185,6 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
         }
     }
 
-    private var lastSearchQuery: String? = null
-
     private var searchIterator: SearchIterator? = null
 
     private val pagingSourceFactory = InvalidatingPagingSourceFactory {
@@ -197,18 +194,24 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
     inner class PagingSourceListener : SearchPagingSource.Listener {
         override suspend fun next(): SearchTry<LocatorCollection?> {
             val iterator = searchIterator ?: return Try.success(null)
-            return iterator.next().onSuccess {
-                _searchLocators.value += (it?.locators ?: emptyList())
-            }
+            return iterator.next()
+                .onSuccess {
+                    searchLocators.value += it?.locators ?: emptyList()
+                }
         }
     }
 
-    val searchResult: Flow<PagingData<Locator>> =
-        Pager(PagingConfig(pageSize = 20), pagingSourceFactory = pagingSourceFactory)
-            .flow.cachedIn(viewModelScope)
+    val searchPager = Pager(
+        PagingConfig(pageSize = 20),
+        pagingSourceFactory = pagingSourceFactory
+    )
 
-    class Factory(private val context: Context, private val arguments: ReaderContract.Input)
-        : ViewModelProvider.NewInstanceFactory() {
+    fun onSearchItemClicked(locator: Locator) {
+        channel.send(Event.GoToSearchResult(locator))
+    }
+
+    class Factory(private val context: Context, private val arguments: ReaderContract.Input) :
+        ViewModelProvider.NewInstanceFactory() {
 
         override fun <T : ViewModel?> create(modelClass: Class<T>): T =
             modelClass.getDeclaredConstructor(Context::class.java, ReaderContract.Input::class.java)
@@ -218,7 +221,7 @@ class ReaderViewModel(context: Context, arguments: ReaderContract.Input) : ViewM
     sealed class Event {
         object OpenOutlineRequested : Event()
         object OpenDrmManagementRequested : Event()
-        object StartNewSearch : Event()
+        class GoToSearchResult(val locator: Locator) : Event()
         class Failure(val error: UserException) : Event()
     }
 
