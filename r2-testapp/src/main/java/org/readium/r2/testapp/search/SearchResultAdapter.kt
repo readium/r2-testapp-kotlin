@@ -6,40 +6,51 @@
 
 package org.readium.r2.testapp.search
 
+import android.os.Build
 import android.text.Html
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import org.readium.r2.shared.publication.Locator
-import org.readium.r2.testapp.R
+import org.readium.r2.testapp.databinding.ItemRecycleSearchBinding
 import org.readium.r2.testapp.utils.singleClick
 
 /**
- * This class is an adapter for Search results' list view
+ * This class is an adapter for Search results' recycler view.
  */
-class SearchResultAdapter(private var listener: Listener) : PagingDataAdapter<Locator, SearchResultAdapter.ViewHolder>(ItemCallback()) {
+class SearchResultAdapter(private var listener: Listener) :
+    PagingDataAdapter<Locator, SearchResultAdapter.ViewHolder>(ItemCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_recycle_search, parent, false)
-        return ViewHolder(view)
+        return ViewHolder(
+            ItemRecycleSearchBinding.inflate(
+                LayoutInflater.from(parent.context), parent, false
+            )
+        )
     }
 
-    override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val locator = getItem(position) ?: return
-        val title = locator.title?.let { "<h6>$it</h6>"}
-        viewHolder.textView.text = Html.fromHtml("$title\n${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}")
+        val html =
+            "${locator.text.before}<span style=\"background:yellow;\"><b>${locator.text.highlight}</b></span>${locator.text.after}"
+        holder.textView.text = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            Html.fromHtml(html, Html.FROM_HTML_MODE_COMPACT)
+        } else {
+            @Suppress("DEPRECATION")
+            Html.fromHtml(html)
+        }
 
-        viewHolder.itemView.singleClick { v->
+        holder.itemView.singleClick { v ->
             listener.onItemClicked(v, locator)
         }
     }
 
-    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val textView: TextView = view.findViewById<View>(R.id.text) as TextView
+    inner class ViewHolder(val binding: ItemRecycleSearchBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+        val textView = binding.text
     }
 
     interface Listener {
@@ -54,5 +65,4 @@ class SearchResultAdapter(private var listener: Listener) : PagingDataAdapter<Lo
         override fun areContentsTheSame(oldItem: Locator, newItem: Locator): Boolean =
             oldItem == newItem
     }
-
 }

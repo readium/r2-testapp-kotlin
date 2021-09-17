@@ -19,9 +19,11 @@ import androidx.fragment.app.commitNow
 import androidx.lifecycle.ViewModelProvider
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
+import org.readium.r2.shared.publication.allAreAudio
 import org.readium.r2.shared.publication.allAreBitmap
 import org.readium.r2.shared.util.mediatype.MediaType
 import org.readium.r2.testapp.R
+import org.readium.r2.testapp.databinding.ActivityReaderBinding
 import org.readium.r2.testapp.drm.DrmManagementContract
 import org.readium.r2.testapp.drm.DrmManagementFragment
 import org.readium.r2.testapp.outline.OutlineContract
@@ -32,16 +34,22 @@ import org.readium.r2.testapp.outline.OutlineFragment
  *
  * This class can be used as it is or be inherited from.
  */
-open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
+open class ReaderActivity : AppCompatActivity() {
 
-    protected lateinit var readerFragment: VisualReaderFragment
+    protected lateinit var readerFragment: BaseReaderFragment
     private lateinit var modelFactory: ReaderViewModel.Factory
     private lateinit var publication: Publication
+
+    lateinit var binding: ActivityReaderBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val inputData = ReaderContract.parseIntent(this)
         modelFactory = ReaderViewModel.Factory(applicationContext, inputData)
         super.onCreate(savedInstanceState)
+
+        binding = ActivityReaderBinding.inflate(layoutInflater)
+        val view = binding.root
+        setContentView(view)
 
         ViewModelProvider(this).get(ReaderViewModel::class.java).let { model ->
             publication = model.publication
@@ -61,6 +69,7 @@ open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
                 val readerClass: Class<out Fragment> = when {
                     publication.readingOrder.all { it.mediaType == MediaType.PDF } -> PdfReaderFragment::class.java
                     publication.readingOrder.allAreBitmap -> ImageReaderFragment::class.java
+                    publication.readingOrder.allAreAudio -> AudioReaderFragment::class.java
                     else -> throw IllegalArgumentException("Cannot render publication")
                 }
 
@@ -70,7 +79,7 @@ open class ReaderActivity : AppCompatActivity(R.layout.activity_reader) {
             }
         }
 
-        readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as VisualReaderFragment
+        readerFragment = supportFragmentManager.findFragmentByTag(READER_FRAGMENT_TAG) as BaseReaderFragment
 
         supportFragmentManager.setFragmentResultListener(
             OutlineContract.REQUEST_KEY,

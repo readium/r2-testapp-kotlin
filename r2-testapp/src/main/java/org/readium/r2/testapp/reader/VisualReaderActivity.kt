@@ -9,16 +9,17 @@ package org.readium.r2.testapp.reader
 import android.os.Bundle
 import android.view.View
 import android.view.WindowInsets
-import android.widget.FrameLayout
-import org.readium.r2.testapp.R
 import org.readium.r2.testapp.utils.clearPadding
 import org.readium.r2.testapp.utils.padSystemUi
 import org.readium.r2.testapp.utils.showSystemUi
 
-/*
+/**
  * Adds fullscreen support to the ReaderActivity
  */
 open class VisualReaderActivity : ReaderActivity() {
+
+    private val visualReaderFragment: VisualReaderFragment
+        get() = readerFragment as VisualReaderFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,10 +28,10 @@ open class VisualReaderActivity : ReaderActivity() {
         // although we need a call every time the reader is hidden
         window.decorView.setOnApplyWindowInsetsListener { view, insets ->
             val newInsets = view.onApplyWindowInsets(insets)
-            findViewById<FrameLayout>(R.id.activity_container).dispatchApplyWindowInsets(newInsets)
+            binding.activityContainer.dispatchApplyWindowInsets(newInsets)
         }
 
-        findViewById<FrameLayout>(R.id.activity_container).setOnApplyWindowInsetsListener { container, insets ->
+        binding.activityContainer.setOnApplyWindowInsetsListener { container, insets ->
             updateSystemUiPadding(container, insets)
             insets
         }
@@ -46,17 +47,17 @@ open class VisualReaderActivity : ReaderActivity() {
     }
 
     private fun updateSystemUiVisibility() {
-        if (readerFragment.isHidden)
+        if (visualReaderFragment.isHidden)
             showSystemUi()
         else
-            readerFragment.updateSystemUiVisibility()
+            visualReaderFragment.updateSystemUiVisibility()
 
         // Seems to be required to adjust padding when transitioning from the outlines to the screen reader
-        findViewById<FrameLayout>(R.id.activity_container).requestApplyInsets()
+        binding.activityContainer.requestApplyInsets()
     }
 
     private fun updateSystemUiPadding(container: View, insets: WindowInsets) {
-        if (readerFragment.isHidden)
+        if (visualReaderFragment.isHidden)
             container.padSystemUi(insets, this)
         else
             container.clearPadding()

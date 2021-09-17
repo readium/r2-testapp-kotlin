@@ -16,6 +16,7 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.PublicationId
 import org.readium.r2.testapp.bookshelf.BookRepository
 import org.readium.r2.testapp.db.BookDatabase
+import org.readium.r2.testapp.reader.ReaderActivity
 
 @OptIn(AudiobookNavigator::class)
 class AudiobookService : MediaService() {
@@ -32,7 +33,7 @@ class AudiobookService : MediaService() {
 
     override val navigatorActivityIntent: PendingIntent?
         get() {
-            val intent = Intent(this, AudiobookActivity::class.java).apply {
+            val intent = Intent(this, ReaderActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             }
             return PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT)

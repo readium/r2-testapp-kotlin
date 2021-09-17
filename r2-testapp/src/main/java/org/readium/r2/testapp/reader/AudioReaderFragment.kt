@@ -4,30 +4,38 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.commitNow
-import androidx.lifecycle.ViewModelProvider
+import org.readium.r2.navigator.MediaNavigator
 import org.readium.r2.navigator.Navigator
-import org.readium.r2.shared.publication.Publication
+import org.readium.r2.navigator.audio.AudioNavigatorFragment
+import org.readium.r2.navigator.media.MediaService
+import org.readium.r2.shared.AudiobookNavigator
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.audiobook.AudioNavigatorFragment
-import org.readium.r2.testapp.audiobook.AudiobookActivity
+import org.readium.r2.testapp.audiobook.AudiobookService
 
-class AudioReaderFragment : BaseReaderFragment(), AudioNavigatorFragment.Listener {
+@OptIn(AudiobookNavigator::class)
+class AudioReaderFragment : BaseReaderFragment() {
 
-    override lateinit var model: ReaderViewModel
-    override lateinit var navigator: Navigator
-    private lateinit var publication: Publication
+    override val model: ReaderViewModel by activityViewModels()
+    override val navigator: Navigator get() = mediaNavigator
+
+    private lateinit var mediaNavigator: MediaNavigator
+    private lateinit var mediaService: MediaService.Connection
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val activity = requireActivity() as AudiobookActivity
+        val context = requireContext()
 
-        ViewModelProvider(activity).get(ReaderViewModel::class.java).let {
-            model = it
-            publication = it.publication
-        }
+        mediaService = MediaService.connect(context, AudiobookService::class.java)
 
-        childFragmentManager.fragmentFactory =
-            AudioNavigatorFragment.createFactory(publication, model.initialLocation, this)
+        // Get the currently playing navigator from the media service, if it is the same pub ID.
+        // Otherwise, ask to switch to the new publication.
+        mediaNavigator = mediaService.currentNavigator.value?.takeIf { it.publicationId == model.publicationId }
+            ?: mediaService.getNavigator(model.publication, model.publicationId, model.initialLocation)
+
+        mediaNavigator.play()
+
+        childFragmentManager.fragmentFactory = AudioNavigatorFragment.createFactory(mediaNavigator)
 
         super.onCreate(savedInstanceState)
     }
@@ -39,7 +47,6 @@ class AudioReaderFragment : BaseReaderFragment(), AudioNavigatorFragment.Listene
                 add(R.id.fragment_reader_container, AudioNavigatorFragment::class.java, Bundle(), NAVIGATOR_FRAGMENT_TAG)
             }
         }
-        navigator = childFragmentManager.findFragmentByTag(NAVIGATOR_FRAGMENT_TAG)!! as Navigator
         return view
     }
 
