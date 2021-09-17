@@ -195,7 +195,7 @@
             android:name=".reader.VisualReaderActivity"
             android:label="Reader" />
 
-        <service android:name=".audiobook.AudiobookService"
+        <service android:name=".reader.AudiobookService"
             android:enabled="true"
             android:exported="true"
             android:stopWithTask="true"

@@ -1,10 +1,10 @@
 /*
- * Copyright 2020 Readium Foundation. All rights reserved.
+ * Copyright 2021 Readium Foundation. All rights reserved.
  * Use of this source code is governed by the BSD-style license
  * available in the top-level LICENSE file of the project.
  */
 
-package org.readium.r2.testapp.audiobook
+package org.readium.r2.testapp.reader
 
 import android.app.PendingIntent
 import android.content.Intent
@@ -16,7 +16,6 @@ import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.PublicationId
 import org.readium.r2.testapp.bookshelf.BookRepository
 import org.readium.r2.testapp.db.BookDatabase
-import org.readium.r2.testapp.reader.ReaderActivity
 
 @OptIn(AudiobookNavigator::class)
 class AudiobookService : MediaService() {

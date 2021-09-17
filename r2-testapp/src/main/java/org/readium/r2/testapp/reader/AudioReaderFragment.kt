@@ -12,7 +12,6 @@ import org.readium.r2.navigator.audio.AudioNavigatorFragment
 import org.readium.r2.navigator.media.MediaService
 import org.readium.r2.shared.AudiobookNavigator
 import org.readium.r2.testapp.R
-import org.readium.r2.testapp.audiobook.AudiobookService
 
 @OptIn(AudiobookNavigator::class)
 class AudioReaderFragment : BaseReaderFragment() {
