@@ -78,10 +78,10 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
 
     private suspend fun addPublicationToDatabase(
         href: String,
-        extension: String,
+        mediaType: MediaType,
         publication: Publication
     ): Long {
-        val id = repository.insertBook(href, extension, publication)
+        val id = repository.insertBook(href, mediaType, publication)
         storeCoverImage(publication, id.toString())
         return id
     }
@@ -159,10 +159,6 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
 
-        val extension = libraryAsset.let {
-            it.mediaType().fileExtension ?: it.file.extension
-        }
-
         val isRwpm = libraryAsset.mediaType().isRwpm
 
         val bddHref =
@@ -177,7 +173,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
 
         streamer.open(libraryAsset, allowUserInteraction = false, sender = r2Application)
             .onSuccess {
-                addPublicationToDatabase(bddHref, extension, it).let { id ->
+                addPublicationToDatabase(bddHref, libraryAsset.mediaType(), it).let { id ->
 
                     showProgressBar.set(false)
                     if (id != -1L)
@@ -198,13 +194,12 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun openBook(
         book: Book, context: Context,
-        callback: (file: FileAsset, mediaType: MediaType?, publication: Publication, remoteAsset: FileAsset?, url: URL?) -> Unit
+        callback: suspend (file: FileAsset, publication: Publication, url: URL?) -> Unit
     ) = viewModelScope.launch {
 
-        val remoteAsset: FileAsset? =
-            tryOrNull { URL(book.href).copyToTempFile(r2Directory)?.let { FileAsset(it) } }
-        val asset = remoteAsset // remote file
-            ?: FileAsset(File(book.href)) // local file
+        val file = File(book.href)
+        require(file.exists())
+        val asset = FileAsset(file)
 
         streamer.open(asset, allowUserInteraction = true, sender = context)
             .onFailure {
@@ -219,7 +214,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                 } else {
                     val url = prepareToServe(it)
-                    callback.invoke(asset, asset.mediaType(), it, remoteAsset, url)
+                    callback.invoke(asset, it, url)
                 }
             }
     }

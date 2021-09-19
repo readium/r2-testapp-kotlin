@@ -60,7 +60,7 @@ open class ReaderActivity : AppCompatActivity() {
 
             if (publication.type == Publication.TYPE.EPUB) {
                 val baseUrl = requireNotNull(inputData.baseUrl)
-                readerFragment = EpubReaderFragment.newInstance(baseUrl, inputData.bookId)
+                readerFragment = EpubReaderFragment.newInstance(baseUrl)
 
                 supportFragmentManager.commitNow {
                     replace(R.id.activity_container, readerFragment, READER_FRAGMENT_TAG)

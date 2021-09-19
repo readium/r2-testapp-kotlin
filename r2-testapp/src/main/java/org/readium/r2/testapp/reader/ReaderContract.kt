@@ -26,19 +26,15 @@ import java.net.URL
 class ReaderContract : ActivityResultContract<ReaderContract.Input, ReaderContract.Output>() {
 
     data class Input(
-        val file: File,
         val mediaType: MediaType?,
         val publication: Publication,
         val bookId: Long,
         val initialLocator: Locator? = null,
-        val deleteOnResult: Boolean = false,
         val baseUrl: URL? = null
     )
 
     data class Output(
-        val file: File,
-        val publication: Publication,
-        val deleteOnResult: Boolean
+        val publication: Publication
     )
 
     override fun createIntent(context: Context, input: Input): Intent {
@@ -58,9 +54,6 @@ class ReaderContract : ActivityResultContract<ReaderContract.Input, ReaderContra
         return intent.apply {
             putPublication(input.publication)
             putExtra("bookId", input.bookId)
-            putExtra("publicationPath", input.file.path)
-            putExtra("publicationFileName", input.file.name)
-            putExtra("deleteOnResult", input.deleteOnResult)
             putExtra("baseUrl", input.baseUrl?.toString())
             putExtra("locator", input.initialLocator)
         }
@@ -70,15 +63,9 @@ class ReaderContract : ActivityResultContract<ReaderContract.Input, ReaderContra
         if (intent == null)
             return null
 
-        val path = intent.getStringExtra("publicationPath")
-            ?: throw Exception("publicationPath required")
-
         intent.destroyPublication(null)
-
         return Output(
-            file = File(path),
             publication = intent.getPublication(null),
-            deleteOnResult = intent.getBooleanExtra("deleteOnResult", false)
         )
     }
 
@@ -86,13 +73,11 @@ class ReaderContract : ActivityResultContract<ReaderContract.Input, ReaderContra
 
         fun parseIntent(activity: Activity): Input = with(activity) {
             Input(
-                file = File(intent.getStringExtra("publicationPath")!!),
                 mediaType = null,
                 publication = intent.getPublication(activity),
                 bookId = intent.getLongExtra("bookId", -1),
                 initialLocator = intent.getParcelableExtra("locator"),
-                deleteOnResult = intent.getBooleanExtra("deleteOnResult", false),
-                baseUrl = URL(intent.getStringExtra("baseUrl"))
+                baseUrl = intent.getStringExtra("baseUrl")?.let { URL(it) }
             )
         }
     }
