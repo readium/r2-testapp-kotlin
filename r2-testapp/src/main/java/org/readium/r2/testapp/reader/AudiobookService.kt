@@ -8,34 +8,43 @@ package org.readium.r2.testapp.reader
 
 import android.app.PendingIntent
 import android.content.Intent
-import kotlinx.coroutines.launch
+import android.os.Build
+import org.readium.r2.navigator.ExperimentalAudiobook
 import org.readium.r2.navigator.media.MediaService
-import org.readium.r2.shared.AudiobookNavigator
 import org.readium.r2.shared.publication.Locator
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.PublicationId
 import org.readium.r2.testapp.bookshelf.BookRepository
 import org.readium.r2.testapp.db.BookDatabase
 
-@OptIn(AudiobookNavigator::class)
+@OptIn(ExperimentalAudiobook::class)
 class AudiobookService : MediaService() {
 
     private val books by lazy {
         BookRepository(BookDatabase.getDatabase(this).booksDao())
     }
 
-    override fun onCurrentLocatorChanged(publication: Publication, publicationId: PublicationId, locator: Locator) {
-        launch {
-            books.saveProgression(locator, publicationId.toLong())
-        }
+    override suspend fun onCurrentLocatorChanged(publication: Publication, publicationId: PublicationId, locator: Locator) {
+        books.saveProgression(locator, publicationId.toLong())
     }
 
-    override val navigatorActivityIntent: PendingIntent?
-        get() {
-            val intent = Intent(this, ReaderActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            }
-            return PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    override suspend fun onCreateNotificationIntent(publication: Publication, publicationId: PublicationId): PendingIntent? {
+        val bookId = publicationId.toLong()
+        val book = books.get(bookId) ?: return null
+
+        var flags = PendingIntent.FLAG_UPDATE_CURRENT
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flags = flags or PendingIntent.FLAG_IMMUTABLE
         }
+
+        val intent = ReaderContract().createIntent(this, ReaderContract.Input(
+            mediaType = book.mediaType(),
+            publication = publication,
+            bookId = bookId,
+        ))
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
+        return PendingIntent.getActivity(this, 0, intent, flags)
+    }
 
 }
