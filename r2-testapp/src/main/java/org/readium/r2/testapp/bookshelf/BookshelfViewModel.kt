@@ -159,29 +159,15 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
             return
         }
 
-        val isRwpm = libraryAsset.mediaType().isRwpm
-
-        val bddHref =
-            if (!isRwpm)
-                libraryAsset.file.path
-            else
-                sourceUrl ?: run {
-                    Timber.e("Trying to add a RWPM to the database from a file without sourceUrl.")
-                    showProgressBar.set(false)
-                    return
-                }
-
         streamer.open(libraryAsset, allowUserInteraction = false, sender = r2Application)
             .onSuccess {
-                addPublicationToDatabase(bddHref, libraryAsset.mediaType(), it).let { id ->
+                addPublicationToDatabase(libraryAsset.file.path, libraryAsset.mediaType(), it).let { id ->
 
                     showProgressBar.set(false)
                     if (id != -1L)
                         channel.send(Event.ImportPublicationSuccess)
                     else
                         channel.send(Event.ImportDatabaseFailed)
-                    if (id != -1L && isRwpm)
-                        tryOrNull { libraryAsset.file.delete() }
                 }
             }
             .onFailure {
