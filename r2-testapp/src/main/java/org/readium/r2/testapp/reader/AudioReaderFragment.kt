@@ -38,12 +38,12 @@ class AudioReaderFragment : BaseReaderFragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         val context = requireActivity()
 
-        mediaService = MediaService.connect(context, AudiobookService::class.java)
+        mediaService = MediaService.connect(AudiobookService::class.java)
 
         // Get the currently playing navigator from the media service, if it is the same pub ID.
         // Otherwise, ask to switch to the new publication.
         mediaNavigator = mediaService.currentNavigator.value?.takeIf { it.publicationId == model.publicationId }
-            ?: mediaService.getNavigator(model.publication, model.publicationId, model.initialLocation)
+            ?: mediaService.getNavigator(context, model.publication, model.publicationId, model.initialLocation)
 
         mediaNavigator.play()
 
