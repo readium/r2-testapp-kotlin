@@ -119,7 +119,7 @@
             android:layout_weight="1"
             android:background="@android:color/transparent"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_baseline_replay_10_24"
+            android:src="@drawable/ic_rewind_30"
             app:tint="@color/white" />
 
         <ImageButton
@@ -139,7 +139,7 @@
             android:layout_weight="1"
             android:background="@android:color/transparent"
             android:scaleType="fitCenter"
-            android:src="@drawable/ic_baseline_forward_10_24"
+            android:src="@drawable/ic_fastforward_30"
             app:tint="@color/white" />
 
     </LinearLayout>
