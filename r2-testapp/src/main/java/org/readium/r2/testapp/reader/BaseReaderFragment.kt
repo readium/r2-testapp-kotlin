@@ -25,6 +25,7 @@ import org.readium.r2.lcp.lcpLicense
 import org.readium.r2.navigator.*
 import org.readium.r2.navigator.util.BaseActionModeCallback
 import org.readium.r2.shared.publication.Locator
+import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.services.isProtected
 import org.readium.r2.testapp.R
 import org.readium.r2.testapp.databinding.FragmentReaderBinding
@@ -41,9 +42,6 @@ abstract class BaseReaderFragment : Fragment() {
     protected abstract val model: ReaderViewModel
     protected abstract val navigator: Navigator
 
-    private var _binding: FragmentReaderBinding? = null
-    val binding get() = _binding!!
-
     override fun onCreate(savedInstanceState: Bundle?) {
         setHasOptionsMenu(true)
         super.onCreate(savedInstanceState)
@@ -56,15 +54,6 @@ abstract class BaseReaderFragment : Fragment() {
                 }
             Toast.makeText(requireContext(), getString(message), Toast.LENGTH_SHORT).show()
         }
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        _binding = FragmentReaderBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -90,7 +79,6 @@ abstract class BaseReaderFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        _binding = null
         (navigator as? DecorableNavigator)?.removeDecorationListener(decorationListener)
         super.onDestroyView()
     }
