@@ -179,10 +179,11 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun openBook(
-        book: Book, context: Context,
-        callback: suspend (file: FileAsset, publication: Publication, url: URL?) -> Unit
+        context: Context,
+        bookId: Long,
+        callback: suspend (book: Book, file: FileAsset, publication: Publication, url: URL?) -> Unit
     ) = viewModelScope.launch {
-
+        val book = booksDao.get(bookId) ?: return@launch
         val file = File(book.href)
         require(file.exists())
         val asset = FileAsset(file)
@@ -200,7 +201,7 @@ class BookshelfViewModel(application: Application) : AndroidViewModel(applicatio
                     }
                 } else {
                     val url = prepareToServe(it)
-                    callback.invoke(asset, it, url)
+                    callback.invoke(book, asset, it, url)
                 }
             }
     }

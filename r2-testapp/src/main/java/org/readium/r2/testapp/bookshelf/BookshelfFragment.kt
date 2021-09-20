@@ -77,7 +77,7 @@ class BookshelfFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        bookshelfAdapter = BookshelfAdapter(onBookClick = { book -> openBook(book) },
+        bookshelfAdapter = BookshelfAdapter(onBookClick = { book -> openBook(book.id) },
             onBookLongClick = { book -> confirmDeleteBook(book) })
 
         documentPickerLauncher =
@@ -238,21 +238,18 @@ class BookshelfFragment : Fragment() {
         bookshelfViewModel.deleteBook(book)
     }
 
-    private fun openBook(book: Book) {
-        bookshelfViewModel.openBook(
-            book, requireContext(),
-            callback = { asset, publication, url ->
-                readerLauncher.launch(
-                    ReaderContract.Input(
-                        mediaType = asset.mediaType(),
-                        publication = publication,
-                        bookId = book.id!!,
-                        initialLocator = book.progression
-                            ?.let { Locator.fromJSON(JSONObject(it)) },
-                        baseUrl = url
-                    )
-                )
-            })
+    private fun openBook(bookId: Long?) {
+        bookId ?: return
+
+        bookshelfViewModel.openBook(requireContext(), bookId) { book, asset, publication, url ->
+            readerLauncher.launch(ReaderContract.Input(
+                mediaType = asset.mediaType(),
+                publication = publication,
+                bookId = bookId,
+                initialLocator = book.progression?.let { Locator.fromJSON(JSONObject(it)) },
+                baseUrl = url
+            ))
+        }
     }
 
     private fun confirmDeleteBook(book: Book) {
