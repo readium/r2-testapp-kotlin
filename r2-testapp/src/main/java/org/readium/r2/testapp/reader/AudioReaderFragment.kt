@@ -36,7 +36,7 @@ class AudioReaderFragment : BaseReaderFragment() {
     private var isSeeking = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        val context = requireActivity()
+        val context = requireContext()
 
         mediaService = MediaService.connect(AudiobookService::class.java)
 
@@ -48,11 +48,6 @@ class AudioReaderFragment : BaseReaderFragment() {
         mediaNavigator.play()
 
         super.onCreate(savedInstanceState)
-
-        context.onBackPressedDispatcher.addCallback {
-            activity?.finish()
-            mediaNavigator.stop()
-        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -96,10 +91,7 @@ class AudioReaderFragment : BaseReaderFragment() {
 
             timelineBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
 
-                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    if (!fromUser) return
-                    mediaNavigator.seekTo(Duration.seconds(progress))
-                }
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {}
 
                 override fun onStartTrackingTouch(p0: SeekBar?) {
                     isSeeking = true
@@ -107,6 +99,9 @@ class AudioReaderFragment : BaseReaderFragment() {
 
                 override fun onStopTrackingTouch(p0: SeekBar?) {
                     isSeeking = false
+                    p0?.let { seekBar ->
+                        mediaNavigator.seekTo(Duration.seconds(seekBar.progress))
+                    }
                 }
 
             })
