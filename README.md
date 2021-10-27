@@ -1,3 +1,7 @@
+> **:warning: ᴛʜɪs ʀᴇᴘᴏsɪᴛᴏʀʏ ɪs ᴅᴇᴘʀᴇᴄᴀᴛᴇᴅ :warning:**
+>
+> We moved all the `r2-*-kotlin` modules to a single repository: [`kotlin-toolkit`](https://github.com/readium/kotlin-toolkit).
+
 # Readium Mobile Test App (Kotlin/Android)
 
 A test app for the Kotlin implementation of Readium-2. Stable builds are [available on Google Play](https://play.google.com/apps/testing/org.readium.r2reader).
@@ -16,8 +20,8 @@ All migration steps necessary in reading apps to upgrade to major versions of th
 - [x] Pagination and scrolling
 - [x] Table of contents
 - [x] OPDS 1.x and 2.0 support
-- [x] FXL support
-- [ ] RTL support
+- [x] EPUB FXL support
+- [x] EPUB RTL support
 
 
 ## Dependencies
